@@ -1,0 +1,134 @@
+Design Standards 
+Cohesive, Scalable, and Power BI-Ready UI for 
+Ongoing Use Cases
+July 2025
+2
+Design Standards: Summary 
+By applying consistent use case logos, a unified color palette, cohesive typography, standardized iconography, and reusable 
+UX patterns, this design standards ensures scalable, recognizable, and user-friendly experiences across use cases
+Use Case Logos
+Unified identity 
+across use-cases 
+using the Pertamina 
+base logo
+Color Palette
+Derived from 
+Pertamina's core 
+colors, with new 
+shades to create 
+distinction
+Typography
+Clean, modern, and 
+optimized 
+typography for 
+Power BI pages and 
+data visualisations
+Iconography
+Minimalist, clean, 
+intuitive and scale-
+friendly 
+iconography for 
+Power BI and data 
+visualisations
+ 
+UX Patterns
+Consistent 
+navigation structure 
+with adaptable 
+title/control bars 
+and breadcrumb 
+navigation 
+mechanism
+
+3
+Consistent and modular 
+identity across use cases
+A flexible identify style that gives each use case a 
+distinct look while staying visually aligned with 
+Pertamina brand family
+Built on a shared structure, it ensures brand 
+recognition, consistency, and easy scalability.
+We’ve used Futura to match the Digital Hub logo 
+and maintain visual coherence across all logos
+
+4
+Familiar and functional color 
+system
+The color palette builds on Pertamina’s core 
+brand colors, expanding them into a more 
+interface-friendly and accessible set for use 
+across platforms
+Focused on clarity and consistency, this system 
+introduces new shades —especially within the 
+blue spectrum—to support differentiation across 
+use cases while maintaining consistency
+Reference: Pertamina Brand Guide
+
+5
+Modern and accessible 
+typography
+Inter is a modern, legible typeface optimized for 
+digital use—balancing clarity, readability, and 
+visual consistency across sizes and layouts
+Available as a Google Web Font, it can be 
+uploaded as a custom font in Power BI, enabling 
+seamless alignment across dashboards and 
+interfaces with minimal effort
+
+6
+Consistent and scalable 
+iconography
+A clean, lightweight and outlined icon style for 
+performance and adaptable across themes and 
+backgrounds
+Built on a widely-used, open-source library 
+ensures a visual consistency while allowing room 
+for future scale
+
+7
+Flexible persistent navigation 
+system design
+A modular, scalable, and context -aware 
+navigation system supports consistency across 
+platforms while adapting to specific needs
+• Left Navigation bar: Teams can choose to use 
+either the expanded or collapsed navigation 
+view based on their use case needs — or both, 
+if the experience requires it.
+However, due to Power BI limitations , it’s 
+recommended to pick one primary layout  to 
+ensure consistency and avoid complexity in 
+implementation.
+• Top bar: Customizable per use case with 
+filters, key actions, and breadcrumbs for 
+clarity
+Left navigation bar (expanded and collapsed view)
+Top bar
+
+8
+Bringing It All Together in 
+Power BI
+ 
+Consistent logo 
+placement
+Modular 
+Navigation 
+Standardized 
+Color scheme
+This screen shows how the OPTIgas 
+use case brings our design standard 
+to life — built entirely within Power BI 
+using standardized components, 
+styles, and layouts for consistency 
+and scalability.
+Reusable card 
+components
+Unified chart 
+styling
+Clear back & 
+breadcrumb path
+Unified filter 
+position
+9Pertamina Digital Hub | Deck Template
+
+Thank you
