@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare } from 'lucide-react';
+import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare, X, Eye } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { getAllLiftings, getLiftingById, createDraft, updateLifting, submitLifting, createAndSubmit, approveLifting, rejectLifting, deleteLifting, getKKKSList, getStats } from './dataStore';
 
 export const Dashboard = () => {
   const [viewMode, setViewMode] = useState('gabungan'); // 'gabungan', 'estimasi', 'realisasi'
@@ -204,8 +205,76 @@ export const Dashboard = () => {
 export const DataSubmission = () => {
   const [tab, setTab] = useState('manual');
   const navigate = useNavigate();
+  const kkksList = getKKKSList();
+
+  // Form state
+  const emptyForm = { blNumber: '', tanggalLifting: '', kkks: '', volumeGross: '', volumeNet: '', waterContent: '', apiGravity: '', catatan: '' };
+  const [form, setForm] = useState(emptyForm);
+  const [toast, setToast] = useState(null);
+  const [liftings, setLiftings] = useState([]);
+  const [filterStatus, setFilterStatus] = useState('Semua Status');
+
+  const refreshData = useCallback(() => setLiftings(getAllLiftings()), []);
+  useEffect(() => { refreshData(); }, [refreshData]);
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const handleSaveDraft = () => {
+    if (!form.kkks) { showToast('Pilih KKKS terlebih dahulu', 'error'); return; }
+    createDraft(form);
+    showToast('Draft berhasil disimpan');
+    setForm(emptyForm);
+    refreshData();
+  };
+
+  const handleSubmit = () => {
+    if (!form.kkks || !form.tanggalLifting || !form.volumeGross || !form.volumeNet || !form.apiGravity) {
+      showToast('Lengkapi semua field wajib sebelum submit', 'error'); return;
+    }
+    createAndSubmit(form);
+    showToast('Data berhasil disubmit ke verifikasi L1');
+    setForm(emptyForm);
+    refreshData();
+  };
+
+  const handleDeleteDraft = (id) => {
+    if (deleteLifting(id)) { showToast('Draft berhasil dihapus'); refreshData(); }
+  };
+
+  const filteredLiftings = liftings.filter(l => {
+    if (filterStatus === 'Semua Status') return true;
+    if (filterStatus === 'Draft Tersimpan') return l.status === 'draft';
+    if (filterStatus === 'Terkirim (Menunggu Review)') return l.status === 'submitted';
+    if (filterStatus === 'Butuh Revisi') return l.status === 'revisi';
+    if (filterStatus === 'Approved') return l.status === 'approved';
+    return true;
+  });
+
+  const getStatusBadge = (status) => {
+    const map = {
+      draft: { bg: '#f1f5f9', color: 'var(--text-muted)', text: 'Draft' },
+      submitted: { bg: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)', text: 'Menunggu Review L1' },
+      revisi: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', text: 'Butuh Perbaikan' },
+      approved: { bg: 'rgba(0, 166, 81, 0.1)', color: 'var(--success)', text: 'Approved' },
+    };
+    const s = map[status] || map.draft;
+    return <span className="badge" style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}22` }}>{s.text}</span>;
+  };
+
   return (
     <div className="animate-fade-in">
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', top: 24, right: 32, zIndex: 100, padding: '14px 24px', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', background: toast.type === 'error' ? 'var(--danger)' : 'var(--success)', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeIn 0.3s ease-out' }}>
+          {toast.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle size={18} />} {toast.msg}
+        </div>
+      )}
+
       <div className="mb-8">
         <h1>Input Data Lifting (KKKS)</h1>
         <p className="text-muted mt-2">Lengkapi detail spesifikasi komersial minyak mentah untuk dilaporkan kepada Feedstock Pertamina.</p>
@@ -218,129 +287,226 @@ export const DataSubmission = () => {
 
       {tab === 'manual' ? (
         <div className="card">
-          <h2 className="mb-6">Laporan Detail Lifting</h2>
+          <h2 className="mb-6">Laporan Detail Lifting Baru</h2>
           <div className="grid-cols-2">
             <div className="input-group">
               <label className="input-label">Nomor Referensi Bill of Lading (B/L)</label>
-              <input type="text" className="input-control" defaultValue="CT-2026/03-1123" />
+              <input type="text" className="input-control" placeholder="Otomatis jika kosong" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
             </div>
             <div className="input-group">
-              <label className="input-label">Tanggal Lifting</label>
-              <input type="date" className="input-control" defaultValue="2026-03-09" />
+              <label className="input-label">Tanggal Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input type="date" className="input-control" value={form.tanggalLifting} onChange={e => handleChange('tanggalLifting', e.target.value)} />
+            </div>
+            <div className="input-group" style={{ gridColumn: 'span 2' }}>
+              <label className="input-label">Entitas KKKS <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <select className="input-control" value={form.kkks} onChange={e => handleChange('kkks', e.target.value)}>
+                <option value="">— Pilih KKKS —</option>
+                {kkksList.map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
             </div>
             <div className="input-group">
-              <label className="input-label">Volume (Gross Bbls)</label>
-              <input type="number" className="input-control" placeholder="Contoh: 150000" />
+              <label className="input-label">Volume (Gross Bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input type="number" className="input-control" placeholder="Contoh: 150000" value={form.volumeGross} onChange={e => handleChange('volumeGross', e.target.value)} />
             </div>
             <div className="input-group">
-              <label className="input-label">Volume (Net Bbls)</label>
-              <input type="number" className="input-control" placeholder="Isi volume net yang akurat" />
+              <label className="input-label">Volume (Net Bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input type="number" className="input-control" placeholder="Isi volume net yang akurat" value={form.volumeNet} onChange={e => handleChange('volumeNet', e.target.value)} />
             </div>
             <div className="input-group">
               <label className="input-label">Water Content / Sedimen (%)</label>
-              <input type="text" className="input-control" placeholder="Contoh: 0.05" />
+              <input type="text" className="input-control" placeholder="Contoh: 0.05" value={form.waterContent} onChange={e => handleChange('waterContent', e.target.value)} />
             </div>
             <div className="input-group">
-              <label className="input-label">API Gravity</label>
-              <input type="text" className="input-control" placeholder="Contoh: 33.2" />
+              <label className="input-label">API Gravity <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input type="text" className="input-control" placeholder="Contoh: 33.2" value={form.apiGravity} onChange={e => handleChange('apiGravity', e.target.value)} />
             </div>
           </div>
+          <div className="input-group" style={{ marginTop: '8px' }}>
+            <label className="input-label">Catatan Tambahan (Opsional)</label>
+            <textarea className="input-control" placeholder="Catatan untuk reviewer..." style={{ resize: 'vertical', minHeight: '80px' }} value={form.catatan} onChange={e => handleChange('catatan', e.target.value)} />
+          </div>
           <div className="flex justify-end gap-4 mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-            <button className="btn btn-outline">Simpan Draft</button>
-            <button className="btn btn-primary"><Save size={16} /> Submit Dokumen</button>
+            <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
+            <button className="btn btn-primary" onClick={handleSubmit}><CheckCircle size={16} /> Submit Dokumen</button>
           </div>
         </div>
       ) : (
         <div className="card text-center py-12">
-          <div className="mx-auto flex items-center justify-center mb-4" style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-light)' }}>
-            <Upload size={32} />
-          </div>
+          <div className="mx-auto flex items-center justify-center mb-4" style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-light)' }}><Upload size={32} /></div>
           <h2 className="mb-2">Upload Format Template (Excel)</h2>
-          <p className="text-muted max-w-md mx-auto mb-8">Unggah data massal lifting untuk efisiensi. Hanya mendukung format struktur template .xlsx standar Pertamina FAST.</p>
+          <p className="text-muted max-w-md mx-auto mb-8">Unggah data massal lifting. Hanya mendukung format .xlsx standar Pertamina FAST.</p>
           <button className="btn btn-primary btn-lg"><Upload size={18} /> Pilih File Excel</button>
-          <div className="mt-8 pt-6 mx-auto max-w-lg text-left" style={{ borderTop: '1px solid var(--border)' }}>
-            <div className="text-sm font-semibold mb-2 flex items-center gap-2"><FileText size={16} /> Informasi Kolom Required:</div>
-            <ul className="text-xs text-muted" style={{ marginLeft: '24px', listStyleType: 'decimal' }}>
-              <li>Bill of Lading ID</li>
-              <li>Net Volume BBLS</li>
-              <li>Density / Gravity</li>
-            </ul>
-          </div>
         </div>
       )}
 
+      {/* History Table */}
       <div className="mt-16 pt-8" style={{ borderTop: '2px solid var(--border)' }}>
         <div className="flex justify-between items-end mb-6">
           <div>
             <h2 className="text-xl font-semibold">Riwayat Input Data Lifting</h2>
-            <p className="text-sm text-muted mt-1">Pantau status integrasi data submission Anda sebelumnya.</p>
+            <p className="text-sm text-muted mt-1">Data real-time dari penyimpanan lokal • Total: {liftings.length} record</p>
           </div>
-          <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '13px', height: 'fit-content' }}><Activity size={14} /> Segarkan Data</button>
-        </div>
-
-        {/* Filters */}
-        <div className="flex gap-4 mb-6 p-4 rounded-lg" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-          <div className="flex-1">
-            <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1 block">Periode Tanggal</label>
-            <input type="month" className="input-control" style={{ padding: '8px 12px', fontSize: '14px' }} defaultValue="2026-03" />
-          </div>
-          <div className="flex-1">
-            <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1 block">Entitas KKKS</label>
-            <select className="input-control" style={{ padding: '8px 12px', fontSize: '14px' }}>
-              <option>Semua KKKS</option>
-              <option>PT KKKS Alpha Energi</option>
-              <option>PT Bravo Petroleum</option>
+          <div className="flex gap-3 items-center">
+            <select className="input-control" style={{ width: '220px', padding: '8px 12px', fontSize: '13px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+              <option>Semua Status</option><option>Draft Tersimpan</option><option>Terkirim (Menunggu Review)</option><option>Butuh Revisi</option><option>Approved</option>
             </select>
-          </div>
-          <div className="flex-1">
-            <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1 block">Status Integrasi</label>
-            <select className="input-control" style={{ padding: '8px 12px', fontSize: '14px' }}>
-              <option>Semua Status</option>
-              <option>Terkirim ke Feedstock</option>
-              <option>Draft Tersimpan</option>
-              <option>Butuh Revisi</option>
-            </select>
+            <button className="btn btn-outline" style={{ padding: '8px 14px', fontSize: '13px' }} onClick={refreshData}><Activity size={14} /> Refresh</button>
           </div>
         </div>
         <div className="table-container">
           <table>
-            <thead>
-              <tr>
-                <th>No. Referensi (B/L)</th>
-                <th>Tanggal Submission</th>
-                <th>Volume (BBLS)</th>
-                <th>API Gravity</th>
-                <th>Status Integrasi</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
+            <thead><tr><th>No. Referensi (B/L)</th><th>KKKS</th><th>Tgl Lifting</th><th>Vol Net (BBL)</th><th>API</th><th>Status</th><th>Terakhir Diperbarui</th><th>Aksi</th></tr></thead>
             <tbody>
-              <tr>
-                <td className="font-medium" style={{ color: 'var(--accent)' }}>CT-2026/03-1120</td>
-                <td>08 Mar 2026, 14:30</td>
-                <td>150,000</td>
-                <td>32.5</td>
-                <td><span className="badge" style={{ background: 'rgba(0, 166, 81, 0.1)', color: 'var(--success)' }}>Terkirim ke Feedstock</span></td>
-                <td><button onClick={() => navigate('/operasional/verifikasi/CT-2026%2F03-1120')} className="btn btn-sm btn-outline" style={{ padding: '4px 8px' }}><FileText size={14} /></button></td>
-              </tr>
-              <tr>
-                <td className="font-medium" style={{ color: 'var(--accent)' }}>CT-2026/03-1115</td>
-                <td>01 Mar 2026, 09:15</td>
-                <td>120,500</td>
-                <td>33.1</td>
-                <td><span className="badge" style={{ background: 'rgba(0, 166, 81, 0.1)', color: 'var(--success)' }}>Terkirim ke Feedstock</span></td>
-                <td><button onClick={() => navigate('/operasional/verifikasi/CT-2026%2F03-1115')} className="btn btn-sm btn-outline" style={{ padding: '4px 8px' }}><FileText size={14} /></button></td>
-              </tr>
-              <tr>
-                <td className="font-medium" style={{ color: 'var(--text-muted)' }}>CT-2026/03-1122</td>
-                <td>09 Mar 2026, 10:00</td>
-                <td>-</td>
-                <td>-</td>
-                <td><span className="badge" style={{ background: '#f1f5f9', color: 'var(--text-muted)' }}>Draft Tersimpan</span></td>
-                <td><button className="btn btn-sm btn-primary" style={{ padding: '4px 8px' }}><Save size={14} /> Lanjutkan</button></td>
-              </tr>
+              {filteredLiftings.map(l => (
+                <tr key={l.id}>
+                  <td className="font-medium" style={{ color: 'var(--accent)' }}>{l.blNumber}</td>
+                  <td>{l.kkks || '-'}</td>
+                  <td>{l.tanggalLifting || '-'}</td>
+                  <td>{l.volumeNet ? l.volumeNet.toLocaleString() : '-'}</td>
+                  <td>{l.apiGravity ?? '-'}</td>
+                  <td>{getStatusBadge(l.status)}</td>
+                  <td className="text-sm text-muted">{l.updatedAt}</td>
+                  <td>
+                    <div className="flex gap-2">
+                      {(l.status === 'draft' || l.status === 'revisi') && (
+                        <button className="btn btn-sm btn-primary" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => navigate(`/operasional/submission/edit/${l.id}`)}><Edit2 size={13} /> Edit</button>
+                      )}
+                      {l.status === 'draft' && (
+                        <button className="btn btn-sm btn-outline" style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => handleDeleteDraft(l.id)}><Trash2 size={13} /></button>
+                      )}
+                      {(l.status === 'submitted' || l.status === 'approved') && (
+                        <button className="btn btn-sm btn-outline" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => navigate(`/operasional/verifikasi/${l.id}`)}><Eye size={13} /> Lihat</button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredLiftings.length === 0 && (<tr><td colSpan="8" className="text-center py-8 text-muted">Tidak ada data lifting untuk filter ini.</td></tr>)}
             </tbody>
           </table>
+          <div className="flex justify-between items-center p-4" style={{ borderTop: '1px solid var(--border)', background: '#f9fafb' }}>
+            <span className="text-sm text-muted">Menampilkan {filteredLiftings.length} dari {liftings.length} record</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+export const EditLifting = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const kkksList = getKKKSList();
+
+  const emptyForm = { blNumber: '', tanggalLifting: '', kkks: '', volumeGross: '', volumeNet: '', waterContent: '', apiGravity: '', catatan: '' };
+  const [form, setForm] = useState(emptyForm);
+  const [originalStatus, setOriginalStatus] = useState('draft');
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    const data = getLiftingById(id);
+    if (data) {
+      setForm({
+        blNumber: data.blNumber || '', tanggalLifting: data.tanggalLifting || '', kkks: data.kkks || '',
+        volumeGross: data.volumeGross ?? '', volumeNet: data.volumeNet ?? '', waterContent: data.waterContent ?? '',
+        apiGravity: data.apiGravity ?? '', catatan: data.catatan || '',
+      });
+      setOriginalStatus(data.status);
+    }
+  }, [id]);
+
+  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
+  const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+  const handleSaveDraft = () => {
+    if (!form.kkks) { showToast('Pilih KKKS terlebih dahulu', 'error'); return; }
+    updateLifting(id, form);
+    showToast('Draft berhasil diperbarui');
+    setTimeout(() => navigate('/operasional/submission'), 1200);
+  };
+
+  const handleSubmit = () => {
+    if (!form.kkks || !form.tanggalLifting || !form.volumeGross || !form.volumeNet || !form.apiGravity) {
+      showToast('Lengkapi semua field wajib sebelum submit', 'error'); return;
+    }
+    updateLifting(id, form);
+    submitLifting(id);
+    showToast('Data berhasil disubmit ke verifikasi L1');
+    setTimeout(() => navigate('/operasional/submission'), 1200);
+  };
+
+  const statusBadge = {
+    draft: { bg: '#f1f5f9', color: 'var(--text-muted)', text: 'Draft' },
+    revisi: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', text: 'Butuh Perbaikan' },
+  };
+  const st = statusBadge[originalStatus] || statusBadge.draft;
+
+  return (
+    <div className="animate-fade-in">
+      {toast && (
+        <div style={{ position: 'fixed', top: 24, right: 32, zIndex: 100, padding: '14px 24px', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', background: toast.type === 'error' ? 'var(--danger)' : 'var(--success)', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeIn 0.3s ease-out' }}>
+          {toast.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle size={18} />} {toast.msg}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <button onClick={() => navigate('/operasional/submission')} className="btn btn-outline" style={{ padding: '8px 12px', borderRadius: '10px' }}>
+          <ChevronLeft size={18} /> Kembali
+        </button>
+        <div style={{ flex: 1 }}>
+          <h1>Edit Data Lifting</h1>
+          <p className="text-muted mt-1" style={{ fontSize: '14px' }}>
+            ID: <span style={{ color: 'var(--accent)', fontFamily: 'monospace' }}>{id}</span>
+          </p>
+        </div>
+        <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, padding: '8px 16px', fontSize: '13px' }}>{st.text}</span>
+      </div>
+
+      {/* Form Card */}
+      <div className="card">
+        <h2 className="mb-6">Detail Laporan Lifting</h2>
+        <div className="grid-cols-2">
+          <div className="input-group">
+            <label className="input-label">Nomor Referensi Bill of Lading (B/L)</label>
+            <input type="text" className="input-control" placeholder="Otomatis jika kosong" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
+          </div>
+          <div className="input-group">
+            <label className="input-label">Tanggal Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="date" className="input-control" value={form.tanggalLifting} onChange={e => handleChange('tanggalLifting', e.target.value)} />
+          </div>
+          <div className="input-group" style={{ gridColumn: 'span 2' }}>
+            <label className="input-label">Entitas KKKS <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <select className="input-control" value={form.kkks} onChange={e => handleChange('kkks', e.target.value)}>
+              <option value="">— Pilih KKKS —</option>
+              {kkksList.map(k => <option key={k} value={k}>{k}</option>)}
+            </select>
+          </div>
+          <div className="input-group">
+            <label className="input-label">Volume (Gross Bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="number" className="input-control" placeholder="Contoh: 150000" value={form.volumeGross} onChange={e => handleChange('volumeGross', e.target.value)} />
+          </div>
+          <div className="input-group">
+            <label className="input-label">Volume (Net Bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="number" className="input-control" placeholder="Isi volume net yang akurat" value={form.volumeNet} onChange={e => handleChange('volumeNet', e.target.value)} />
+          </div>
+          <div className="input-group">
+            <label className="input-label">Water Content / Sedimen (%)</label>
+            <input type="text" className="input-control" placeholder="Contoh: 0.05" value={form.waterContent} onChange={e => handleChange('waterContent', e.target.value)} />
+          </div>
+          <div className="input-group">
+            <label className="input-label">API Gravity <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="text" className="input-control" placeholder="Contoh: 33.2" value={form.apiGravity} onChange={e => handleChange('apiGravity', e.target.value)} />
+          </div>
+        </div>
+        <div className="input-group" style={{ marginTop: '8px' }}>
+          <label className="input-label">Catatan Tambahan (Opsional)</label>
+          <textarea className="input-control" placeholder="Catatan untuk reviewer..." style={{ resize: 'vertical', minHeight: '80px' }} value={form.catatan} onChange={e => handleChange('catatan', e.target.value)} />
+        </div>
+        <div className="flex justify-end gap-3 mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+          <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
+          <button className="btn btn-primary" onClick={handleSubmit}><CheckCircle size={16} /> Submit untuk Review</button>
         </div>
       </div>
     </div>
@@ -351,41 +517,36 @@ export const VerificationPage = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('Semua Status');
   const [searchTerm, setSearchTerm] = useState('');
+  const [liftings, setLiftings] = useState([]);
 
-  const inboxData = [
-    { id: 'BL-2026-8812', entitas: 'PT KKKS Alpha Energi', tanggal: '09 Mar 2026', volume: 250000, statusType: 'menunggu_l1', statusText: 'Menunggu Review L1', notes: '-' },
-    { id: 'CT-2026/03-1002', entitas: 'PT Bravo Petroleum', tanggal: '08 Mar 2026', volume: 125500, statusType: 'approved', statusText: 'Approved (Tembus L2)', notes: '-' },
-    { id: 'CT-2026/03-0092', entitas: 'PT KKKS Charlie', tanggal: '03 Mar 2026', volume: 150000, statusType: 'revisi', statusText: 'Butuh Perbaikan', notes: 'Angka Net Volume keliru. Mohon cek water content.' },
-    { id: 'BL-2026-8815', entitas: 'Pertamina EP', tanggal: '10 Mar 2026', volume: 300000, statusType: 'menunggu_l1', statusText: 'Menunggu Review L1', notes: '-' },
-    { id: 'CT-2026/03-0105', entitas: 'PT Delta Energy', tanggal: '05 Mar 2026', volume: 85000, statusType: 'revisi', statusText: 'Butuh Perbaikan', notes: 'Lampiran manifest buram, mohon unggah ulang.' },
-  ];
+  useEffect(() => { setLiftings(getAllLiftings().filter(l => l.status !== 'draft')); }, []);
 
-  const filteredData = inboxData.filter(item => {
-    const matchesSearch = item.id.toLowerCase().includes(searchTerm.toLowerCase()) || item.entitas.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredData = liftings.filter(item => {
+    const matchesSearch = (item.blNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) || (item.kkks || '').toLowerCase().includes(searchTerm.toLowerCase());
     if (statusFilter === 'Semua Status') return matchesSearch;
-    if (statusFilter === 'Menunggu Review') return matchesSearch && item.statusType === 'menunggu_l1';
-    if (statusFilter === 'Butuh Perbaikan') return matchesSearch && item.statusType === 'revisi';
-    if (statusFilter === 'Approved') return matchesSearch && item.statusType === 'approved';
+    if (statusFilter === 'Menunggu Review') return matchesSearch && item.status === 'submitted';
+    if (statusFilter === 'Butuh Perbaikan') return matchesSearch && item.status === 'revisi';
+    if (statusFilter === 'Approved') return matchesSearch && item.status === 'approved';
     return matchesSearch;
   });
 
-  const getStatusBadge = (type, text) => {
-    switch(type) {
-      case 'menunggu_l1': return <span className="badge badge-warning">{text}</span>;
-      case 'revisi': return <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{text}</span>;
-      case 'approved': return <span className="badge badge-success">{text}</span>;
-      default: return <span className="badge">{text}</span>;
+  const getStatusBadge = (status) => {
+    switch(status) {
+      case 'submitted': return <span className="badge badge-warning">Menunggu Review L1</span>;
+      case 'revisi': return <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>Butuh Perbaikan</span>;
+      case 'approved': return <span className="badge badge-success">Approved (Tembus L2)</span>;
+      default: return <span className="badge">{status}</span>;
     }
   };
 
-  const getActionButton = (type, id) => {
-    switch(type) {
-      case 'menunggu_l1': 
+  const getActionButton = (status, id) => {
+    switch(status) {
+      case 'submitted': 
         return <button onClick={() => navigate(`/operasional/verifikasi/${id}`)} className="btn btn-sm btn-outline" style={{ padding: '6px 12px', fontSize: '12px' }}><CheckSquare size={14} /> Verifikasi Form</button>;
       case 'revisi': 
-        return <button className="btn btn-sm btn-primary" style={{ padding: '6px 12px', fontSize: '12px', background: '#ef4444', border: 'none' }}><Activity size={14} /> Perbaiki Data</button>;
+        return <button onClick={() => navigate(`/operasional/verifikasi/${id}`)} className="btn btn-sm btn-primary" style={{ padding: '6px 12px', fontSize: '12px', background: '#ef4444', border: 'none' }}><Activity size={14} /> Lihat Detail</button>;
       case 'approved': 
-        return <button className="btn btn-sm btn-outline" style={{ padding: '6px 12px', fontSize: '12px', opacity: 0.5 }} disabled><FileText size={14} /> Lihat Arsip</button>;
+        return <button onClick={() => navigate(`/operasional/verifikasi/${id}`)} className="btn btn-sm btn-outline" style={{ padding: '6px 12px', fontSize: '12px', opacity: 0.7 }}><FileText size={14} /> Lihat Arsip</button>;
       default: return null;
     }
   };
@@ -442,17 +603,17 @@ export const VerificationPage = () => {
           </thead>
           <tbody>
             {filteredData.map((row, index) => (
-              <tr key={index}>
-                <td className="font-medium">{row.id}</td>
-                <td>{row.entitas}</td>
-                <td>{row.tanggal}</td>
-                <td>{row.volume.toLocaleString()}</td>
-                <td>{getStatusBadge(row.statusType, row.statusText)}</td>
-                <td style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: row.statusType === 'revisi' ? '#ef4444' : 'var(--text-muted)' }}>
-                  {row.notes}
+              <tr key={row.id}>
+                <td className="font-medium">{row.blNumber}</td>
+                <td>{row.kkks}</td>
+                <td>{row.tanggalLifting}</td>
+                <td>{row.volumeNet ? row.volumeNet.toLocaleString() : '-'}</td>
+                <td>{getStatusBadge(row.status)}</td>
+                <td style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: row.status === 'revisi' ? '#ef4444' : 'var(--text-muted)' }}>
+                  {row.verifikasiCatatan || '-'}
                 </td>
                 <td className="flex gap-2">
-                  {getActionButton(row.statusType, row.id)}
+                  {getActionButton(row.status, row.id)}
                 </td>
               </tr>
             ))}
@@ -797,92 +958,73 @@ export const SettlementSheet = ({ invoice, onBack }) => {
 
 export const VerificationDetail = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [lifting, setLifting] = useState(null);
+  const [decision, setDecision] = useState(null);
+  const [catatan, setCatatan] = useState('');
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => { const data = getLiftingById(id); if (data) setLifting(data); }, [id]);
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  const handleConfirm = () => {
+    if (!decision) { showToast('Pilih keputusan Approve atau Reject'); return; }
+    if (decision === 'approve') { approveLifting(id, catatan); showToast('APPROVED!'); }
+    else { if (!catatan.trim()) { showToast('Catatan wajib saat Reject'); return; } rejectLifting(id, catatan); showToast('DITOLAK'); }
+    setTimeout(() => navigate('/operasional/verifikasi'), 1500);
+  };
+
+  if (!lifting) return (
+    <div className="animate-fade-in" style={{ textAlign: 'center', padding: '80px 0' }}>
+      <AlertCircle size={48} color="var(--warning)" /><h2 className="mt-4">Data Tidak Ditemukan</h2>
+      <p className="text-muted mt-2">ID "{id}" tidak ditemukan.</p>
+      <button className="btn btn-primary mt-4" onClick={() => navigate(-1)}><ChevronLeft size={16} /> Kembali</button>
+    </div>
+  );
+
+  const isEditable = lifting.status === 'submitted';
+  const statusBadge = { submitted: <span className="badge badge-warning">Menunggu Review L1</span>, approved: <span className="badge badge-success">Approved</span>, revisi: <span className="badge badge-danger">Butuh Perbaikan</span> };
+
   return (
     <div className="animate-fade-in">
+      {toast && (<div style={{ position: 'fixed', top: 24, right: 32, zIndex: 100, padding: '14px 24px', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', background: decision === 'reject' ? 'var(--danger)' : 'var(--success)', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeIn 0.3s ease-out' }}><CheckCircle size={18} /> {toast}</div>)}
       <div className="flex items-center gap-4 mb-8">
         <button onClick={() => navigate(-1)} className="btn btn-outline" style={{ padding: '8px', border: 'none' }}><ChevronLeft size={20} /></button>
-        <div>
-          <h1>Detail Verifikasi Lifting</h1>
-          <p className="text-muted mt-2">No. Referensi (B/L): <span className="font-semibold text-main">CT-2026/03-1120</span></p>
-        </div>
+        <div><h1>Detail Verifikasi Lifting</h1><p className="text-muted mt-2">B/L: <span className="font-semibold text-main">{lifting.blNumber}</span> • ID: <span style={{ color: 'var(--accent)' }}>{lifting.id}</span></p></div>
       </div>
-
       <div className="grid-cols-3 mb-8">
         <div className="card" style={{ gridColumn: 'span 2' }}>
-          <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
-            <h2 className="text-lg font-semibold">Data Parameter Komersial</h2>
-            <span className="badge badge-warning">Menunggu Feedback Anda</span>
-          </div>
-
+          <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}><h2 className="text-lg font-semibold">Data Parameter Komersial</h2>{statusBadge[lifting.status]}</div>
           <div className="grid-cols-2 mb-6 text-sm">
             <div>
-              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Entitas KKKS</div>
-              <div className="font-medium mb-4">PT KKKS Alpha Energi</div>
-
-              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Tanggal Lifting</div>
-              <div className="font-medium mb-4">08 Mar 2026</div>
-
-              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Volume Gross (BBLS)</div>
-              <div className="font-medium mb-4">152,000</div>
+              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Entitas KKKS</div><div className="font-medium mb-4">{lifting.kkks}</div>
+              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Tanggal Lifting</div><div className="font-medium mb-4">{lifting.tanggalLifting}</div>
+              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Volume Gross (BBLS)</div><div className="font-medium mb-4">{lifting.volumeGross ? lifting.volumeGross.toLocaleString() : '-'}</div>
             </div>
             <div>
-              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Tujuan Pengiriman</div>
-              <div className="font-medium mb-4">Kilang Pertamina RU IV</div>
-
-              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Volume Net Klaim (BBLS)</div>
-              <div className="font-medium mb-4 text-accent">150,000</div>
-
-              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Kualitas (API & BS&W)</div>
-              <div className="font-medium mb-4">API 32.5 | BS&W 0.5%</div>
+              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Water Content (%)</div><div className="font-medium mb-4">{lifting.waterContent ?? '-'}</div>
+              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Volume Net Klaim (BBLS)</div><div className="font-medium mb-4 text-accent">{lifting.volumeNet ? lifting.volumeNet.toLocaleString() : '-'}</div>
+              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">API Gravity</div><div className="font-medium mb-4">{lifting.apiGravity ?? '-'}</div>
             </div>
           </div>
-
-          <div className="mb-2">
-            <h3 className="text-sm font-semibold mb-3">Dokumen Pendukung Tersubmit</h3>
-            <div className="flex items-center justify-between p-3 rounded" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-              <div className="flex items-center gap-3">
-                <FileText size={18} color="var(--accent)" />
-                <span className="text-sm font-medium">Bill_of_Lading_Signed.pdf</span>
-              </div>
-              <button className="btn btn-sm btn-outline" style={{ padding: '4px 8px' }}><Download size={14} /></button>
-            </div>
-          </div>
+          {lifting.verifikasiCatatan && (<div className="mb-4 p-4 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}><div className="text-xs font-semibold uppercase mb-1" style={{ color: '#ef4444' }}>Catatan Verifikasi</div><div className="text-sm">{lifting.verifikasiCatatan}</div></div>)}
+          <div className="mb-2"><h3 className="text-sm font-semibold mb-3">Dokumen Pendukung</h3><div className="flex items-center justify-between p-3 rounded" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}><div className="flex items-center gap-3"><FileText size={18} color="var(--accent)" /><span className="text-sm font-medium">Bill_of_Lading_Signed.pdf</span></div><button className="btn btn-sm btn-outline" style={{ padding: '4px 8px' }}><Download size={14} /></button></div></div>
         </div>
-
-        <div className="card pt-8" style={{ borderTop: '4px solid var(--accent)', display: 'block' }}>
-          <h2 className="text-lg font-semibold mb-6 pb-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <Activity size={20} color="var(--accent)" /> Aksi & Catatan Verifikasi
-          </h2>
-
-          <div className="mb-6">
-            <label className="text-sm font-semibold text-muted mb-3 block">Keputusan Verifikasi <span className="text-danger">*</span></label>
-            <div className="flex justify-between gap-4">
-              <button className="btn btn-outline flex-1" style={{ justifyContent: 'center', borderColor: 'var(--success)', color: 'var(--success)', background: 'rgba(0, 166, 81, 0.05)', padding: '12px' }}>
-                <CheckCircle size={18} /> Approve Form
-              </button>
-              <button className="btn btn-outline flex-1" style={{ justifyContent: 'center', borderColor: 'var(--danger)', color: 'var(--danger)', background: 'rgba(238, 49, 42, 0.05)', padding: '12px' }}>
-                <AlertCircle size={18} /> Reject Form
-              </button>
+        <div className="card pt-8" style={{ borderTop: `4px solid ${isEditable ? 'var(--accent)' : 'var(--success)'}`, display: 'block' }}>
+          <h2 className="text-lg font-semibold mb-6 pb-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}><Activity size={20} color="var(--accent)" /> {isEditable ? 'Aksi Verifikasi' : 'Riwayat Keputusan'}</h2>
+          {isEditable ? (<>
+            <div className="mb-6">
+              <label className="text-sm font-semibold text-muted mb-3 block">Keputusan <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <div className="flex justify-between gap-4">
+                <button onClick={() => setDecision('approve')} className="btn btn-outline flex-1" style={{ justifyContent: 'center', borderColor: decision === 'approve' ? 'var(--success)' : 'var(--border)', color: decision === 'approve' ? '#fff' : 'var(--success)', background: decision === 'approve' ? 'var(--success)' : 'rgba(0,166,81,0.05)', padding: '12px' }}><CheckCircle size={18} /> Approve</button>
+                <button onClick={() => setDecision('reject')} className="btn btn-outline flex-1" style={{ justifyContent: 'center', borderColor: decision === 'reject' ? 'var(--danger)' : 'var(--border)', color: decision === 'reject' ? '#fff' : 'var(--danger)', background: decision === 'reject' ? 'var(--danger)' : 'rgba(238,49,42,0.05)', padding: '12px' }}><AlertCircle size={18} /> Reject</button>
+              </div>
             </div>
-          </div>
-
-          <div className="mb-6">
-            <label className="text-sm font-semibold text-muted mb-3 block flex items-center justify-between">
-              <span>Tambahkan Catatan Khusus</span>
-              <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>(Opsional)</span>
-            </label>
-            <textarea
-              className="input-control"
-              placeholder="Tuliskan catatan internal atau alasan kepada KKKS di sini..."
-              style={{ resize: 'vertical', minHeight: '160px', width: '100%', display: 'block' }}
-            ></textarea>
-          </div>
-
-          <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-            <button className="btn btn-primary w-full shadow" style={{ justifyContent: 'center', padding: '14px', fontSize: '15px' }}>
-              Konfirmasi & Kirim Keputusan
-            </button>
-          </div>
+            <div className="mb-6"><label className="text-sm font-semibold text-muted mb-3 block">Catatan {decision === 'reject' ? <span style={{ color: 'var(--danger)' }}>* (Wajib)</span> : '(Opsional)'}</label><textarea className="input-control" placeholder="Tuliskan catatan..." style={{ resize: 'vertical', minHeight: '140px', width: '100%', display: 'block' }} value={catatan} onChange={e => setCatatan(e.target.value)} /></div>
+            <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}><button onClick={handleConfirm} className="btn btn-primary w-full shadow" style={{ justifyContent: 'center', padding: '14px', fontSize: '15px' }}>Konfirmasi & Kirim Keputusan</button></div>
+          </>) : (
+            <div><div className="p-4 rounded-lg mb-4" style={{ background: lifting.status === 'approved' ? 'rgba(0,166,81,0.05)' : 'rgba(239,68,68,0.05)', border: `1px solid ${lifting.status === 'approved' ? 'rgba(0,166,81,0.2)' : 'rgba(239,68,68,0.2)'}` }}><div className="text-sm font-semibold mb-1" style={{ color: lifting.status === 'approved' ? 'var(--success)' : '#ef4444' }}>{lifting.status === 'approved' ? '✓ Disetujui' : '✗ Ditolak'}</div><div className="text-sm text-muted">{lifting.verifikasiCatatan || 'Tidak ada catatan'}</div></div><div className="text-xs text-muted">Diperbarui: {lifting.updatedAt}</div></div>
+          )}
         </div>
       </div>
     </div>

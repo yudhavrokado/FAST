@@ -1,5 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { initStore } from './dataStore'
+
+initStore();
 import './index.css'
 import App from './App.jsx'
 

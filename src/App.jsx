@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FileUp, CheckSquare, Database, FileText, User, Bell, Hexagon, MessageSquareWarning } from 'lucide-react';
-import { Dashboard, DataSubmission, VerificationPage, MasterDataPage, SettlementArchive, VerificationDetail } from './pages';
+import { Dashboard, DataSubmission, EditLifting, VerificationPage, MasterDataPage, SettlementArchive, VerificationDetail } from './pages';
 import './index.css';
 
 const Sidebar = () => {
@@ -42,6 +42,7 @@ const TopNav = () => {
   const getTitle = () => {
     const p = location.pathname;
     if (p.includes('dashboard')) return 'Dashboard Eksekutif (View: Semua)';
+    if (p.includes('operasional/submission/edit')) return 'Edit Data Lifting';
     if (p.includes('operasional/submission')) return 'Input Form Lifting';
     if (p.includes('operasional/verifikasi')) return 'Inbox Operasional Terpadu';
     if (p.includes('operasional/master-data')) return 'Pengaturan Master Data';
@@ -82,6 +83,7 @@ export default function App() {
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/operasional/submission" element={<DataSubmission />} />
+              <Route path="/operasional/submission/edit/:id" element={<EditLifting />} />
               <Route path="/operasional/verifikasi" element={<VerificationPage />} />
               <Route path="/operasional/verifikasi/:id" element={<VerificationDetail />} />
               <Route path="/operasional/master-data" element={<MasterDataPage />} />
