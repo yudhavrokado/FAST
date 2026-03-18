@@ -33,14 +33,14 @@ export const Dashboard = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex-responsive justify-between items-center mb-8">
         <div>
           <h1>Dashboard Realisasi & Estimasi</h1>
           <p className="text-muted mt-2">Gambaran umum penyelesaian transaksi Feedstock & KKKS</p>
         </div>
-        <div className="flex gap-4">
-          <button className="btn btn-outline"><Calendar size={16} /> Filter Periode</button>
-          <button className="btn btn-primary"><Activity size={16} /> Unduh Ringkasan Eksekutif</button>
+        <div className="flex gap-4 w-full-mobile">
+          <button className="btn btn-outline w-full-mobile"><Calendar size={16} /> Filter Periode</button>
+          <button className="btn btn-primary w-full-mobile"><Activity size={16} /> Unduh Ringkasan</button>
         </div>
       </div>
 
@@ -139,7 +139,7 @@ export const Dashboard = () => {
       </div>
 
       <div className="mt-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex-responsive justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Rincian Transaksi Lifting</h2>
           <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
             <Search size={16} color="var(--text-muted)" />
@@ -341,16 +341,16 @@ export const DataSubmission = () => {
 
       {/* History Table */}
       <div className="mt-16 pt-8" style={{ borderTop: '2px solid var(--border)' }}>
-        <div className="flex justify-between items-end mb-6">
+        <div className="flex-responsive justify-between items-end mb-6">
           <div>
             <h2 className="text-xl font-semibold">Riwayat Input Data Lifting</h2>
             <p className="text-sm text-muted mt-1">Data real-time dari penyimpanan lokal • Total: {liftings.length} record</p>
           </div>
-          <div className="flex gap-3 items-center">
-            <select className="input-control" style={{ width: '220px', padding: '8px 12px', fontSize: '13px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <div className="flex-wrap flex gap-3 items-center w-full-mobile">
+            <select className="input-control w-full-mobile" style={{ padding: '8px 12px', fontSize: '13px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
               <option>Semua Status</option><option>Draft Tersimpan</option><option>Terkirim (Menunggu Review)</option><option>Butuh Revisi</option><option>Approved</option>
             </select>
-            <button className="btn btn-outline" style={{ padding: '8px 14px', fontSize: '13px' }} onClick={refreshData}><Activity size={14} /> Refresh</button>
+            <button className="btn btn-outline w-full-mobile" style={{ padding: '8px 14px', fontSize: '13px' }} onClick={refreshData}><Activity size={14} /> Refresh</button>
           </div>
         </div>
         <div className="table-container">
@@ -559,8 +559,8 @@ export const VerificationPage = () => {
       </div>
 
       {/* Top Action Bar */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex gap-2">
+      <div className="flex-responsive justify-between items-center mb-6">
+        <div className="flex-responsive gap-2 w-full-mobile">
            <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
             <Search size={16} color="var(--text-muted)" />
             <input 
@@ -568,15 +568,15 @@ export const VerificationPage = () => {
               placeholder="Cari ID atau KKKS..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px', width: '250px' }} 
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }} 
             />
           </div>
         </div>
-        <div className="flex gap-3 items-center">
-          <span className="text-sm font-medium text-muted">Filter Status:</span>
+        <div className="flex gap-3 items-center w-full-mobile">
+          <span className="text-sm font-medium text-muted">Status:</span>
           <select 
-            className="input-field" 
-            style={{ width: '200px', padding: '8px 12px', background: 'var(--bg-surface)' }}
+            className="input-field w-full-mobile" 
+            style={{ padding: '8px 12px', background: 'var(--bg-surface)' }}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -654,28 +654,25 @@ export const MasterDataPage = () => {
       </div>
 
       {/* Top Action Bar */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex gap-2">
-          <button className="btn btn-outline" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}>
+      <div className="flex-responsive justify-between items-center mb-6">
+        <div className="flex gap-2 w-full-mobile">
+          <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}>
             <Plus size={16} /> Add
           </button>
-          <button className="btn btn-outline" style={{ padding: '8px 16px', color: 'var(--text-muted)', border: 'none', background: 'transparent' }}>
+          <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}>
             <Edit2 size={16} /> Edit
           </button>
-          <button className="btn btn-outline" style={{ padding: '8px 16px', color: 'var(--text-muted)', border: 'none', background: 'transparent' }}>
+          <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}>
             <Trash2 size={16} /> Delete
           </button>
         </div>
-        <div className="flex gap-3">
+        <div className="flex-responsive gap-3 w-full-mobile">
           <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            <input type="text" placeholder="Search by column" style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px', width: '200px' }} />
+            <input type="text" placeholder="Search..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }} />
             <Search size={16} color="var(--text-muted)" />
           </div>
-          <button className="btn btn-outline" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}>
+          <button className="btn btn-outline w-full-mobile" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}>
             <Filter size={16} /> Filter
-          </button>
-          <button className="btn btn-outline" style={{ padding: '8px', background: 'var(--bg-surface)' }}>
-            <MoreHorizontal size={16} />
           </button>
         </div>
       </div>
@@ -820,15 +817,15 @@ export const SettlementArchive = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex-responsive justify-between items-center mb-8">
         <div>
           <h1>Arsip Output Settlement</h1>
-          <p className="text-muted mt-2">Daftar masing-masing transaksi (per baris/invoice) yang telah menjadi *Calculation Sheet* PDF usai persetujuan penuh.</p>
+          <p className="text-muted mt-2">Daftar masing-masing transaksi (per baris) yang telah menjadi *Calculation Sheet* PDF.</p>
         </div>
-        <div className="flex gap-2">
-          <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
+        <div className="flex w-full-mobile">
+          <div className="search-bar flex items-center gap-2 w-full-mobile" style={{ background: 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
             <Search size={16} color="var(--text-muted)" />
-            <input type="text" placeholder="Temukan Invoice..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }} />
+            <input type="text" placeholder="Temukan Invoice..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }} className="w-full-mobile" />
           </div>
         </div>
       </div>
@@ -880,8 +877,8 @@ export const SettlementSheet = ({ invoice, onBack }) => {
         <button className="btn btn-primary"><Download size={16} /> Unduh Format Cetak (PDF)</button>
       </div>
 
-      <div className="card mx-auto" style={{ background: 'white', color: '#111827', maxWidth: '800px', padding: '48px' }}>
-        <div className="flex justify-between items-start mb-8 pb-8" style={{ borderBottom: '2px solid #e5e7eb' }}>
+      <div className="card mx-auto calculation-sheet-card" style={{ background: 'white', color: '#111827', maxWidth: '800px', padding: '48px' }}>
+        <div className="flex justify-between items-start mb-8 pb-8 calculation-sheet-header" style={{ borderBottom: '2px solid #e5e7eb' }}>
           <div>
             <h2 style={{ color: '#1e3a8a', fontWeight: 'bold', fontSize: '24px', letterSpacing: '-1px' }}>PERTAMINA FAST</h2>
             <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Feedstock Automation Settlement Tracking</div>
@@ -993,7 +990,7 @@ export const VerificationDetail = () => {
         <div><h1>Detail Verifikasi Lifting</h1><p className="text-muted mt-2">B/L: <span className="font-semibold text-main">{lifting.blNumber}</span> • ID: <span style={{ color: 'var(--accent)' }}>{lifting.id}</span></p></div>
       </div>
       <div className="grid-cols-3 mb-8">
-        <div className="card" style={{ gridColumn: 'span 2' }}>
+        <div className="card verification-main-card">
           <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}><h2 className="text-lg font-semibold">Data Parameter Komersial</h2>{statusBadge[lifting.status]}</div>
           <div className="grid-cols-2 mb-6 text-sm">
             <div>
