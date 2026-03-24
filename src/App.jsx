@@ -1,44 +1,74 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileUp, CheckSquare, Database, FileText, User, Bell, Hexagon, Menu, X } from 'lucide-react';
-import { Dashboard, DataSubmission, EditLifting, VerificationPage, MasterDataPage, SettlementArchive, VerificationDetail } from './pages';
+import {
+  LayoutDashboard, FileUp, CheckSquare, Database, FileText, User, Bell,
+  Menu, X, ChevronDown, BarChart2, Radio, Wifi, Archive
+} from 'lucide-react';
+import { Dashboard, DataSubmission, EditLifting, VerificationPage, MasterDataPage, SettlementArchive, ExceptionSignal, VerificationDetail } from './pages';
 import './index.css';
+
+const PertaminaLogo = () => (
+  <div className="sidebar-logo">
+    <div className="logo-icon">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+        <rect width="40" height="40" rx="8" fill="#00529c"/>
+        <path d="M8 28 L14 12 L20 22 L26 14 L32 28 Z" fill="white" opacity="0.9"/>
+        <circle cx="26" cy="12" r="3" fill="#e8402a"/>
+      </svg>
+    </div>
+    <div className="logo-text">
+      <div className="logo-title">PERTAMINA</div>
+      <div className="logo-subtitle">FAST · SYSTEM SETTLEMENT</div>
+    </div>
+  </div>
+);
 
 const Sidebar = ({ isOpen, onClose }) => {
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'active' : ''}`} onClick={onClose}></div>
-      <div className={`sidebar ${isOpen ? 'mobile-open' : ''}`} style={{ overflowY: 'auto' }}>
-        <div className="flex items-center justify-between mb-8 px-6 pt-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center rounded-xl" style={{ width: 40, height: 40, background: 'linear-gradient(135deg, var(--accent), var(--accent-light))', color: 'white', borderRadius: '10px' }}>
-              <Hexagon size={24} strokeWidth={2.5} />
-            </div>
-            <div>
-              <div style={{ fontSize: '22px', fontWeight: 'bold', letterSpacing: '-0.5px', color: 'var(--text-main)' }}>FAST</div>
-              <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 700 }}>SETTLEMENT SYSTEM</div>
-            </div>
-          </div>
-          <button className="mobile-menu-btn" onClick={onClose} style={{ marginRight: 0 }}>
-            <X size={24} />
+      <div className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <PertaminaLogo />
+          <button className="mobile-menu-btn sidebar-close-btn" onClick={onClose}>
+            <X size={20} />
           </button>
         </div>
 
-        <div style={{ padding: '0 24px', marginBottom: '12px', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>DASHBOARD BERSAMA</div>
-        <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/dashboard" onClick={onClose}><LayoutDashboard size={18} /> Ringkasan Pembayaran</NavLink>
+        <nav className="sidebar-nav">
+          <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/dashboard" onClick={onClose}>
+            <BarChart2 size={16} />
+            <span>Executive Summary</span>
+          </NavLink>
+          <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/submission" onClick={onClose}>
+            <FileUp size={16} />
+            <span>Data Submission</span>
+          </NavLink>
+          <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/verifikasi" onClick={onClose}>
+            <CheckSquare size={16} />
+            <span>Data Verification</span>
+          </NavLink>
+          <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/master-data" onClick={onClose}>
+            <Database size={16} />
+            <span>Master Data</span>
+          </NavLink>
+          <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/settlement/arsip" onClick={onClose}>
+            <Archive size={16} />
+            <span>Arsip Invoice &amp; Settlement</span>
+          </NavLink>
+          <NavLink end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/settlement" onClick={onClose}>
+            <Radio size={16} />
+            <span>Exception Signal</span>
+          </NavLink>
+        </nav>
 
-        <div style={{ padding: '0 24px', marginTop: '24px', marginBottom: '12px', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>MANAJEMEN LIFTING</div>
-        <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/submission" onClick={onClose}><FileUp size={18} /> Input Data Lifting</NavLink>
-        <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/verifikasi" onClick={onClose}><CheckSquare size={18} /> Inbox Terpadu</NavLink>
-        <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/master-data" onClick={onClose}><Database size={18} /> Master Data Referensi</NavLink>
-
-        <div style={{ padding: '0 24px', marginTop: '24px', marginBottom: '12px', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>OUTPUT DOKUMEN</div>
-        <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/settlement" onClick={onClose}><FileText size={18} /> Daftar Invoice / Settlement</NavLink>
-
-        <div style={{ marginTop: 'auto', padding: '24px' }}>
-          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-            Menu ini menyajikan navigasi <em>All-in-One</em> untuk memudahkan ulasan prototipe.
+        <div className="sidebar-footer">
+          <div className="sidebar-footer-icon"><Wifi size={14} /></div>
+          <div className="sidebar-footer-text">
+            <div className="sidebar-footer-label">Last Updated</div>
+            <div className="sidebar-footer-time">11/06/2026 14:07</div>
           </div>
+          <div className="sidebar-footer-brand">Pertamina Digital Hub©2026</div>
         </div>
       </div>
     </>
@@ -47,37 +77,56 @@ const Sidebar = ({ isOpen, onClose }) => {
 
 const TopNav = ({ onMenuClick }) => {
   const location = useLocation();
-  const getTitle = () => {
+
+  const getBreadcrumb = () => {
     const p = location.pathname;
-    if (p.includes('dashboard')) return 'Dashboard Eksekutif (View: Semua)';
-    if (p.includes('operasional/submission/edit')) return 'Edit Data Lifting';
-    if (p.includes('operasional/submission')) return 'Input Form Lifting';
-    if (p.includes('operasional/verifikasi')) return 'Inbox Operasional Terpadu';
-    if (p.includes('operasional/master-data')) return 'Pengaturan Master Data';
-    if (p.includes('settlement')) return 'Arsip Dokumen Settlement';
-    return '';
+    if (p.includes('dashboard')) return { parent: 'Dashboard', current: 'Executive Summary' };
+    if (p.includes('operasional/submission/edit')) return { parent: 'Data Submission', current: 'Edit Data' };
+    if (p.includes('operasional/submission')) return { parent: 'FAST – System Settlement', current: 'Data Submission' };
+    if (p.includes('operasional/verifikasi')) return { parent: 'FAST – System Settlement', current: 'Data Verification' };
+    if (p.includes('operasional/master-data')) return { parent: 'FAST – System Settlement', current: 'Master Data' };
+    if (p.includes('settlement/arsip')) return { parent: 'FAST – System Settlement', current: 'Arsip Invoice & Settlement' };
+    if (p.includes('settlement')) return { parent: 'FAST – System Settlement', current: 'Exception Signal' };
+    return { parent: 'FAST', current: 'Dashboard' };
   };
+
+  const { parent, current } = getBreadcrumb();
 
   return (
     <div className="top-nav">
-      <div className="flex items-center">
+      <div className="top-nav-left">
         <button className="mobile-menu-btn" onClick={onMenuClick}>
-          <Menu size={24} />
+          <Menu size={20} />
         </button>
-        <div className="font-semibold text-lg" style={{ color: 'var(--text-main)' }}>{getTitle()}</div>
+        <div className="breadcrumb">
+          <span className="breadcrumb-parent">{parent}</span>
+          <span className="breadcrumb-sep">/</span>
+          <span className="breadcrumb-current">{current}</span>
+        </div>
+        <div className="page-title">{current}</div>
       </div>
-      <div className="flex items-center gap-6">
-        <button style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', padding: '8px', borderRadius: '50%', color: 'var(--text-muted)', cursor: 'pointer', position: 'relative' }}>
-          <Bell size={18} />
-        </button>
-        <div className="flex items-center gap-3 cursor-pointer ml-2">
-          <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
-            <User size={18} />
+
+      <div className="top-nav-right">
+        <div className="date-selectors">
+          <div className="date-chip">
+            <span className="date-chip-label">Start Date</span>
+            <span className="date-chip-val">Dec 2025</span>
+            <ChevronDown size={12} />
           </div>
-          <div>
-            <div className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>Guest Reviewer</div>
-            <div className="text-xs text-muted" style={{ color: 'var(--success)' }}>● Prototype Session</div>
+          <div className="date-chip">
+            <span className="date-chip-label">End Date</span>
+            <span className="date-chip-val">Feb 2026</span>
+            <ChevronDown size={12} />
           </div>
+        </div>
+
+        <div className="user-profile">
+          <div className="user-avatar"><User size={16} /></div>
+          <div className="user-info">
+            <div className="user-name">John Doe</div>
+            <div className="user-email">johndoe@mail.com</div>
+          </div>
+          <ChevronDown size={12} className="user-chevron" />
         </div>
       </div>
     </div>
@@ -95,14 +144,15 @@ export default function App() {
           <TopNav onMenuClick={() => setSidebarOpen(true)} />
           <div className="page-container">
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Navigate to="/operasional/submission" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/operasional/submission" element={<DataSubmission />} />
               <Route path="/operasional/submission/edit/:id" element={<EditLifting />} />
               <Route path="/operasional/verifikasi" element={<VerificationPage />} />
               <Route path="/operasional/verifikasi/:id" element={<VerificationDetail />} />
               <Route path="/operasional/master-data" element={<MasterDataPage />} />
-              <Route path="/settlement" element={<SettlementArchive />} />
+              <Route path="/settlement" element={<ExceptionSignal />} />
+              <Route path="/settlement/arsip" element={<SettlementArchive />} />
             </Routes>
           </div>
         </div>

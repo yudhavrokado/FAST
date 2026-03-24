@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare, X, Eye } from 'lucide-react';
+import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare, X, Eye, Bell } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getAllLiftings, getLiftingById, createDraft, updateLifting, submitLifting, createAndSubmit, approveLifting, rejectLifting, deleteLifting, getKKKSList, getStats } from './dataStore';
 
@@ -207,12 +207,21 @@ export const DataSubmission = () => {
   const navigate = useNavigate();
   const kkksList = getKKKSList();
 
-  // Form state
-  const emptyForm = { blNumber: '', tanggalLifting: '', kkks: '', volumeGross: '', volumeNet: '', waterContent: '', apiGravity: '', catatan: '' };
+  // Form state — mapping to the new field semantics shown in the image
+  const emptyForm = {
+    blNumber: '',       // Reference Number B/L
+    kkks: '',           // KKS Linked
+    purchaseType: '',   // Type of Purchase
+    tanggalLifting: '', // Lifting Date
+    volumeGross: '',    // Volume Cargo (BBLS)
+    volumeNet: '',      // Total Payment (USD)
+    apiGravity: '',     // Price per BBLS
+    waterContent: '',   // Payment Due Date
+  };
   const [form, setForm] = useState(emptyForm);
   const [toast, setToast] = useState(null);
   const [liftings, setLiftings] = useState([]);
-  const [filterStatus, setFilterStatus] = useState('Semua Status');
+  const [tableTab, setTableTab] = useState('submitted');
 
   const refreshData = useCallback(() => setLiftings(getAllLiftings()), []);
   useEffect(() => { refreshData(); }, [refreshData]);
@@ -225,8 +234,8 @@ export const DataSubmission = () => {
   const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
   const handleSaveDraft = () => {
-    if (!form.kkks) { showToast('Pilih KKKS terlebih dahulu', 'error'); return; }
-    createDraft(form);
+    if (!form.kkks) { showToast('Pilih KKS terlebih dahulu', 'error'); return; }
+    createDraft({ ...form, catatan: form.purchaseType });
     showToast('Draft berhasil disimpan');
     setForm(emptyForm);
     refreshData();
@@ -236,8 +245,8 @@ export const DataSubmission = () => {
     if (!form.kkks || !form.tanggalLifting || !form.volumeGross || !form.volumeNet || !form.apiGravity) {
       showToast('Lengkapi semua field wajib sebelum submit', 'error'); return;
     }
-    createAndSubmit(form);
-    showToast('Data berhasil disubmit ke verifikasi L1');
+    createAndSubmit({ ...form, catatan: form.purchaseType });
+    showToast('Data berhasil disubmit');
     setForm(emptyForm);
     refreshData();
   };
@@ -247,152 +256,275 @@ export const DataSubmission = () => {
   };
 
   const filteredLiftings = liftings.filter(l => {
-    if (filterStatus === 'Semua Status') return true;
-    if (filterStatus === 'Draft Tersimpan') return l.status === 'draft';
-    if (filterStatus === 'Terkirim (Menunggu Review)') return l.status === 'submitted';
-    if (filterStatus === 'Butuh Revisi') return l.status === 'revisi';
-    if (filterStatus === 'Approved') return l.status === 'approved';
+    if (tableTab === 'submitted') return l.status !== 'revisi';
+    if (tableTab === 'revision') return l.status === 'revisi';
     return true;
   });
 
   const getStatusBadge = (status) => {
     const map = {
-      draft: { bg: '#f1f5f9', color: 'var(--text-muted)', text: 'Draft' },
-      submitted: { bg: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)', text: 'Menunggu Review L1' },
-      revisi: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', text: 'Butuh Perbaikan' },
-      approved: { bg: 'rgba(0, 166, 81, 0.1)', color: 'var(--success)', text: 'Approved' },
+      draft:     { cls: 'badge badge-draft', text: '● Draft' },
+      submitted: { cls: 'badge badge-submitted', text: '● Submitted' },
+      revisi:    { cls: 'badge badge-danger', text: '● Revisi' },
+      approved:  { cls: 'badge badge-success', text: '● Approved' },
     };
     const s = map[status] || map.draft;
-    return <span className="badge" style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}22` }}>{s.text}</span>;
+    return <span className={s.cls}>{s.text}</span>;
   };
+
+  // Stats
+  const verified = liftings.filter(l => l.status === 'approved').length;
+  const waiting  = liftings.filter(l => l.status === 'submitted').length;
+  const returned = liftings.filter(l => l.status === 'revisi').length;
 
   return (
     <div className="animate-fade-in">
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', top: 24, right: 32, zIndex: 100, padding: '14px 24px', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', background: toast.type === 'error' ? 'var(--danger)' : 'var(--success)', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeIn 0.3s ease-out' }}>
-          {toast.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle size={18} />} {toast.msg}
+        <div className="toast" style={{ background: toast.type === 'error' ? 'var(--danger)' : 'var(--success)' }}>
+          {toast.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle size={16} />} {toast.msg}
         </div>
       )}
 
-      <div className="mb-8">
-        <h1>Input Data Lifting (KKKS)</h1>
-        <p className="text-muted mt-2">Lengkapi detail spesifikasi komersial minyak mentah untuk dilaporkan kepada Feedstock Pertamina.</p>
+      {/* ── Summary Cards ── */}
+      <div className="summary-row">
+        <div className="summary-card">
+          <div className="summary-card-body">
+            <div className="summary-card-label">Verified Data Lifting</div>
+            <div className="summary-card-value">{verified > 0 ? verified : 'XX'}</div>
+            <div className="summary-card-sub">Verified Value: <span style={{ color: 'var(--success)' }}>$XX,XXM</span></div>
+          </div>
+          <div className="summary-card-icon green">
+            <CheckCircle size={22} color="var(--success)" />
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-card-body">
+            <div className="summary-card-label">Waiting For Review</div>
+            <div className="summary-card-value">{waiting > 0 ? waiting : 'XX'}</div>
+            <div className="summary-card-sub">Pending Value: <span style={{ color: 'var(--warning)' }}>$XX,XXM</span></div>
+          </div>
+          <div className="summary-card-icon yellow">
+            <AlertCircle size={22} color="var(--warning)" />
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-card-body">
+            <div className="summary-card-label">Returned Data Lifting</div>
+            <div className="summary-card-value">{returned > 0 ? returned : 'XX'}</div>
+            <div className="summary-card-sub">Returned Value: <span style={{ color: 'var(--danger)' }}>$XX,XXM</span></div>
+          </div>
+          <div className="summary-card-icon red">
+            <AlertCircle size={22} color="var(--danger)" />
+          </div>
+        </div>
       </div>
 
-      <div className="flex gap-4 mb-6">
-        <button className={`btn ${tab === 'manual' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setTab('manual')}>Input Form Manual</button>
-        <button className={`btn ${tab === 'bulk' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setTab('bulk')}>Bulk Upload (Excel)</button>
+      {/* ── Input Form Card ── */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div className="tab-strip">
+          <button className={`tab-pill ${tab === 'manual' ? 'active' : ''}`} onClick={() => setTab('manual')}>
+            Input Form Manual
+          </button>
+          <button className={`tab-pill ${tab === 'bulk' ? 'active' : ''}`} onClick={() => setTab('bulk')}>
+            Bulk Upload
+          </button>
+        </div>
+
+        {tab === 'manual' ? (
+          <>
+            <div className="form-section-title">Input Form Manual</div>
+            <div className="form-grid">
+              <div className="input-group">
+                <label className="input-label">Reference Number Bill of Lading (B/L)</label>
+                <input type="text" className="input-control" placeholder="Input reference number"
+                  value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">KKS Linked</label>
+                <input type="text" className="input-control" placeholder="Input KKS Linked"
+                  value={form.kkks} onChange={e => handleChange('kkks', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Type of Purchase</label>
+                <select className="input-control" value={form.purchaseType} onChange={e => handleChange('purchaseType', e.target.value)}>
+                  <option value="">Select type of purchase</option>
+                  <option>Import</option>
+                  <option>Domestic</option>
+                  <option>Export</option>
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Lifting Date</label>
+                <div className="input-date-wrap">
+                  <input type="date" className="input-control" value={form.tanggalLifting}
+                    onChange={e => handleChange('tanggalLifting', e.target.value)} />
+                  <span className="input-date-icon"><Calendar size={14} /></span>
+                </div>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Volume Cargo (BBLS)</label>
+                <input type="number" className="input-control" placeholder="Input volume gross"
+                  value={form.volumeGross} onChange={e => handleChange('volumeGross', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Total Payment (USD)</label>
+                <input type="number" className="input-control" placeholder="Input price"
+                  value={form.volumeNet} onChange={e => handleChange('volumeNet', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Price (per BBLS)</label>
+                <input type="text" className="input-control" placeholder="Input API gravity"
+                  value={form.apiGravity} onChange={e => handleChange('apiGravity', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Payment Due Date</label>
+                <div className="input-date-wrap">
+                  <input type="date" className="input-control" value={form.waterContent}
+                    onChange={e => handleChange('waterContent', e.target.value)} />
+                  <span className="input-date-icon"><Calendar size={14} /></span>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-2" style={{ paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+              <button className="btn btn-outline" onClick={handleSaveDraft}>Save as Draft</button>
+              <button className="btn btn-primary" onClick={handleSubmit}>
+                <FileText size={15} /> Submit Data
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <div className="mx-auto flex items-center justify-center mb-4"
+              style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(0,82,156,0.08)', color: 'var(--accent)' }}>
+              <Upload size={28} />
+            </div>
+            <h2 className="mb-2">Bulk Upload (Excel/CSV)</h2>
+            <p className="max-w-md mx-auto mb-6">Upload data lifting secara massal. Hanya mendukung format .xlsx standar Pertamina FAST.</p>
+            <button className="btn btn-primary"><Upload size={16} /> Pilih File</button>
+          </div>
+        )}
       </div>
 
-      {tab === 'manual' ? (
-        <div className="card">
-          <h2 className="mb-6">Laporan Detail Lifting Baru</h2>
-          <div className="grid-cols-2">
-            <div className="input-group">
-              <label className="input-label">Nomor Referensi Bill of Lading (B/L)</label>
-              <input type="text" className="input-control" placeholder="Otomatis jika kosong" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
-            </div>
-            <div className="input-group">
-              <label className="input-label">Tanggal Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <input type="date" className="input-control" value={form.tanggalLifting} onChange={e => handleChange('tanggalLifting', e.target.value)} />
-            </div>
-            <div className="input-group" style={{ gridColumn: 'span 2' }}>
-              <label className="input-label">Entitas KKKS <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <select className="input-control" value={form.kkks} onChange={e => handleChange('kkks', e.target.value)}>
-                <option value="">— Pilih KKKS —</option>
-                {kkksList.map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
-            </div>
-            <div className="input-group">
-              <label className="input-label">Volume (Gross Bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <input type="number" className="input-control" placeholder="Contoh: 150000" value={form.volumeGross} onChange={e => handleChange('volumeGross', e.target.value)} />
-            </div>
-            <div className="input-group">
-              <label className="input-label">Volume (Net Bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <input type="number" className="input-control" placeholder="Isi volume net yang akurat" value={form.volumeNet} onChange={e => handleChange('volumeNet', e.target.value)} />
-            </div>
-            <div className="input-group">
-              <label className="input-label">Water Content / Sedimen (%)</label>
-              <input type="text" className="input-control" placeholder="Contoh: 0.05" value={form.waterContent} onChange={e => handleChange('waterContent', e.target.value)} />
-            </div>
-            <div className="input-group">
-              <label className="input-label">API Gravity <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <input type="text" className="input-control" placeholder="Contoh: 33.2" value={form.apiGravity} onChange={e => handleChange('apiGravity', e.target.value)} />
-            </div>
-          </div>
-          <div className="input-group" style={{ marginTop: '8px' }}>
-            <label className="input-label">Catatan Tambahan (Opsional)</label>
-            <textarea className="input-control" placeholder="Catatan untuk reviewer..." style={{ resize: 'vertical', minHeight: '80px' }} value={form.catatan} onChange={e => handleChange('catatan', e.target.value)} />
-          </div>
-          <div className="flex justify-end gap-4 mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-            <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
-            <button className="btn btn-primary" onClick={handleSubmit}><CheckCircle size={16} /> Submit Dokumen</button>
-          </div>
+      {/* ── Submitted Data Table ── */}
+      <div className="card">
+        <div className="tab-strip">
+          <button className={`tab-pill ${tableTab === 'submitted' ? 'active' : ''}`} onClick={() => setTableTab('submitted')}>
+            Submitted Data
+          </button>
+          <button className={`tab-pill ${tableTab === 'revision' ? 'active' : ''}`} onClick={() => setTableTab('revision')}>
+            Revision Required
+          </button>
         </div>
-      ) : (
-        <div className="card text-center py-12">
-          <div className="mx-auto flex items-center justify-center mb-4" style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-light)' }}><Upload size={32} /></div>
-          <h2 className="mb-2">Upload Format Template (Excel)</h2>
-          <p className="text-muted max-w-md mx-auto mb-8">Unggah data massal lifting. Hanya mendukung format .xlsx standar Pertamina FAST.</p>
-          <button className="btn btn-primary btn-lg"><Upload size={18} /> Pilih File Excel</button>
-        </div>
-      )}
 
-      {/* History Table */}
-      <div className="mt-16 pt-8" style={{ borderTop: '2px solid var(--border)' }}>
-        <div className="flex-responsive justify-between items-end mb-6">
-          <div>
-            <h2 className="text-xl font-semibold">Riwayat Input Data Lifting</h2>
-            <p className="text-sm text-muted mt-1">Data real-time dari penyimpanan lokal • Total: {liftings.length} record</p>
-          </div>
-          <div className="flex-wrap flex gap-3 items-center w-full-mobile">
-            <select className="input-control w-full-mobile" style={{ padding: '8px 12px', fontSize: '13px' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-              <option>Semua Status</option><option>Draft Tersimpan</option><option>Terkirim (Menunggu Review)</option><option>Butuh Revisi</option><option>Approved</option>
-            </select>
-            <button className="btn btn-outline w-full-mobile" style={{ padding: '8px 14px', fontSize: '13px' }} onClick={refreshData}><Activity size={14} /> Refresh</button>
+        <div className="action-bar">
+          <div className="action-bar-left">Submitted Data</div>
+          <div className="action-bar-right">
+            <button className="btn btn-primary btn-sm"><Download size={13} /> Download</button>
+            <div className="search-input-wrap">
+              <Search size={13} color="var(--text-faint)" />
+              <input type="text" placeholder="Search by Reference Numbers" />
+            </div>
+            <button className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+              <Filter size={14} />
+            </button>
           </div>
         </div>
-        <div className="table-container">
-          <table>
-            <thead><tr><th>No. Referensi (B/L)</th><th>KKKS</th><th>Tgl Lifting</th><th>Vol Net (BBL)</th><th>API</th><th>Status</th><th>Terakhir Diperbarui</th><th>Aksi</th></tr></thead>
-            <tbody>
-              {filteredLiftings.map(l => (
-                <tr key={l.id}>
-                  <td className="font-medium" style={{ color: 'var(--accent)' }}>{l.blNumber}</td>
-                  <td>{l.kkks || '-'}</td>
-                  <td>{l.tanggalLifting || '-'}</td>
-                  <td>{l.volumeNet ? l.volumeNet.toLocaleString() : '-'}</td>
-                  <td>{l.apiGravity ?? '-'}</td>
-                  <td>{getStatusBadge(l.status)}</td>
-                  <td className="text-sm text-muted">{l.updatedAt}</td>
-                  <td>
-                    <div className="flex gap-2">
-                      {(l.status === 'draft' || l.status === 'revisi') && (
-                        <button className="btn btn-sm btn-primary" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => navigate(`/operasional/submission/edit/${l.id}`)}><Edit2 size={13} /> Edit</button>
-                      )}
-                      {l.status === 'draft' && (
-                        <button className="btn btn-sm btn-outline" style={{ padding: '4px 8px', fontSize: '12px', color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => handleDeleteDraft(l.id)}><Trash2 size={13} /></button>
-                      )}
-                      {(l.status === 'submitted' || l.status === 'approved') && (
-                        <button className="btn btn-sm btn-outline" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => navigate(`/operasional/verifikasi/${l.id}`)}><Eye size={13} /> Lihat</button>
-                      )}
-                    </div>
-                  </td>
+
+        <div className="table-wrap">
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th><span className="th-sort">Type Of Purchase <ArrowUpDown size={10} /></span></th>
+                  <th><span className="th-sort">Lifting Date <ArrowUpDown size={10} /></span></th>
+                  <th><span className="th-sort">Payment Due Date <ArrowUpDown size={10} /></span></th>
+                  <th><span className="th-sort">Volume Cargo (BBLS) <ArrowUpDown size={10} /></span></th>
+                  <th><span className="th-sort">Total Payment (USD) <ArrowUpDown size={10} /></span></th>
+                  <th><span className="th-sort">Price (Per BBLS) <ArrowUpDown size={10} /></span></th>
+                  <th>Integrity Status</th>
+                  <th>Action</th>
                 </tr>
-              ))}
-              {filteredLiftings.length === 0 && (<tr><td colSpan="8" className="text-center py-8 text-muted">Tidak ada data lifting untuk filter ini.</td></tr>)}
-            </tbody>
-          </table>
-          <div className="flex justify-between items-center p-4" style={{ borderTop: '1px solid var(--border)', background: '#f9fafb' }}>
-            <span className="text-sm text-muted">Menampilkan {filteredLiftings.length} dari {liftings.length} record</span>
+              </thead>
+              <tbody>
+                {filteredLiftings.length === 0 ? (
+                  [1,2,3,4,5,6].map(i => (
+                    <tr key={i}>
+                      <td>Import</td>
+                      <td>10 Mar 2026</td>
+                      <td>29 Mar 2026</td>
+                      <td>XXX,XXX</td>
+                      <td>$XX,XXM</td>
+                      <td>$XX.XX</td>
+                      <td>
+                        <span className={i === 1 ? 'badge badge-draft' : 'badge badge-submitted'}>
+                          ● {i === 1 ? 'Draft' : 'Submitted'}
+                        </span>
+                      </td>
+                      <td>
+                        <button className="btn btn-ghost btn-sm" style={{ padding: '3px 6px' }}>
+                          <Edit2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  filteredLiftings.map(l => (
+                    <tr key={l.id}>
+                      <td>{l.catatan || 'Import'}</td>
+                      <td>{l.tanggalLifting || '—'}</td>
+                      <td>{l.waterContent || '—'}</td>
+                      <td>{l.volumeGross ? Number(l.volumeGross).toLocaleString() : '—'}</td>
+                      <td>{l.volumeNet ? `$${Number(l.volumeNet).toLocaleString()}` : '—'}</td>
+                      <td>{l.apiGravity || '—'}</td>
+                      <td>{getStatusBadge(l.status)}</td>
+                      <td>
+                        <div className="flex gap-2">
+                          {(l.status === 'draft' || l.status === 'revisi') && (
+                            <button className="btn btn-ghost btn-sm" style={{ padding: '3px 6px' }}
+                              onClick={() => navigate(`/operasional/submission/edit/${l.id}`)}>
+                              <Edit2 size={13} />
+                            </button>
+                          )}
+                          {l.status === 'draft' && (
+                            <button className="btn btn-ghost btn-sm" style={{ padding: '3px 6px', color: 'var(--danger)' }}
+                              onClick={() => handleDeleteDraft(l.id)}>
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                          {(l.status === 'submitted' || l.status === 'approved') && (
+                            <button className="btn btn-ghost btn-sm" style={{ padding: '3px 6px' }}
+                              onClick={() => navigate(`/operasional/verifikasi/${l.id}`)}>
+                              <Eye size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-footer">
+            <span>Total 210</span>
+            <div className="flex items-center gap-3">
+              <span>Lines per page: 25</span>
+              <div className="pagination">
+                <button className="page-btn active">1</button>
+                <button className="page-btn">2</button>
+                <button className="page-btn">3</button>
+                <span style={{ color: 'var(--text-faint)', padding: '0 4px' }}>...</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
     </div>
   );
 };
+
+
 
 export const EditLifting = () => {
   const navigate = useNavigate();
@@ -801,20 +933,199 @@ export const MasterDataPage = () => {
               <option>100</option>
             </select>
             <span className="text-sm text-muted">Page 1 of 1, Total 3</span>
-          </div>
+                    </div>
         </div>
       </div>
     </div>
   );
 };
 
+export const ExceptionSignal = () => {
+  const [filterLevel, setFilterLevel] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const signals = [
+    { id: 'INV/26/BL-8799', kkks: 'PT KKKS Foxtrot Energy',  liftingDate: '20 Jan 2026', dueDateLabel: '22 Mar 2026', volume: 135000,  totalUsd: 11130750, paymentStatus: 'Overdue', daysLeft: -2, level: 'overdue' },
+    { id: 'INV/26/BL-8801', kkks: 'PT KKKS Delta Resources', liftingDate: '28 Jan 2026', dueDateLabel: '25 Mar 2026', volume: 312000,  totalUsd: 25724400, paymentStatus: 'Unpaid',  daysLeft: 1,  level: 'critical' },
+    { id: 'INV/26/BL-8805', kkks: 'PT KKKS Alpha Energi',    liftingDate: '01 Feb 2026', dueDateLabel: '27 Mar 2026', volume: 185000,  totalUsd: 15253250, paymentStatus: 'Unpaid',  daysLeft: 3,  level: 'critical' },
+    { id: 'INV/26/BL-8809', kkks: 'Pertamina EP',            liftingDate: '05 Feb 2026', dueDateLabel: '31 Mar 2026', volume: 420000,  totalUsd: 34629000, paymentStatus: 'Unpaid',  daysLeft: 7,  level: 'warning' },
+    { id: 'INV/26/BL-8814', kkks: 'PT KKKS Bravo Petroleum', liftingDate: '10 Feb 2026', dueDateLabel: '03 Apr 2026', volume: 98500,   totalUsd: 8122575,  paymentStatus: 'Unpaid',  daysLeft: 10, level: 'warning' },
+    { id: 'INV/26/BL-8820', kkks: 'PT KKKS Charlie Minyak',  liftingDate: '14 Feb 2026', dueDateLabel: '09 Apr 2026', volume: 250000,  totalUsd: 20612500, paymentStatus: 'Unpaid',  daysLeft: 16, level: 'watch' },
+    { id: 'INV/26/BL-8824', kkks: 'PT KKKS Echo Offshore',   liftingDate: '18 Feb 2026', dueDateLabel: '14 Apr 2026', volume: 175000,  totalUsd: 14428750, paymentStatus: 'Unpaid',  daysLeft: 21, level: 'watch' },
+  ];
+
+  const levelConfig = {
+    overdue:  { label: 'Overdue',  bg: 'rgba(239,68,68,0.12)',  color: '#ef4444',        border: 'rgba(239,68,68,0.3)',   dot: '#ef4444' },
+    critical: { label: 'Critical', bg: 'rgba(239,68,68,0.07)',  color: 'var(--danger)',  border: 'rgba(239,68,68,0.2)',   dot: '#ee312a' },
+    warning:  { label: 'Warning',  bg: 'rgba(245,158,11,0.08)', color: 'var(--warning)', border: 'rgba(245,158,11,0.22)', dot: '#f59e0b' },
+    watch:    { label: 'Watch',    bg: 'rgba(59,130,246,0.07)', color: '#3b82f6',        border: 'rgba(59,130,246,0.2)',  dot: '#3b82f6' },
+  };
+
+  const filtered = signals.filter(s => {
+    const matchLevel = filterLevel === 'all' || s.level === filterLevel;
+    const matchSearch = s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        s.kkks.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchLevel && matchSearch;
+  });
+
+  const totalExposureUsd = signals.reduce((a, s) => a + s.totalUsd, 0);
+  const criticalCount = signals.filter(s => s.level === 'critical' || s.level === 'overdue').length;
+  const warningCount  = signals.filter(s => s.level === 'warning').length;
+
+  const getDaysLabel = (days) => {
+    if (days < 0)   return { text: `${Math.abs(days)} hari lewat`, color: '#ef4444' };
+    if (days === 0) return { text: 'Hari ini!', color: '#ef4444' };
+    if (days === 1) return { text: 'Besok', color: '#ee312a' };
+    return { text: `${days} hari lagi`, color: days <= 7 ? 'var(--danger)' : days <= 14 ? 'var(--warning)' : '#3b82f6' };
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-1">
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 0 3px rgba(239,68,68,0.25)', animation: 'exPulse 1.6s ease-in-out infinite' }} />
+          <h1>Exception Signal</h1>
+        </div>
+        <p className="text-muted" style={{ marginLeft: 22 }}>
+          Daftar settlement yang mendekati atau melampaui jatuh tempo pembayaran namun belum dibayar.
+        </p>
+      </div>
+
+      <div className="summary-row" style={{ marginBottom: 20 }}>
+        <div className="summary-card" style={{ borderLeft: '3px solid #ef4444' }}>
+          <div className="summary-card-body">
+            <div className="summary-card-label">Overdue / Critical</div>
+            <div className="summary-card-value" style={{ color: '#ef4444' }}>{criticalCount}</div>
+            <div className="summary-card-sub">Jatuh tempo ≤ 3 hari</div>
+          </div>
+          <div className="summary-card-icon red"><AlertCircle size={22} color="#ef4444" /></div>
+        </div>
+        <div className="summary-card" style={{ borderLeft: '3px solid var(--warning)' }}>
+          <div className="summary-card-body">
+            <div className="summary-card-label">Warning</div>
+            <div className="summary-card-value" style={{ color: 'var(--warning)' }}>{warningCount}</div>
+            <div className="summary-card-sub">Jatuh tempo 4–14 hari</div>
+          </div>
+          <div className="summary-card-icon yellow"><AlertCircle size={22} color="var(--warning)" /></div>
+        </div>
+        <div className="summary-card" style={{ borderLeft: '3px solid #3b82f6' }}>
+          <div className="summary-card-body">
+            <div className="summary-card-label">Total Eksposur (USD)</div>
+            <div className="summary-card-value" style={{ fontSize: 22, color: 'var(--accent)' }}>${(totalExposureUsd / 1e6).toFixed(1)}M</div>
+            <div className="summary-card-sub">{signals.length} invoice belum dibayar</div>
+          </div>
+          <div className="summary-card-icon" style={{ background: 'rgba(0,82,156,0.08)' }}><DollarSign size={22} color="var(--accent)" /></div>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: '12px 16px', marginBottom: 16 }}>
+        <div className="action-bar" style={{ marginBottom: 0 }}>
+          <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+            {['all', 'overdue', 'critical', 'warning', 'watch'].map(lvl => {
+              const lbl = lvl === 'all' ? 'Semua' : levelConfig[lvl]?.label ?? lvl;
+              const isActive = filterLevel === lvl;
+              return (
+                <button key={lvl} onClick={() => setFilterLevel(lvl)} className="btn btn-sm" style={{
+                  background: isActive ? (lvl === 'all' ? 'var(--accent)' : levelConfig[lvl]?.bg) : 'transparent',
+                  color: isActive ? (lvl === 'all' ? 'white' : levelConfig[lvl]?.color) : 'var(--text-muted)',
+                  border: `1px solid ${isActive ? (lvl === 'all' ? 'var(--accent)' : levelConfig[lvl]?.border) : 'var(--border)'}`,
+                  fontWeight: isActive ? 700 : 500,
+                }}>
+                  {lbl}
+                </button>
+              );
+            })}
+          </div>
+          <div className="action-bar-right">
+            <div className="search-input-wrap">
+              <Search size={13} color="var(--text-faint)" />
+              <input type="text" placeholder="Cari ID / KKKS..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="table-wrap">
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Level</th>
+                <th><span className="th-sort">ID Invoice <ArrowUpDown size={10} /></span></th>
+                <th><span className="th-sort">KKKS <ArrowUpDown size={10} /></span></th>
+                <th><span className="th-sort">Tgl Lifting <ArrowUpDown size={10} /></span></th>
+                <th><span className="th-sort">Jatuh Tempo <ArrowUpDown size={10} /></span></th>
+                <th style={{ textAlign: 'center' }}>Sisa Hari</th>
+                <th><span className="th-sort">Volume (BBLS) <ArrowUpDown size={10} /></span></th>
+                <th><span className="th-sort">Total (USD) <ArrowUpDown size={10} /></span></th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(s => {
+                const cfg = levelConfig[s.level];
+                const daysInfo = getDaysLabel(s.daysLeft);
+                return (
+                  <tr key={s.id} style={{ background: s.level === 'overdue' ? 'rgba(239,68,68,0.025)' : undefined }}>
+                    <td>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
+                        {cfg.label}
+                      </span>
+                    </td>
+                    <td className="font-medium" style={{ color: 'var(--accent)' }}>{s.id}</td>
+                    <td>{s.kkks}</td>
+                    <td>{s.liftingDate}</td>
+                    <td className="font-medium">{s.dueDateLabel}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700, background: s.daysLeft < 0 ? 'rgba(239,68,68,0.1)' : s.daysLeft <= 3 ? 'rgba(238,49,42,0.08)' : s.daysLeft <= 7 ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.08)', color: daysInfo.color }}>
+                        {daysInfo.text}
+                      </span>
+                    </td>
+                    <td>{s.volume.toLocaleString()}</td>
+                    <td className="font-medium">${s.totalUsd.toLocaleString()}</td>
+                    <td>
+                      <span className={`badge ${s.paymentStatus === 'Overdue' ? 'badge-danger' : 'badge-warning'}`}>
+                        ● {s.paymentStatus}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex gap-2">
+                        <button className="btn btn-sm btn-outline" style={{ padding: '4px 10px', fontSize: 11 }}><Eye size={12} /> Detail</button>
+                        <button className="btn btn-sm btn-primary" style={{ padding: '4px 10px', fontSize: 11 }}><Bell size={12} /> Eskalasi</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr><td colSpan="10" className="text-center" style={{ padding: '40px 0', color: 'var(--text-muted)' }}>Tidak ada exception signal untuk filter ini.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="table-footer">
+          <span>Total <strong>{filtered.length}</strong> exception signal aktif</span>
+          <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>Diperbarui otomatis setiap hari</span>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes exPulse {
+          0%, 100% { box-shadow: 0 0 0 3px rgba(239,68,68,0.25); }
+          50%       { box-shadow: 0 0 0 7px rgba(239,68,68,0.06); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 export const SettlementArchive = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-
   if (selectedInvoice) {
-    return <SettlementSheet invoice={selectedInvoice} onBack={() => setSelectedInvoice(null)} />
+    return <SettlementSheet invoice={selectedInvoice} onBack={() => setSelectedInvoice(null)} />;
   }
-
   return (
     <div className="animate-fade-in">
       <div className="flex-responsive justify-between items-center mb-8">
@@ -825,7 +1136,7 @@ export const SettlementArchive = () => {
         <div className="flex w-full-mobile">
           <div className="search-bar flex items-center gap-2 w-full-mobile" style={{ background: 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
             <Search size={16} color="var(--text-muted)" />
-            <input type="text" placeholder="Temukan Invoice..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }} className="w-full-mobile" />
+            <input type="text" placeholder="Temukan Invoice..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }} />
           </div>
         </div>
       </div>
@@ -844,23 +1155,15 @@ export const SettlementArchive = () => {
           <tbody>
             <tr>
               <td className="font-medium" style={{ color: 'var(--accent-light)' }}>INV/26/BL-8812</td>
-              <td>PT KKKS Alpha Energi</td>
-              <td>09 Mar 2026</td>
-              <td>250,000</td>
+              <td>PT KKKS Alpha Energi</td><td>09 Mar 2026</td><td>250,000</td>
               <td className="font-medium" style={{ color: 'var(--success)' }}>Rp 318,463,125,000</td>
-              <td>
-                <button onClick={() => setSelectedInvoice({ id: 'INV/26/BL-8812', bl: 'BL-2026-8812', kkks: 'PT KKKS Alpha Energi', volume: 250000, rp: '318,463,125,000', usd: '20,612,500.00' })} className="btn btn-sm btn-primary" style={{ padding: '6px 12px' }}>Buka Kalkulasi PDF</button>
-              </td>
+              <td><button onClick={() => setSelectedInvoice({ id: 'INV/26/BL-8812', bl: 'BL-2026-8812', kkks: 'PT KKKS Alpha Energi', volume: 250000, rp: '318,463,125,000', usd: '20,612,500.00' })} className="btn btn-sm btn-primary" style={{ padding: '6px 12px' }}>Buka Kalkulasi PDF</button></td>
             </tr>
             <tr>
               <td className="font-medium" style={{ color: 'var(--accent-light)' }}>INV/26/BL-8813</td>
-              <td>PT KKKS Bravo Petroleum</td>
-              <td>08 Mar 2026</td>
-              <td>125,500</td>
+              <td>PT KKKS Bravo Petroleum</td><td>08 Mar 2026</td><td>125,500</td>
               <td className="font-medium" style={{ color: 'var(--success)' }}>Rp 159,864,832,100</td>
-              <td>
-                <button onClick={() => setSelectedInvoice({ id: 'INV/26/BL-8813', bl: 'BL-2026-8813', kkks: 'PT KKKS Bravo Petroleum', volume: 125500, rp: '159,864,832,100', usd: '10,347,238.12' })} className="btn btn-sm btn-primary" style={{ padding: '6px 12px' }}>Buka Kalkulasi PDF</button>
-              </td>
+              <td><button onClick={() => setSelectedInvoice({ id: 'INV/26/BL-8813', bl: 'BL-2026-8813', kkks: 'PT KKKS Bravo Petroleum', volume: 125500, rp: '159,864,832,100', usd: '10,347,238.12' })} className="btn btn-sm btn-primary" style={{ padding: '6px 12px' }}>Buka Kalkulasi PDF</button></td>
             </tr>
           </tbody>
         </table>
@@ -868,6 +1171,7 @@ export const SettlementArchive = () => {
     </div>
   );
 };
+
 
 export const SettlementSheet = ({ invoice, onBack }) => {
   return (
