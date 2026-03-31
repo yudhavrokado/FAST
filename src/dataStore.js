@@ -6,7 +6,15 @@
 
 const STORAGE_KEY = 'fast_data';
 
-// Generate a unique ID like "LFT-20260318-XXXX"
+// Generate a unique Invoice ID like "INV/26/BL-XXXX"
+const generateInvoiceId = () => {
+  const now = new Date();
+  const y = String(now.getFullYear()).slice(2);
+  const seq = String(Math.floor(Math.random() * 9000) + 1000);
+  return `INV/${y}/BL-${seq}`;
+};
+
+// Generate a unique lifting record ID like "LFT-20260318-XXXX"
 const generateId = () => {
   const now = new Date();
   const y = now.getFullYear();
@@ -42,14 +50,22 @@ const SEED_DATA = {
   liftings: [
     {
       id: 'LFT-20260308-A1B2',
+      invoiceId: 'INV/26/BL-8812',
       blNumber: 'CT-2026/03-1120',
+      blDateStart: '2026-03-06',
+      blDateEnd: '2026-03-08',
+      namaKapal: 'MV Pertamina Pride',
+      loadport: 'Dumai',
       tanggalLifting: '2026-03-08',
       kkks: 'PT KKKS Alpha Energi',
+      jenisMM: 'Crude Oil',
+      bagianPembelian: '85% Indonesia',
+      kategoriInvoice: 'First Invoice',
       volumeGross: 152000,
       volumeNet: 150000,
       waterContent: 0.05,
       apiGravity: 32.5,
-      status: 'submitted', // submitted → needs L1 verification
+      status: 'submitted',
       statusText: 'Menunggu Review L1',
       createdAt: '08 Mar 2026, 14:30',
       updatedAt: '08 Mar 2026, 14:30',
@@ -59,9 +75,17 @@ const SEED_DATA = {
     },
     {
       id: 'LFT-20260301-C3D4',
+      invoiceId: 'INV/26/BL-8813',
       blNumber: 'CT-2026/03-1115',
+      blDateStart: '2026-02-28',
+      blDateEnd: '2026-03-01',
+      namaKapal: 'MT Agung Samudra',
+      loadport: 'Cilacap',
       tanggalLifting: '2026-03-01',
       kkks: 'PT KKKS Bravo Petroleum',
+      jenisMM: 'Condensate',
+      bagianPembelian: '100% Indonesia',
+      kategoriInvoice: 'Second Invoice',
       volumeGross: 128000,
       volumeNet: 125500,
       waterContent: 0.03,
@@ -77,9 +101,17 @@ const SEED_DATA = {
     },
     {
       id: 'LFT-20260303-E5F6',
+      invoiceId: 'INV/26/BL-8814',
       blNumber: 'CT-2026/03-0092',
+      blDateStart: '2026-03-02',
+      blDateEnd: '2026-03-03',
+      namaKapal: 'MT Nusantara Express',
+      loadport: 'Balikpapan',
       tanggalLifting: '2026-03-03',
       kkks: 'PT KKKS Charlie',
+      jenisMM: 'Crude Oil',
+      bagianPembelian: '70% Indonesia, 30% Singapore',
+      kategoriInvoice: 'Provisional Invoice',
       volumeGross: 155000,
       volumeNet: 150000,
       waterContent: 0.08,
@@ -94,9 +126,17 @@ const SEED_DATA = {
     },
     {
       id: 'LFT-20260310-G7H8',
+      invoiceId: 'INV/26/BL-8815',
       blNumber: 'BL-2026-8815',
+      blDateStart: '2026-03-09',
+      blDateEnd: '2026-03-10',
+      namaKapal: 'MT Borneo Star',
+      loadport: 'Bontang',
       tanggalLifting: '2026-03-10',
       kkks: 'Pertamina EP',
+      jenisMM: 'LPG',
+      bagianPembelian: '100% Indonesia',
+      kategoriInvoice: 'Final Invoice',
       volumeGross: 310000,
       volumeNet: 300000,
       waterContent: 0.02,
@@ -111,9 +151,17 @@ const SEED_DATA = {
     },
     {
       id: 'LFT-20260309-DRFT',
+      invoiceId: null,
       blNumber: 'CT-2026/03-1122',
+      blDateStart: '',
+      blDateEnd: '',
+      namaKapal: '',
+      loadport: '',
       tanggalLifting: '2026-03-09',
       kkks: 'PT KKKS Alpha Energi',
+      jenisMM: '',
+      bagianPembelian: '',
+      kategoriInvoice: '',
       volumeGross: null,
       volumeNet: null,
       waterContent: null,
@@ -128,9 +176,17 @@ const SEED_DATA = {
     },
     {
       id: 'LFT-20260305-I9J0',
+      invoiceId: 'INV/26/BL-8816',
       blNumber: 'CT-2026/03-0105',
+      blDateStart: '2026-03-04',
+      blDateEnd: '2026-03-05',
+      namaKapal: 'MT Sriwijaya',
+      loadport: 'Merak',
       tanggalLifting: '2026-03-05',
       kkks: 'PT Delta Energy',
+      jenisMM: 'Crude Oil',
+      bagianPembelian: '60% Indonesia, 40% Japan',
+      kategoriInvoice: 'First Invoice',
       volumeGross: 88000,
       volumeNet: 85000,
       waterContent: 0.06,
@@ -144,6 +200,7 @@ const SEED_DATA = {
       verifikasiCatatan: 'Lampiran manifest buram, mohon unggah ulang.',
     },
   ],
+
   // Master data & KKKS registry
   kkksRegistry: [
     'PT KKKS Alpha Energi',
@@ -152,6 +209,54 @@ const SEED_DATA = {
     'Pertamina EP',
     'PT Delta Energy',
     'PT Echo Resources',
+  ],
+
+  // K3S (Kontraktor Kontrak Kerja Sama) list
+  k3sList: [
+    { id: 'K3S-001', nama: 'PT KKKS Alpha Energi', wilayahKerja: 'Blok Mahakam', negara: 'Indonesia', kontakPIC: 'Budi Santoso', email: 'budi@kkksalpha.com', status: 'Aktif' },
+    { id: 'K3S-002', nama: 'PT KKKS Bravo Petroleum', wilayahKerja: 'Blok Cepu', negara: 'Indonesia', kontakPIC: 'Siti Rahma', email: 'siti@bravopetro.com', status: 'Aktif' },
+    { id: 'K3S-003', nama: 'PT KKKS Charlie', wilayahKerja: 'Blok Rokan', negara: 'Indonesia', kontakPIC: 'Ahmad Fauzi', email: 'ahmad@charlie.co.id', status: 'Aktif' },
+    { id: 'K3S-004', nama: 'Pertamina EP', wilayahKerja: 'Multiple Blocks', negara: 'Indonesia', kontakPIC: 'Retno Wulandari', email: 'retno@pertaminaep.com', status: 'Aktif' },
+    { id: 'K3S-005', nama: 'PT Delta Energy', wilayahKerja: 'Blok Tangguh', negara: 'Indonesia', kontakPIC: 'Hendra Wijaya', email: 'hendra@deltaenergy.id', status: 'Aktif' },
+    { id: 'K3S-006', nama: 'PT Echo Resources', wilayahKerja: 'Blok Masela', negara: 'Indonesia', kontakPIC: 'Dewi Kusuma', email: 'dewi@echoresources.com', status: 'Tidak Aktif' },
+  ],
+
+  // Supplier list
+  supplierList: [
+    { id: 'SUP-001', nama: 'Shell Trading & Shipping', negara: 'Netherlands', komoditas: 'Crude Oil, LNG', kontakPIC: 'James Wilson', email: 'jwilson@shell.com', status: 'Aktif' },
+    { id: 'SUP-002', nama: 'BP Singapore Pte Ltd', negara: 'Singapore', komoditas: 'Crude Oil, Condensate', kontakPIC: 'Sarah Chen', email: 'schen@bp.com', status: 'Aktif' },
+    { id: 'SUP-003', nama: 'Vitol Asia Pte Ltd', negara: 'Singapore', komoditas: 'Crude Oil', kontakPIC: 'Michael Park', email: 'mpark@vitol.com', status: 'Aktif' },
+    { id: 'SUP-004', nama: 'Trafigura Pte Ltd', negara: 'Singapore', komoditas: 'LPG, Condensate', kontakPIC: 'Anna Müller', email: 'amuller@trafigura.com', status: 'Aktif' },
+    { id: 'SUP-005', nama: 'Gunvor International BV', negara: 'Netherlands', komoditas: 'Crude Oil', kontakPIC: 'Pierre Dubois', email: 'pdubois@gunvor.com', status: 'Aktif' },
+    { id: 'SUP-006', nama: 'Mitsui & Co Petroleum', negara: 'Japan', komoditas: 'Crude Oil, LNG', kontakPIC: 'Takashi Yamamoto', email: 'tyamamoto@mitsui.com', status: 'Aktif' },
+  ],
+
+  // Dated Brent daily prices
+  datedBrentPrices: [
+    { id: 'DBR-260330', tanggal: '2026-03-30', harga: 74.85, perubahan: +0.42, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260329', tanggal: '2026-03-29', harga: 74.43, perubahan: -0.71, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260328', tanggal: '2026-03-28', harga: 75.14, perubahan: +1.02, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260327', tanggal: '2026-03-27', harga: 74.12, perubahan: -0.35, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260326', tanggal: '2026-03-26', harga: 74.47, perubahan: +0.88, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260325', tanggal: '2026-03-25', harga: 73.59, perubahan: -0.22, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260324', tanggal: '2026-03-24', harga: 73.81, perubahan: +0.53, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260323', tanggal: '2026-03-23', harga: 73.28, perubahan: -1.12, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260322', tanggal: '2026-03-22', harga: 74.40, perubahan: +0.65, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260321', tanggal: '2026-03-21', harga: 73.75, perubahan: -0.48, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260320', tanggal: '2026-03-20', harga: 74.23, perubahan: +1.35, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260319', tanggal: '2026-03-19', harga: 72.88, perubahan: -0.90, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260318', tanggal: '2026-03-18', harga: 73.78, perubahan: +0.25, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260317', tanggal: '2026-03-17', harga: 73.53, perubahan: +0.72, sumber: 'Platts Brent Assessment' },
+    { id: 'DBR-260316', tanggal: '2026-03-16', harga: 72.81, perubahan: -1.20, sumber: 'Platts Brent Assessment' },
+  ],
+
+  // Price Formula Crude Domestik
+  priceFormulas: [
+    { id: 'PF-001', namaFormula: 'Crude Domestik Standard', dasarHarga: 'ICP', penyesuaian: -1.50, satuan: 'USD/bbl', berlakuDari: '2026-01-01', berlakuSampai: '2026-03-31', keterangan: 'Formula standar crude domestik Q1 2026', status: 'Aktif' },
+    { id: 'PF-002', namaFormula: 'Crude Domestik Premium', dasarHarga: 'Dated Brent', penyesuaian: -2.25, satuan: 'USD/bbl', berlakuDari: '2026-01-01', berlakuSampai: '2026-03-31', keterangan: 'Formula premium grade crude', status: 'Aktif' },
+    { id: 'PF-003', namaFormula: 'Crude Rokan Formula', dasarHarga: 'ICP', penyesuaian: +0.75, satuan: 'USD/bbl', berlakuDari: '2026-02-01', berlakuSampai: '2026-04-30', keterangan: 'Formula khusus Blok Rokan', status: 'Aktif' },
+    { id: 'PF-004', namaFormula: 'Condensate Standard', dasarHarga: 'Dated Brent', penyesuaian: +1.00, satuan: 'USD/bbl', berlakuDari: '2026-01-01', berlakuSampai: '2026-06-30', keterangan: 'Formula condensate semua blok', status: 'Aktif' },
+    { id: 'PF-005', namaFormula: 'Crude Mahakam 2025', dasarHarga: 'ICP', penyesuaian: -0.50, satuan: 'USD/bbl', berlakuDari: '2025-01-01', berlakuSampai: '2025-12-31', keterangan: 'Formula Mahakam tahun 2025', status: 'Kadaluarsa' },
   ],
 };
 
@@ -182,41 +287,35 @@ const saveData = (data) => {
 
 // ─── LIFTING CRUD ─────────────────────────────────────────
 
-/**
- * Get all lifting records.
- */
 export const getAllLiftings = () => {
   const data = getData();
   return data.liftings || [];
 };
 
-/**
- * Get a single lifting record by ID.
- */
 export const getLiftingById = (id) => {
   const liftings = getAllLiftings();
   return liftings.find((l) => l.id === id) || null;
 };
 
-/**
- * Get liftings filtered by status.
- * @param {'draft'|'submitted'|'revisi'|'approved'|'rejected'} status
- */
 export const getLiftingsByStatus = (status) => {
   return getAllLiftings().filter((l) => l.status === status);
 };
 
-/**
- * Create a new draft lifting.
- * Returns the newly created record.
- */
 export const createDraft = (formData) => {
   const data = getData();
   const newLifting = {
     id: generateId(),
+    invoiceId: null,
     blNumber: formData.blNumber || generateBLRef(),
+    blDateStart: formData.blDateStart || '',
+    blDateEnd: formData.blDateEnd || '',
+    namaKapal: formData.namaKapal || '',
+    loadport: formData.loadport || '',
     tanggalLifting: formData.tanggalLifting || '',
     kkks: formData.kkks || '',
+    jenisMM: formData.jenisMM || '',
+    bagianPembelian: formData.bagianPembelian || '',
+    kategoriInvoice: formData.kategoriInvoice || '',
     volumeGross: formData.volumeGross ? Number(formData.volumeGross) : null,
     volumeNet: formData.volumeNet ? Number(formData.volumeNet) : null,
     waterContent: formData.waterContent ? Number(formData.waterContent) : null,
@@ -234,10 +333,6 @@ export const createDraft = (formData) => {
   return newLifting;
 };
 
-/**
- * Update an existing lifting (draft or revision).
- * Returns the updated record.
- */
 export const updateLifting = (id, formData) => {
   const data = getData();
   const index = data.liftings.findIndex((l) => l.id === id);
@@ -247,8 +342,15 @@ export const updateLifting = (id, formData) => {
   const updated = {
     ...existing,
     blNumber: formData.blNumber ?? existing.blNumber,
+    blDateStart: formData.blDateStart ?? existing.blDateStart,
+    blDateEnd: formData.blDateEnd ?? existing.blDateEnd,
+    namaKapal: formData.namaKapal ?? existing.namaKapal,
+    loadport: formData.loadport ?? existing.loadport,
     tanggalLifting: formData.tanggalLifting ?? existing.tanggalLifting,
     kkks: formData.kkks ?? existing.kkks,
+    jenisMM: formData.jenisMM ?? existing.jenisMM,
+    bagianPembelian: formData.bagianPembelian ?? existing.bagianPembelian,
+    kategoriInvoice: formData.kategoriInvoice ?? existing.kategoriInvoice,
     volumeGross: formData.volumeGross !== undefined ? (formData.volumeGross ? Number(formData.volumeGross) : null) : existing.volumeGross,
     volumeNet: formData.volumeNet !== undefined ? (formData.volumeNet ? Number(formData.volumeNet) : null) : existing.volumeNet,
     waterContent: formData.waterContent !== undefined ? (formData.waterContent ? Number(formData.waterContent) : null) : existing.waterContent,
@@ -261,10 +363,6 @@ export const updateLifting = (id, formData) => {
   return updated;
 };
 
-/**
- * Submit a draft/revision → changes status to 'submitted'.
- * KKKS clicks "Submit" → data goes to L1 verification queue.
- */
 export const submitLifting = (id) => {
   const data = getData();
   const index = data.liftings.findIndex((l) => l.id === id);
@@ -272,6 +370,7 @@ export const submitLifting = (id) => {
 
   data.liftings[index] = {
     ...data.liftings[index],
+    invoiceId: data.liftings[index].invoiceId || generateInvoiceId(),
     status: 'submitted',
     statusText: 'Menunggu Review L1',
     submittedAt: getTimestamp(),
@@ -281,18 +380,26 @@ export const submitLifting = (id) => {
   return data.liftings[index];
 };
 
-/**
- * Create and immediately submit a new lifting.
- * Form → Submit button pressed.
- */
+export const generateAndAssignInvoiceId = (id) => {
+  const data = getData();
+  const index = data.liftings.findIndex((l) => l.id === id);
+  if (index === -1) return null;
+  
+  if (!data.liftings[index].invoiceId) {
+    const newInvId = generateInvoiceId();
+    data.liftings[index].invoiceId = newInvId;
+    data.liftings[index].updatedAt = getTimestamp();
+    saveData(data);
+    return newInvId;
+  }
+  return data.liftings[index].invoiceId;
+};
+
 export const createAndSubmit = (formData) => {
   const draft = createDraft(formData);
   return submitLifting(draft.id);
 };
 
-/**
- * L1 approves a submission.
- */
 export const approveLifting = (id, catatan = '') => {
   const data = getData();
   const index = data.liftings.findIndex((l) => l.id === id);
@@ -310,9 +417,6 @@ export const approveLifting = (id, catatan = '') => {
   return data.liftings[index];
 };
 
-/**
- * L1 rejects a submission (sends back for revision).
- */
 export const rejectLifting = (id, catatan = '') => {
   const data = getData();
   const index = data.liftings.findIndex((l) => l.id === id);
@@ -329,9 +433,6 @@ export const rejectLifting = (id, catatan = '') => {
   return data.liftings[index];
 };
 
-/**
- * Delete a lifting record (only drafts can be deleted).
- */
 export const deleteLifting = (id) => {
   const data = getData();
   const index = data.liftings.findIndex((l) => l.id === id);
@@ -345,19 +446,60 @@ export const deleteLifting = (id) => {
 
 // ─── KKKS REGISTRY ────────────────────────────────────────
 
-/**
- * Get list of registered KKKS entities.
- */
 export const getKKKSList = () => {
   const data = getData();
   return data.kkksRegistry || [];
 };
 
+// ─── K3S LIST ─────────────────────────────────────────────
+
+export const getK3SList = () => {
+  const data = getData();
+  return data.k3sList || SEED_DATA.k3sList;
+};
+
+// ─── SUPPLIER LIST ────────────────────────────────────────
+
+export const getSupplierList = () => {
+  const data = getData();
+  return data.supplierList || SEED_DATA.supplierList;
+};
+
+// ─── DATED BRENT ──────────────────────────────────────────
+
+export const getDatedBrentPrices = () => {
+  const data = getData();
+  return data.datedBrentPrices || SEED_DATA.datedBrentPrices;
+};
+
+export const addDatedBrentPrice = (entry) => {
+  const data = getData();
+  if (!data.datedBrentPrices) data.datedBrentPrices = [];
+  data.datedBrentPrices.unshift({ ...entry, id: `DBR-${Date.now()}` });
+  saveData(data);
+};
+
+// ─── PRICE FORMULAS ───────────────────────────────────────
+
+export const getPriceFormulas = () => {
+  const data = getData();
+  return data.priceFormulas || SEED_DATA.priceFormulas;
+};
+
+export const savePriceFormula = (formula) => {
+  const data = getData();
+  if (!data.priceFormulas) data.priceFormulas = [];
+  if (formula.id) {
+    const idx = data.priceFormulas.findIndex(f => f.id === formula.id);
+    if (idx !== -1) data.priceFormulas[idx] = formula;
+  } else {
+    data.priceFormulas.unshift({ ...formula, id: `PF-${String(data.priceFormulas.length + 1).padStart(3, '0')}` });
+  }
+  saveData(data);
+};
+
 // ─── STATISTICS ───────────────────────────────────────────
 
-/**
- * Get summary counts for dashboard widgets.
- */
 export const getStats = () => {
   const liftings = getAllLiftings();
   return {
@@ -370,9 +512,23 @@ export const getStats = () => {
   };
 };
 
-/**
- * Reset data store to seed data (useful for demo).
- */
 export const resetStore = () => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_DATA));
 };
+
+// ─── STATIC REFERENCE DATA ────────────────────────────────
+
+export const LOADPORT_OPTIONS = [
+  'Dumai', 'Cilacap', 'Balikpapan', 'Bontang', 'Merak', 'Tuban',
+  'Sungai Pakning', 'Tanjung Uban', 'Lawe-lawe', 'Sorong',
+  'Singapore', 'Rotterdam', 'Fujairah', 'Ras Tanura', 'Ruwais',
+];
+
+export const JENIS_MM_OPTIONS = [
+  'Crude Oil', 'Condensate', 'LPG', 'LNG', 'Naphtha', 'Fuel Oil', 'Gasoline',
+];
+
+export const KATEGORI_INVOICE_OPTIONS = [
+  'Provisional Invoice', 'First Invoice', 'Second Invoice',
+  'Final Invoice', 'Supplementary Invoice', 'Credit Note', 'Debit Note',
+];
