@@ -6,7 +6,8 @@ import {
   getAllLiftings, getLiftingById, createDraft, updateLifting, submitLifting, createAndSubmit, 
   approveLifting, rejectLifting, deleteLifting, getKKKSList, getStats, getK3SList, 
   getSupplierList, getDatedBrentPrices, getPriceFormulas, JENIS_MM_OPTIONS, 
-  KATEGORI_INVOICE_OPTIONS, LOADPORT_OPTIONS, generateAndAssignInvoiceId 
+  KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, 
+  PEMBELIAN_OPTIONS, generateAndAssignInvoiceId 
 } from './dataStore';
 export const Dashboard = () => {
   const [viewMode, setViewMode] = useState('gabungan');
@@ -244,22 +245,38 @@ export const DataSubmission = () => {
   const [tab, setTab] = useState('manual');
   const navigate = useNavigate();
   const kkksList = getKKKSList();
+  
+  // Mock current user mapping: Pertamina EP
+  const MAPPED_K3S = 'Pertamina EP';
 
   const emptyForm = {
+    invoiceNumber: '',
+    invoiceDate: '',
+    dueDateInvoice: '',
     blNumber: '',
-    tanggalLifting: '',
-    tanggalLiftingAkhir: '',
-    kkks: '',
+    blDate: '',
+    kkks: MAPPED_K3S,
     vesselName: '',
-    loadport: '',
+    isPipeline: false,
+    loadPort: '',
+    dischargePort: '',
+    kindOfTransaction: 'Provisional',
     jenisMm: 'Crude Oil',
-    kategoriInvoice: 'Provisional Invoice',
+    pembelian: 'Domestik',
     bagianPembelian: '',
+    kategoriInvoice: 'Provisional Invoice',
+    totalVolume: '',
+    volumeK3s: '',
+    volumeGoi: 0,
+    priceUsdBbl: '',
     volumeGross: '',
     volumeNet: '',
     apiGravity: '',
     waterContent: '',
     catatan: '',
+    fileInvoice: null,
+    fileBL: null,
+    fileDocLain: null,
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -275,15 +292,32 @@ export const DataSubmission = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field, value) => {
+    setForm(prev => {
+      const newForm = { ...prev, [field]: value };
+      
+      // Auto-calculate Volume Goi if Total Volume or Volume K3s changes
+      if (field === 'totalVolume' || field === 'volumeK3s') {
+        const total = parseFloat(newForm.totalVolume) || 0;
+        const k3s = parseFloat(newForm.volumeK3s) || 0;
+        newForm.volumeGoi = total - k3s;
+      }
+      
+      return newForm;
+    });
+  };
 
-  const generateInvoiceId = () => {
+  const handleFileChange = (field, file) => {
+    setForm(prev => ({ ...prev, [field]: file?.name || null }));
+  };
+
+  const generateInternalInvoiceId = () => {
     const rdm = Math.floor(1000 + Math.random() * 9000);
     return `INV/26/BL-${rdm}`;
   };
 
   const handleSaveDraft = () => {
-    if (!form.kkks) { showToast('Pilih KKS (Partner) terlebih dahulu', 'error'); return; }
+    if (!form.invoiceNumber) { showToast('Masukkan Nomor Invoice terlebih dahulu', 'error'); return; }
     createDraft(form);
     showToast('Draft berhasil disimpan');
     setForm(emptyForm);
@@ -291,12 +325,12 @@ export const DataSubmission = () => {
   };
 
   const handleSubmit = () => {
-    if (!form.kkks || !form.tanggalLifting || !form.volumeGross || !form.volumeNet || !form.apiGravity) {
-      showToast('Lengkapi semua field wajib sebelum submit', 'error'); return;
+    if (!form.invoiceNumber || !form.totalVolume || !form.priceUsdBbl) {
+      showToast('Lengkapi field wajib (Nomor Invoice, Volume, Price) sebelum submit', 'error'); return;
     }
-    const invId = generateInvoiceId();
-    createAndSubmit({ ...form, invoiceId: invId });
-    showToast(`Data berhasil disubmit. Invoice ID: ${invId}`);
+    const internalId = generateInternalInvoiceId();
+    createAndSubmit({ ...form, invoiceId: internalId });
+    showToast(`Invoice berhasil disubmit. Ref ID: ${internalId}`);
     setForm(emptyForm);
     refreshData();
   };
@@ -314,8 +348,8 @@ export const DataSubmission = () => {
       {/* ── Header ── */}
       <div className="flex-responsive justify-between items-center mb-6">
         <div>
-          <h1>Formulir Submisi Lifting</h1>
-          <p className="text-muted mt-2">Daftarkan data lifting baru atau upload melalui file Excel.</p>
+          <h1>Invoice Submission</h1>
+          <p className="text-muted mt-2">Daftarkan invoice lifting baru atau upload melalui file Excel.</p>
         </div>
       </div>
 
@@ -329,22 +363,72 @@ export const DataSubmission = () => {
         {tab === 'manual' ? (
           <>
             <div className="grid-cols-3" style={{ gap: '20px' }}>
+              {/* Section 1: Basic Info */}
               <div className="input-group">
-                <label className="input-label">Nomor B/L <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="text" className="input-control" placeholder="Contoh: BL-88204" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
+                <label className="input-label">Nomor Invoice <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="text" className="input-control" placeholder="Contoh: INV/2026/001" value={form.invoiceNumber} onChange={e => handleChange('invoiceNumber', e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">BL Dates (Awal) <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="date" className="input-control" value={form.tanggalLifting} onChange={e => handleChange('tanggalLifting', e.target.value)} />
+                <label className="input-label">Invoice Date <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="date" className="input-control" value={form.invoiceDate} onChange={e => handleChange('invoiceDate', e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">BL Dates (Akhir)</label>
-                <input type="date" className="input-control" value={form.tanggalLiftingAkhir} onChange={e => handleChange('tanggalLiftingAkhir', e.target.value)} />
+                <label className="input-label">Due Date Invoice <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="date" className="input-control" value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
               </div>
 
               <div className="input-group">
-                <label className="input-label">Nama Kapal</label>
-                <input type="text" className="input-control" placeholder="Contoh: MT Pertamina Prime" value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
+                <label className="input-label">Nomor B/L</label>
+                <input type="text" className="input-control" placeholder="Contoh: BL-88204" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">BL Date</label>
+                <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">K3S / Partner (Otomatis)</label>
+                <input type="text" className="input-control" value={form.kkks} readOnly style={{ background: '#f9fafb', cursor: 'not-allowed' }} />
+              </div>
+
+              {/* Section 2: Vessel & Ports */}
+              <div className="input-group">
+                <label className="input-label flex justify-between">
+                  <span>Nama Kapal</span>
+                  <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '11px', fontWeight: 'normal'}}>
+                    <input type="checkbox" checked={form.isPipeline} onChange={e => handleChange('isPipeline', e.target.checked)} />
+                    Pipeline
+                  </label>
+                </label>
+                <input 
+                  type="text" 
+                  className="input-control" 
+                  placeholder={form.isPipeline ? "Pipeline Mode Aktif" : "Contoh: MT Pertamina Prime"} 
+                  disabled={form.isPipeline}
+                  value={form.isPipeline ? '' : form.vesselName} 
+                  onChange={e => handleChange('vesselName', e.target.value)} 
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Load Port</label>
+                <select className="input-control" value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
+                  <option value="">-- Pilih Load Port --</option>
+                  {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Discharge Port</label>
+                <select className="input-control" value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
+                  <option value="">-- Pilih Discharge Port --</option>
+                  {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
+                </select>
+              </div>
+
+              {/* Section 3: Transaction Details */}
+              <div className="input-group">
+                <label className="input-label">Kind of Transaction</label>
+                <select className="input-control" value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
+                  {KIND_OF_TRANSACTION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
               </div>
               <div className="input-group">
                 <label className="input-label">Jenis MM</label>
@@ -353,23 +437,34 @@ export const DataSubmission = () => {
                 </select>
               </div>
               <div className="input-group">
-                <label className="input-label">Loadport</label>
-                <select className="input-control" value={form.loadport} onChange={e => handleChange('loadport', e.target.value)}>
-                  <option value="">-- Pilih Loadport --</option>
-                  {LOADPORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
+                <label className="input-label">Pembelian (Opsional)</label>
+                <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                  <option value="">-- Pilih --</option>
+                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
 
+              {/* Section 4: Volumes & Price */}
               <div className="input-group">
-                <label className="input-label">K3S / Partner <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <select className="input-control" value={form.kkks} onChange={e => handleChange('kkks', e.target.value)}>
-                  <option value="">-- Pilih Entitas --</option>
-                  {kkksList.map((k, i) => <option key={i} value={k}>{k}</option>)}
-                </select>
+                <label className="input-label">Total Volume (BBLS) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="number" className="input-control" placeholder="0" value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Bagian Pembelian</label>
-                <input type="text" className="input-control" placeholder="Contoh: 100% Negara" value={form.bagianPembelian} onChange={e => handleChange('bagianPembelian', e.target.value)} />
+                <label className="input-label">Volume Bagian KKKS (BBLS)</label>
+                <input type="number" className="input-control" placeholder="0" value={form.volumeK3s} onChange={e => handleChange('volumeK3s', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Volume GOI (Auto)</label>
+                <input type="number" className="input-control" value={form.volumeGoi} readOnly style={{ background: '#f9fafb' }} />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Price (USD/bbl) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="number" step="0.01" className="input-control" placeholder="0.00" value={form.priceUsdBbl} onChange={e => handleChange('priceUsdBbl', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">API Gravity</label>
+                <input type="text" className="input-control" placeholder="Contoh: 33.2" value={form.apiGravity} onChange={e => handleChange('apiGravity', e.target.value)} />
               </div>
               <div className="input-group">
                 <label className="input-label">Kategori Invoice</label>
@@ -377,22 +472,35 @@ export const DataSubmission = () => {
                   {KATEGORI_INVOICE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
-
-              <div className="input-group">
-                <label className="input-label">Volume Gross (BBLS) <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="number" className="input-control" placeholder="0" value={form.volumeGross} onChange={e => handleChange('volumeGross', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Volume Net (BBLS) <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="number" className="input-control" placeholder="0" value={form.volumeNet} onChange={e => handleChange('volumeNet', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">API Gravity <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="text" className="input-control" placeholder="Contoh: 33.2" value={form.apiGravity} onChange={e => handleChange('apiGravity', e.target.value)} />
-              </div>
             </div>
 
- 
+            {/* Section 5: Uploads */}
+            <div className="mt-8 mb-4">
+              <h3 className="text-sm font-semibold mb-4 text-muted uppercase tracking-wider">Dokumen Pendukung</h3>
+              <div className="grid-cols-3 gap-4">
+                <div style={{ padding: '16px', background: 'var(--bg-surface)', border: '1px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
+                  <Upload size={20} color="var(--accent)" style={{ margin: '0 auto 8px' }} />
+                  <div className="text-sm font-semibold mb-1">Invoice</div>
+                  <div className="text-xs text-muted mb-3">{form.fileInvoice || 'Format: PDF (Max 5MB)'}</div>
+                  <input type="file" id="file-invoice" hidden onChange={e => handleFileChange('fileInvoice', e.target.files[0])} />
+                  <button className="btn btn-sm w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} onClick={() => document.getElementById('file-invoice').click()}>Pilih File</button>
+                </div>
+                <div style={{ padding: '16px', background: 'var(--bg-surface)', border: '1px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
+                  <Upload size={20} color="var(--success)" style={{ margin: '0 auto 8px' }} />
+                  <div className="text-sm font-semibold mb-1">B/L Document</div>
+                  <div className="text-xs text-muted mb-3">{form.fileBL || 'Format: PDF (Max 5MB)'}</div>
+                  <input type="file" id="file-bl" hidden onChange={e => handleFileChange('fileBL', e.target.files[0])} />
+                  <button className="btn btn-sm w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} onClick={() => document.getElementById('file-bl').click()}>Pilih File</button>
+                </div>
+                <div style={{ padding: '16px', background: 'var(--bg-surface)', border: '1px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
+                  <Upload size={20} color="var(--text-muted)" style={{ margin: '0 auto 8px' }} />
+                  <div className="text-sm font-semibold mb-1">Doc Lainnya</div>
+                  <div className="text-xs text-muted mb-3">{form.fileDocLain || 'Format: PDF / ZIP (Max 15MB)'}</div>
+                  <input type="file" id="file-doc" hidden onChange={e => handleFileChange('fileDocLain', e.target.files[0])} />
+                  <button className="btn btn-sm w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} onClick={() => document.getElementById('file-doc').click()}>Pilih File</button>
+                </div>
+              </div>
+            </div>
 
             <div className="flex justify-end gap-3 mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
               <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
@@ -410,7 +518,6 @@ export const DataSubmission = () => {
               <button className="btn btn-outline" style={{ background: 'var(--bg-surface)' }}><Download size={16} /> Unduh Template</button>
               <button className="btn btn-primary"><Upload size={16} /> Upload Form Data</button>
             </div>
- 
           </div>
         )}
       </div>
@@ -422,11 +529,11 @@ export const DataSubmission = () => {
           <table>
             <thead>
               <tr style={{ background: 'var(--bg-surface)' }}>
-                <th>BL & Invoice ID</th>
-                <th>Kapal & Loadport</th>
-                <th>Kategori & MM</th>
-                <th>BL Dates</th>
-                <th>Volume (Bbls)</th>
+                <th>Invoice No & ID</th>
+                <th>Vessel / Pipeline</th>
+                <th>Transaction & MM</th>
+                <th>Dates</th>
+                <th>Total Vol (Bbls)</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Aksi</th>
               </tr>
@@ -435,7 +542,8 @@ export const DataSubmission = () => {
               {liftings.filter(l => l.status === 'draft').map(l => (
                 <tr key={l.id}>
                   <td>
-                    <div style={{ fontWeight: 600 }}>B/L: {l.blNumber || '-'}</div>
+                    <div style={{ fontWeight: 600 }}>{l.invoiceNumber || 'No Invoice'}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ID: {l.id}</div>
                     <div style={{ fontSize: '12px', color: 'var(--accent)', marginTop: '2px', display: 'flex', alignItems: 'center' }}>
                       {l.invoiceId || (
                         l.status === 'draft' ? 
@@ -445,27 +553,30 @@ export const DataSubmission = () => {
                             onClick={() => {
                               const newId = generateAndAssignInvoiceId(l.id);
                               if (newId) {
-                                showToast(`Berhasil generate Invoice ID: ${newId}`);
+                                showToast(`Berhasil generate Ref ID: ${newId}`);
                                 refreshData();
                               }
                             }}
                           >
-                            + Generate ID
+                            + Generate Ref ID
                           </button>
                         : <span style={{ color: 'var(--text-faint)' }}>ID Belum di-generate</span>
                       )}
                     </div>
                   </td>
                   <td>
-                    <div>{l.vesselName || 'MT Unassigned'}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadport || 'Unknown'}</div>
+                    <div>{l.isPipeline ? <span className="badge" style={{background:'rgba(139,92,246,0.1)', color:'#8b5cf6'}}>Pipeline</span> : (l.vesselName || 'MT Unassigned')}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadPort || 'Unknown'} → {l.dischargePort || 'Unknown'}</div>
                   </td>
                   <td>
-                    <div>{l.kategoriInvoice || 'Regular'}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Import'}</div>
+                    <div>{l.kindOfTransaction || 'Regular'}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Crude Oil'}</div>
                   </td>
-                  <td>{l.tanggalLifting || '-'}</td>
-                  <td>{l.volumeGross ? parseFloat(l.volumeGross).toLocaleString() : '-'}</td>
+                  <td>
+                    <div style={{ fontSize: '12px' }}>Inv: {l.invoiceDate || '-'}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Due: {l.dueDateInvoice || '-'}</div>
+                  </td>
+                  <td>{l.totalVolume ? parseFloat(l.totalVolume).toLocaleString() : '-'}</td>
                   <td>
                     <span className={`badge badge-${l.status}`}>{l.status || 'Draft'}</span>
                   </td>
@@ -498,7 +609,36 @@ export const EditLifting = () => {
   const { id } = useParams();
   const kkksList = getKKKSList();
 
-  const emptyForm = { blNumber: '', tanggalLifting: '', tanggalLiftingAkhir: '', vesselName: '', kkks: '', loadport: '', jenisMm: 'Crude Oil', bagianPembelian: '', kategoriInvoice: 'Regular Import', volumeGross: '', volumeNet: '', waterContent: '', apiGravity: '', catatan: '' };
+  const emptyForm = {
+    invoiceNumber: '',
+    invoiceDate: '',
+    dueDateInvoice: '',
+    blNumber: '',
+    blDate: '',
+    kkks: '',
+    vesselName: '',
+    isPipeline: false,
+    loadPort: '',
+    dischargePort: '',
+    kindOfTransaction: '',
+    jenisMm: '',
+    pembelian: '',
+    bagianPembelian: '',
+    kategoriInvoice: '',
+    totalVolume: '',
+    volumeK3s: '',
+    volumeGoi: 0,
+    priceUsdBbl: '',
+    volumeGross: '',
+    volumeNet: '',
+    apiGravity: '',
+    waterContent: '',
+    catatan: '',
+    fileInvoice: null,
+    fileBL: null,
+    fileDocLain: null,
+  };
+  
   const [form, setForm] = useState(emptyForm);
   const [originalStatus, setOriginalStatus] = useState('draft');
   const [toast, setToast] = useState(null);
@@ -507,38 +647,66 @@ export const EditLifting = () => {
     const data = getLiftingById(id);
     if (data) {
       setForm({
-        blNumber: data.blNumber || '', 
-        tanggalLifting: data.tanggalLifting || data.blDateStart || '', 
-        tanggalLiftingAkhir: data.tanggalLiftingAkhir || data.blDateEnd || '', 
+        invoiceNumber: data.invoiceNumber || '',
+        invoiceDate: data.invoiceDate || '',
+        dueDateInvoice: data.dueDateInvoice || '',
+        blNumber: data.blNumber || '',
+        blDate: data.blDate || '',
         kkks: data.kkks || '',
-        vesselName: data.vesselName || data.namaKapal || '',
-        jenisMm: data.jenisMm || data.jenisMM || 'Crude Oil',
-        loadport: data.loadport || '',
+        vesselName: data.vesselName || '',
+        isPipeline: data.isPipeline || false,
+        loadPort: data.loadPort || '',
+        dischargePort: data.dischargePort || '',
+        kindOfTransaction: data.kindOfTransaction || 'Provisional',
+        jenisMm: data.jenisMm || 'Crude Oil',
+        pembelian: data.pembelian || 'Domestik',
         bagianPembelian: data.bagianPembelian || '',
-        kategoriInvoice: data.kategoriInvoice || 'Regular Import',
+        kategoriInvoice: data.kategoriInvoice || 'Provisional Invoice',
+        totalVolume: data.totalVolume ?? '',
+        volumeK3s: data.volumeK3s ?? '',
+        volumeGoi: data.volumeGoi ?? 0,
+        priceUsdBbl: data.priceUsdBbl ?? '',
         volumeGross: data.volumeGross ?? '', 
         volumeNet: data.volumeNet ?? '', 
         waterContent: data.waterContent ?? '',
         apiGravity: data.apiGravity ?? '', 
         catatan: data.catatan || '',
+        fileInvoice: data.files?.invoice || null,
+        fileBL: data.files?.bl || null,
+        fileDocLain: data.files?.docLain || null,
       });
       setOriginalStatus(data.status);
     }
   }, [id]);
 
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
-  const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  
+  const handleChange = (field, value) => {
+    setForm(prev => {
+      const newForm = { ...prev, [field]: value };
+      if (field === 'totalVolume' || field === 'volumeK3s') {
+        const total = parseFloat(newForm.totalVolume) || 0;
+        const k3s = parseFloat(newForm.volumeK3s) || 0;
+        newForm.volumeGoi = total - k3s;
+      }
+      return newForm;
+    });
+  };
+
+  const handleFileChange = (field, file) => {
+    setForm(prev => ({ ...prev, [field]: file?.name || null }));
+  };
 
   const handleSaveDraft = () => {
-    if (!form.kkks) { showToast('Pilih KKKS terlebih dahulu', 'error'); return; }
+    if (!form.invoiceNumber) { showToast('Nomor Invoice wajib diisi', 'error'); return; }
     updateLifting(id, form);
     showToast('Draft berhasil diperbarui');
     setTimeout(() => navigate('/operasional/submission'), 1200);
   };
 
   const handleSubmit = () => {
-    if (!form.kkks || !form.tanggalLifting || !form.volumeGross || !form.volumeNet || !form.apiGravity) {
-      showToast('Lengkapi semua field wajib sebelum submit', 'error'); return;
+    if (!form.invoiceNumber || !form.totalVolume || !form.priceUsdBbl) {
+      showToast('Lengkapi field wajib (Nomor Invoice, Volume, Price) sebelum submit', 'error'); return;
     }
     updateLifting(id, form);
     submitLifting(id);
@@ -566,9 +734,9 @@ export const EditLifting = () => {
           <ChevronLeft size={18} /> Kembali
         </button>
         <div style={{ flex: 1 }}>
-          <h1>Edit Data Lifting</h1>
+          <h1>Edit Invoice Submission</h1>
           <p className="text-muted mt-1" style={{ fontSize: '14px' }}>
-            ID: <span style={{ color: 'var(--accent)', fontFamily: 'monospace' }}>{id}</span>
+            Internal ID: <span style={{ color: 'var(--accent)', fontFamily: 'monospace' }}>{id}</span>
           </p>
         </div>
         <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, padding: '8px 16px', fontSize: '13px' }}>{st.text}</span>
@@ -576,91 +744,138 @@ export const EditLifting = () => {
 
       {/* Form Card */}
       <div className="card">
-        <h2 className="mb-6">Detail Laporan Lifting</h2>
-        <div className="grid-cols-2">
-          <div className="input-group">
-            <label className="input-label">Nomor Referensi Bill of Lading (B/L)</label>
-            <input type="text" className="input-control" placeholder="Otomatis jika kosong" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">BL Dates (Awal) <span style={{ color: 'var(--danger)' }}>*</span></label>
-            <input type="date" className="input-control" value={form.tanggalLifting} onChange={e => handleChange('tanggalLifting', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">BL Dates (Akhir)</label>
-            <input type="date" className="input-control" value={form.tanggalLiftingAkhir} onChange={e => handleChange('tanggalLiftingAkhir', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">Nama Kapal</label>
-            <input type="text" className="input-control" placeholder="Contoh: MT Pertamina Prime" value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">Jenis MM</label>
-            <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-              {JENIS_MM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-          </div>
-          <div className="input-group">
-            <label className="input-label">Loadport</label>
-            <select className="input-control" value={form.loadport} onChange={e => handleChange('loadport', e.target.value)}>
-              <option value="">-- Pilih Loadport --</option>
-              {LOADPORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
-            </select>
-          </div>
-          <div className="input-group">
-            <label className="input-label">Entitas KKKS <span style={{ color: 'var(--danger)' }}>*</span></label>
-            <select className="input-control" value={form.kkks} onChange={e => handleChange('kkks', e.target.value)}>
-              <option value="">— Pilih KKKS —</option>
-              {kkksList.map(k => <option key={k} value={k}>{k}</option>)}
-            </select>
-          </div>
-          <div className="input-group">
-            <label className="input-label">Bagian Pembelian</label>
-            <input type="text" className="input-control" placeholder="Contoh: 100% Negara" value={form.bagianPembelian} onChange={e => handleChange('bagianPembelian', e.target.value)} />
-          </div>
-          <div className="input-group" style={{ gridColumn: 'span 2' }}>
-            <label className="input-label">Kategori Invoice</label>
-            <select className="input-control" value={form.kategoriInvoice} onChange={e => handleChange('kategoriInvoice', e.target.value)}>
-              {KATEGORI_INVOICE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-          </div>
-          <div className="input-group">
-            <label className="input-label">Volume (Gross Bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
-            <input type="number" className="input-control" placeholder="Contoh: 150000" value={form.volumeGross} onChange={e => handleChange('volumeGross', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">Volume (Net Bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
-            <input type="number" className="input-control" placeholder="Isi volume net yang akurat" value={form.volumeNet} onChange={e => handleChange('volumeNet', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">Water Content / Sedimen (%)</label>
-            <input type="text" className="input-control" placeholder="Contoh: 0.05" value={form.waterContent} onChange={e => handleChange('waterContent', e.target.value)} />
-          </div>
-          <div className="input-group">
-            <label className="input-label">API Gravity <span style={{ color: 'var(--danger)' }}>*</span></label>
-            <input type="text" className="input-control" placeholder="Contoh: 33.2" value={form.apiGravity} onChange={e => handleChange('apiGravity', e.target.value)} />
-          </div>
+        <h2 className="mb-6">Detail Invoice & Lifting</h2>
+        <div className="grid-cols-3" style={{ gap: '20px' }}>
+              <div className="input-group">
+                <label className="input-label">Nomor Invoice <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="text" className="input-control" placeholder="Contoh: INV/2026/001" value={form.invoiceNumber} onChange={e => handleChange('invoiceNumber', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Invoice Date <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="date" className="input-control" value={form.invoiceDate} onChange={e => handleChange('invoiceDate', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Due Date Invoice <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="date" className="input-control" value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Nomor B/L</label>
+                <input type="text" className="input-control" placeholder="Contoh: BL-88204" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">BL Date</label>
+                <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">K3S / Partner</label>
+                <input type="text" className="input-control" value={form.kkks} readOnly style={{ background: '#f9fafb' }} />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label flex justify-between">
+                  <span>Nama Kapal</span>
+                  <label className="flex items-center gap-2 cursor-pointer" style={{fontSize: '11px', fontWeight: 'normal'}}>
+                    <input type="checkbox" checked={form.isPipeline} onChange={e => handleChange('isPipeline', e.target.checked)} />
+                    Pipeline
+                  </label>
+                </label>
+                <input 
+                  type="text" 
+                  className="input-control" 
+                  placeholder={form.isPipeline ? "Pipeline Mode Aktif" : "Contoh: MT Pertamina Prime"} 
+                  disabled={form.isPipeline}
+                  value={form.isPipeline ? '' : form.vesselName} 
+                  onChange={e => handleChange('vesselName', e.target.value)} 
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Load Port</label>
+                <select className="input-control" value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
+                  <option value="">-- Pilih Load Port --</option>
+                  {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Discharge Port</label>
+                <select className="input-control" value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
+                  <option value="">-- Pilih Discharge Port --</option>
+                  {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Kind of Transaction</label>
+                <select className="input-control" value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
+                  {KIND_OF_TRANSACTION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Jenis MM</label>
+                <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
+                  {JENIS_MM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Pembelian (Opsional)</label>
+                <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                  <option value="">-- Pilih --</option>
+                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Total Volume (BBLS) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="number" className="input-control" placeholder="0" value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Volume Bagian KKKS (BBLS)</label>
+                <input type="number" className="input-control" placeholder="0" value={form.volumeK3s} onChange={e => handleChange('volumeK3s', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Volume GOI (Auto)</label>
+                <input type="number" className="input-control" value={form.volumeGoi} readOnly style={{ background: '#f9fafb' }} />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Price (USD/bbl) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="number" step="0.01" className="input-control" placeholder="0.00" value={form.priceUsdBbl} onChange={e => handleChange('priceUsdBbl', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">API Gravity</label>
+                <input type="text" className="input-control" placeholder="Contoh: 33.2" value={form.apiGravity} onChange={e => handleChange('apiGravity', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Kategori Invoice</label>
+                <select className="input-control" value={form.kategoriInvoice} onChange={e => handleChange('kategoriInvoice', e.target.value)}>
+                  {KATEGORI_INVOICE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
         </div>
+
         <div className="mt-8 mb-8" style={{ borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
           <h3 className="font-semibold mb-4">Lampiran Dokumen Tambahan</h3>
           <div className="grid-cols-3 gap-4">
             <div style={{ padding: '16px', background: 'var(--bg-surface)', border: '1px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
               <Upload size={20} color="var(--accent)" style={{ margin: '0 auto 8px' }} />
-              <div className="text-sm font-semibold mb-1">Upload B/L Dokumen</div>
-              <div className="text-xs text-muted mb-3">Format: PDF (Max 5MB)</div>
-              <button className="btn w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>Pilih File B/L</button>
+              <div className="text-sm font-semibold mb-1">Upload Invoice Fisik</div>
+              <div className="text-xs text-muted mb-3">{form.fileInvoice || 'Format: PDF (Max 5MB)'}</div>
+              <input type="file" id="edit-file-invoice" hidden onChange={e => handleFileChange('fileInvoice', e.target.files[0])} />
+              <button className="btn w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} onClick={() => document.getElementById('edit-file-invoice').click()}>Pilih File</button>
             </div>
             <div style={{ padding: '16px', background: 'var(--bg-surface)', border: '1px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
               <Upload size={20} color="var(--success)" style={{ margin: '0 auto 8px' }} />
-              <div className="text-sm font-semibold mb-1">Upload Invoice Fisik</div>
-              <div className="text-xs text-muted mb-3">Format: PDF (Max 5MB)</div>
-              <button className="btn w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>Pilih Invoice</button>
+              <div className="text-sm font-semibold mb-1">Upload B/L Dokumen</div>
+              <div className="text-xs text-muted mb-3">{form.fileBL || 'Format: PDF (Max 5MB)'}</div>
+              <input type="file" id="edit-file-bl" hidden onChange={e => handleFileChange('fileBL', e.target.files[0])} />
+              <button className="btn w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} onClick={() => document.getElementById('edit-file-bl').click()}>Pilih File</button>
             </div>
             <div style={{ padding: '16px', background: 'var(--bg-surface)', border: '1px dashed var(--border)', borderRadius: '8px', textAlign: 'center' }}>
               <Upload size={20} color="var(--text-muted)" style={{ margin: '0 auto 8px' }} />
               <div className="text-sm font-semibold mb-1">Dokumen Pendukung Lain</div>
-              <div className="text-xs text-muted mb-3">Format: PDF / ZIP (Max 15MB)</div>
-              <button className="btn w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>Pilih Lainnya</button>
+              <div className="text-xs text-muted mb-3">{form.fileDocLain || 'Format: PDF / ZIP (Max 15MB)'}</div>
+              <input type="file" id="edit-file-doc" hidden onChange={e => handleFileChange('fileDocLain', e.target.files[0])} />
+              <button className="btn w-full" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }} onClick={() => document.getElementById('edit-file-doc').click()}>Pilih Lainnya</button>
             </div>
           </div>
         </div>
@@ -771,7 +986,7 @@ export const VerificationPage = () => {
               <tr key={row.id}>
                 <td className="font-medium">{row.blNumber}</td>
                 <td>{row.kkks}</td>
-                <td>{row.tanggalLifting}</td>
+                <td>{row.liftingDate}</td>
                 <td>{row.volumeNet ? row.volumeNet.toLocaleString() : '-'}</td>
                 <td>{getStatusBadge(row.status)}</td>
                 <td style={{ maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: row.status === 'revisi' ? '#ef4444' : 'var(--text-muted)' }}>
@@ -1280,7 +1495,7 @@ export const VerificationDetail = () => {
           <div className="grid-cols-2 mb-6 text-sm">
             <div>
               <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Entitas KKKS</div><div className="font-medium mb-4">{lifting.kkks}</div>
-              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Tanggal Lifting</div><div className="font-medium mb-4">{lifting.tanggalLifting}</div>
+              <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Tanggal Lifting</div><div className="font-medium mb-4">{lifting.liftingDate}</div>
               <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Volume Gross (BBLS)</div><div className="font-medium mb-4">{lifting.volumeGross ? lifting.volumeGross.toLocaleString() : '-'}</div>
             </div>
             <div>
