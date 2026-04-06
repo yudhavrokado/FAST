@@ -260,6 +260,46 @@ const SEED_DATA = {
     { id: 'PF-004', namaFormula: 'Condensate Standard', dasarHarga: 'Dated Brent', penyesuaian: +1.00, satuan: 'USD/bbl', berlakuDari: '2026-01-01', berlakuSampai: '2026-06-30', keterangan: 'Formula condensate semua blok', status: 'Aktif' },
     { id: 'PF-005', namaFormula: 'Crude Mahakam 2025', dasarHarga: 'ICP', penyesuaian: -0.50, satuan: 'USD/bbl', berlakuDari: '2025-01-01', berlakuSampai: '2025-12-31', keterangan: 'Formula Mahakam tahun 2025', status: 'Kadaluarsa' },
   ],
+
+  // ICP System Data
+  icpPeriode: 'Maret 2026',
+  datedBrentRef: 73.50,
+  mopsNaphthaRef: 620.75,
+
+  // Price History — log setiap kali user mengubah harga referensi/alpha
+  priceHistory: [
+    { periode: 'Oktober 2025', datedBrent: 71.20, mopsNaphtha: 605.30, timestamp: '2025-10-15T10:00:00' },
+    { periode: 'November 2025', datedBrent: 72.80, mopsNaphtha: 612.45, timestamp: '2025-11-15T10:00:00' },
+    { periode: 'Desember 2025', datedBrent: 74.10, mopsNaphtha: 618.90, timestamp: '2025-12-15T10:00:00' },
+    { periode: 'Januari 2026', datedBrent: 72.50, mopsNaphtha: 610.20, timestamp: '2026-01-15T10:00:00' },
+    { periode: 'Februari 2026', datedBrent: 73.90, mopsNaphtha: 616.50, timestamp: '2026-02-15T10:00:00' },
+    { periode: 'Maret 2026', datedBrent: 73.50, mopsNaphtha: 620.75, timestamp: '2026-03-15T10:00:00' },
+  ],
+
+  // Minyak Mentah Utama (Kepmen ESDM) — Price = Reference + Alpha
+  // refType: 'brent' = Dated Brent, 'mops' = MOPS Naphtha
+  primaryCrudes: [
+    { id: 'PC-001', namaCrude: 'SLC (Sumatera Light Crude)', kode: 'SLC', refType: 'brent', alpha: 2.15, used: true },
+    { id: 'PC-002', namaCrude: 'Attaka', kode: 'ATTAKA', refType: 'brent', alpha: 0.85, used: true },
+    { id: 'PC-003', namaCrude: 'Duri', kode: 'DURI', refType: 'brent', alpha: -6.30, used: true },
+    { id: 'PC-004', namaCrude: 'Belida', kode: 'BELIDA', refType: 'brent', alpha: 1.45, used: true },
+    { id: 'PC-005', namaCrude: 'Senipah Condensate', kode: 'SENIPAH', refType: 'brent', alpha: 3.20, used: true },
+    { id: 'PC-006', namaCrude: 'Banyu Urip', kode: 'BANYUURIP', refType: 'brent', alpha: 1.70, used: true },
+  ],
+
+  // Minyak Mentah Turunan — Price = Primary Crude Price + Alpha (or = Primary Crude Price)
+  derivedCrudes: [
+    { id: 'DC-001', namaCrude: 'Arjuna', baseRef: 'SLC', alpha: -0.50, used: true },
+    { id: 'DC-002', namaCrude: 'Cinta', baseRef: 'SLC', alpha: -1.25, used: true },
+    { id: 'DC-003', namaCrude: 'Widuri', baseRef: 'DURI', alpha: 0.00, used: true },
+    { id: 'DC-004', namaCrude: 'Handil', baseRef: 'ATTAKA', alpha: -0.30, used: true },
+    { id: 'DC-005', namaCrude: 'Badak (NGL)', baseRef: 'SENIPAH', alpha: -1.00, used: true },
+    { id: 'DC-006', namaCrude: 'Minas', baseRef: 'SLC', alpha: 0.00, used: false },
+    { id: 'DC-007', namaCrude: 'Jatibarang', baseRef: 'SLC', alpha: -2.10, used: true },
+    { id: 'DC-008', namaCrude: 'Geragai', baseRef: 'SLC', alpha: -0.75, used: true },
+    { id: 'DC-009', namaCrude: 'Sepinggan', baseRef: 'ATTAKA', alpha: 0.50, used: false },
+    { id: 'DC-010', namaCrude: 'Cepu (Light)', baseRef: 'BANYUURIP', alpha: -0.20, used: true },
+  ],
 };
 
 /**
@@ -277,7 +317,12 @@ export const initStore = () => {
  */
 const getData = () => {
   const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : SEED_DATA;
+  if (!raw) return { ...SEED_DATA };
+  
+  const saved = JSON.parse(raw);
+  // Merge top-level keys to ensure new datasets from SEED_DATA are available
+  const merged = { ...SEED_DATA, ...saved };
+  return merged;
 };
 
 /**
@@ -528,6 +573,119 @@ export const savePriceFormula = (formula) => {
     data.priceFormulas.unshift({ ...formula, id: `PF-${String(data.priceFormulas.length + 1).padStart(3, '0')}` });
   }
   saveData(data);
+};
+
+// ─── ICP SYSTEM ───────────────────────────────────────────
+
+export const getIcpPeriode = () => {
+  const data = getData();
+  return data.icpPeriode || SEED_DATA.icpPeriode;
+};
+
+export const saveIcpPeriode = (periode) => {
+  const data = getData();
+  data.icpPeriode = periode;
+  saveData(data);
+};
+
+export const getDatedBrentRef = () => {
+  const data = getData();
+  return data.datedBrentRef ?? SEED_DATA.datedBrentRef;
+};
+
+export const saveDatedBrentRef = (price) => {
+  const data = getData();
+  data.datedBrentRef = parseFloat(price);
+  saveData(data);
+};
+
+export const getMopsNaphthaRef = () => {
+  const data = getData();
+  return data.mopsNaphthaRef ?? SEED_DATA.mopsNaphthaRef;
+};
+
+export const saveMopsNaphthaRef = (price) => {
+  const data = getData();
+  data.mopsNaphthaRef = parseFloat(price);
+  saveData(data);
+};
+
+// Save all reference prices + log to history
+export const saveRefPrices = ({ periode, datedBrent, mopsNaphtha }) => {
+  const data = getData();
+  data.icpPeriode = periode;
+  data.datedBrentRef = parseFloat(datedBrent);
+  data.mopsNaphthaRef = parseFloat(mopsNaphtha);
+  // Append to history
+  if (!data.priceHistory) data.priceHistory = [];
+  const existing = data.priceHistory.findIndex(h => h.periode === periode);
+  const entry = { periode, datedBrent: parseFloat(datedBrent), mopsNaphtha: parseFloat(mopsNaphtha), timestamp: new Date().toISOString() };
+  if (existing !== -1) {
+    data.priceHistory[existing] = entry;
+  } else {
+    data.priceHistory.push(entry);
+  }
+  saveData(data);
+};
+
+export const getPriceHistory = () => {
+  const data = getData();
+  return data.priceHistory || SEED_DATA.priceHistory;
+};
+
+export const getPrimaryCrudes = () => {
+  const data = getData();
+  return data.primaryCrudes || SEED_DATA.primaryCrudes;
+};
+
+export const savePrimaryCrude = (crude) => {
+  const data = getData();
+  if (!data.primaryCrudes) data.primaryCrudes = [...SEED_DATA.primaryCrudes];
+  if (crude.id) {
+    const idx = data.primaryCrudes.findIndex(c => c.id === crude.id);
+    if (idx !== -1) {
+      data.primaryCrudes[idx] = crude;
+    } else {
+      data.primaryCrudes.push(crude);
+    }
+  } else {
+    const nextId = `PC-${String(data.primaryCrudes.length + 1).padStart(3, '0')}`;
+    data.primaryCrudes.push({ ...crude, id: nextId });
+  }
+  saveData(data);
+};
+
+export const getDerivedCrudes = () => {
+  const data = getData();
+  return data.derivedCrudes || SEED_DATA.derivedCrudes;
+};
+
+export const saveDerivedCrude = (crude) => {
+  const data = getData();
+  if (!data.derivedCrudes) data.derivedCrudes = [...SEED_DATA.derivedCrudes];
+  if (crude.id) {
+    const idx = data.derivedCrudes.findIndex(c => c.id === crude.id);
+    if (idx !== -1) {
+      data.derivedCrudes[idx] = crude;
+    } else {
+      data.derivedCrudes.push(crude);
+    }
+  } else {
+    const nextId = `DC-${String(data.derivedCrudes.length + 1).padStart(3, '0')}`;
+    data.derivedCrudes.push({ ...crude, id: nextId });
+  }
+  saveData(data);
+};
+
+// Helper: compute a primary crude's ICP price
+export const getPrimaryCrudePrice = (kode) => {
+  const brent = getDatedBrentRef();
+  const mops = getMopsNaphthaRef();
+  const primaries = getPrimaryCrudes();
+  const crude = primaries.find(c => c.kode === kode);
+  if (!crude) return null;
+  const basePrice = crude.refType === 'mops' ? mops : brent;
+  return parseFloat((basePrice + crude.alpha).toFixed(2));
 };
 
 // ─── STATISTICS ───────────────────────────────────────────

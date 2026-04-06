@@ -5,7 +5,11 @@ import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, Cartesia
 import { 
   getAllLiftings, getLiftingById, createDraft, updateLifting, submitLifting, createAndSubmit, 
   approveLifting, rejectLifting, deleteLifting, getKKKSList, getStats, getK3SList, 
-  getSupplierList, getDatedBrentPrices, getPriceFormulas, JENIS_MM_OPTIONS, 
+  getSupplierList, getDatedBrentPrices, getPriceFormulas,
+  getIcpPeriode, saveIcpPeriode, getDatedBrentRef, saveDatedBrentRef,
+  getMopsNaphthaRef, saveMopsNaphthaRef, saveRefPrices, getPriceHistory,
+  getPrimaryCrudes, savePrimaryCrude, getDerivedCrudes, saveDerivedCrude, getPrimaryCrudePrice,
+  JENIS_MM_OPTIONS, 
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, 
   PEMBELIAN_OPTIONS, generateAndAssignInvoiceId 
 } from './dataStore';
@@ -1015,125 +1019,615 @@ export const VerificationPage = () => {
 export const MasterDataPage = () => {
   const [activeTab, setActiveTab] = useState('icp');
   
-  const brentPrices = getDatedBrentPrices();
+  // ICP state
+  const [datedBrent, setDatedBrent] = useState(73.50);
+  const [mopsNaphtha, setMopsNaphtha] = useState(620.75);
+  const [icpPeriode, setIcpPeriodeState] = useState('');
+  const [primaryCrudes, setPrimaryCrudes] = useState([]);
+  const [derivedCrudes, setDerivedCrudes] = useState([]);
+  const [priceHistory, setPriceHistory] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [editSection, setEditSection] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [derivedSearch, setDerivedSearch] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Other tabs state
   const k3sList = getK3SList();
   const supplierList = getSupplierList();
-  const formulas = getPriceFormulas();
 
-  return (
-    <div className="animate-fade-in">
-      <div className="tabs-container flex-wrap" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
-        <button className={`tab-btn ${activeTab === 'icp' ? 'active' : ''}`} onClick={() => setActiveTab('icp')}>ICP</button>
-        <button className={`tab-btn ${activeTab === 'kurs' ? 'active' : ''}`} onClick={() => setActiveTab('kurs')}>Kurs (BI)</button>
-        <button className={`tab-btn ${activeTab === 'brent' ? 'active' : ''}`} onClick={() => setActiveTab('brent')}>Dated Brent (Daily)</button>
-        <button className={`tab-btn ${activeTab === 'k3s' ? 'active' : ''}`} onClick={() => setActiveTab('k3s')}>K3S & Supplier</button>
-        <button className={`tab-btn ${activeTab === 'formula' ? 'active' : ''}`} onClick={() => setActiveTab('formula')}>Price Formula Domestik</button>
+  useEffect(() => {
+    refreshIcpData();
+  }, []);
+
+  const refreshIcpData = () => {
+    setDatedBrent(getDatedBrentRef());
+    setMopsNaphtha(getMopsNaphthaRef());
+    setIcpPeriodeState(getIcpPeriode());
+    setPrimaryCrudes(getPrimaryCrudes());
+    setDerivedCrudes(getDerivedCrudes());
+    setPriceHistory(getPriceHistory());
+  };
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  // Compute prices — refType determines base price source
+  const getPrimaryPrice = (alpha, refType) => {
+    const base = refType === 'mops' ? mopsNaphtha : datedBrent;
+    return parseFloat((base + alpha).toFixed(2));
+  };
+  const getDerivedPrice = (baseRef, alpha) => {
+    const baseCrude = primaryCrudes.find(c => c.kode === baseRef);
+    if (!baseCrude) return 0;
+    const base = baseCrude.refType === 'mops' ? mopsNaphtha : datedBrent;
+    return parseFloat((base + baseCrude.alpha + alpha).toFixed(2));
+  };
+
+  // Filtered derived crudes
+  const filteredDerived = derivedSearch
+    ? derivedCrudes.filter(c => c.namaCrude.toLowerCase().includes(derivedSearch.toLowerCase()))
+    : derivedCrudes;
+
+  // Save handlers
+  const handleSaveRef = () => {
+    saveRefPrices({ periode: editingItem.periode, datedBrent: editingItem.datedBrent, mopsNaphtha: editingItem.mopsNaphtha });
+    refreshIcpData();
+    setEditSection(null);
+    setEditingItem(null);
+    showToast('Harga referensi berhasil diperbarui');
+  };
+
+  const handleSavePrimary = () => {
+    savePrimaryCrude(editingItem);
+    refreshIcpData();
+    setEditSection(null);
+    setEditingItem(null);
+    setSelectedId(null);
+    showToast(editingItem.id ? 'Minyak Mentah Utama berhasil diperbarui' : 'Minyak Mentah Utama berhasil ditambahkan');
+  };
+
+  const handleSaveDerived = () => {
+    saveDerivedCrude(editingItem);
+    refreshIcpData();
+    setEditSection(null);
+    setEditingItem(null);
+    setSelectedId(null);
+    showToast('Minyak Mentah Turunan berhasil disimpan');
+  };
+
+  // Chart data
+  const historyChartData = priceHistory.map(h => ({
+    name: h.periode.replace('2025', "'25").replace('2026', "'26"),
+    'Dated Brent': h.datedBrent,
+    'MOPS Naphtha': parseFloat((h.mopsNaphtha / 8.33).toFixed(2)),
+  }));
+
+
+  // Generate periode options: current month + 6 months forward
+  const periodeOptions = (() => {
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const now = new Date();
+    const options = [];
+    for (let i = 0; i <= 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      options.push(`${months[d.getMonth()]} ${d.getFullYear()}`);
+    }
+    return options;
+  })();
+
+  // ICP Tab Content
+  const renderIcpTab = () => (
+    <div>
+      {/* Periode & Actions Row — now above cards */}
+      <div className="flex-responsive justify-between items-center mb-4">
+        <div className="flex items-center gap-3">
+          <span className="badge" style={{ background: 'rgba(0,82,156,0.08)', color: 'var(--accent)', fontWeight: 700, padding: '6px 14px', fontSize: '13px' }}>Periode: {icpPeriode}</span>
+        </div>
+        <div className="flex gap-2">
+          <button className="btn btn-outline" style={{ padding: '8px 16px' }} onClick={() => setShowHistory(!showHistory)}>
+            <Calendar size={14} /> {showHistory ? 'Tutup Riwayat' : 'Riwayat Harga'}
+          </button>
+          <button className="btn btn-primary" style={{ padding: '8px 16px' }} onClick={() => {
+            setEditSection('ref');
+            setEditingItem({ periode: icpPeriode, datedBrent, mopsNaphtha });
+          }}><Edit2 size={14} /> Ubah Harga Referensi</button>
+        </div>
       </div>
 
-      <div className="flex-responsive justify-between items-center mb-6">
-        <div className="flex gap-2 w-full-mobile">
-          <button className="btn btn-primary flex-1" style={{ padding: '8px 16px' }}><Plus size={14} /> Add Data</button>
-          <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}><Edit2 size={14} /> Edit</button>
-          <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)', color: 'var(--danger)' }}><Trash2 size={14} /> Delete</button>
-        </div>
-        <div className="flex-responsive gap-3 w-full-mobile">
-          <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            <input type="text" placeholder="Search..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }} />
-            <Search size={16} color="var(--text-muted)" />
+      {/* Reference Prices Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="mb-6">
+        <div className="card" style={{ borderTop: '3px solid var(--accent)', padding: '20px 24px' }}>
+          <div className="flex items-center gap-4">
+            <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(0,82,156,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <DollarSign size={20} color="var(--accent)" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="text-xs text-muted font-semibold uppercase" style={{ letterSpacing: '0.5px' }}>Dated Brent</div>
+              <div className="text-xl font-bold" style={{ color: 'var(--accent)' }}>${datedBrent.toFixed(2)} <span className="text-xs font-normal text-muted">/ bbl</span></div>
+            </div>
           </div>
-          <button className="btn btn-outline w-full-mobile" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}><Filter size={16} /> Filter</button>
+        </div>
+        <div className="card" style={{ borderTop: '3px solid var(--warning)', padding: '20px 24px' }}>
+          <div className="flex items-center gap-4">
+            <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(245,158,11,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Activity size={20} color="var(--warning)" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="text-xs text-muted font-semibold uppercase" style={{ letterSpacing: '0.5px' }}>MOPS Naphtha</div>
+              <div className="text-xl font-bold" style={{ color: 'var(--warning)' }}>${mopsNaphtha.toFixed(2)} <span className="text-xs font-normal text-muted">/ MT</span></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
-              <th style={{ padding: '16px', width: '48px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db', background: '#fff' }}/></th>
-              
-              {activeTab === 'icp' && (<><th style={{ padding: '16px' }}>Id</th><th style={{ padding: '16px' }}>Periode</th><th style={{ padding: '16px' }}>Harga (USD/BBL)</th><th style={{ padding: '16px' }}>Sumber</th></>)}
-              {activeTab === 'kurs' && (<><th style={{ padding: '16px' }}>Id</th><th style={{ padding: '16px' }}>Tanggal</th><th style={{ padding: '16px' }}>JISDOR (IDR)</th><th style={{ padding: '16px' }}>Sumber</th></>)}
-              {activeTab === 'brent' && (<><th style={{ padding: '16px' }}>Id</th><th style={{ padding: '16px' }}>Tanggal</th><th style={{ padding: '16px' }}>Harga (USD/BBL)</th><th style={{ padding: '16px' }}>Sumber</th></>)}
-              {activeTab === 'k3s' && (<><th style={{ padding: '16px' }}>ID Partner</th><th style={{ padding: '16px' }}>Nama Perusahaan</th><th style={{ padding: '16px' }}>Tipe Entitas</th><th style={{ padding: '16px' }}>Negara</th><th style={{ padding: '16px' }}>Kontak PIC</th><th style={{ padding: '16px' }}>Status</th></>)}
-              {activeTab === 'formula' && (<><th style={{ padding: '16px' }}>Deskripsi</th><th style={{ padding: '16px' }}>Base Price</th><th style={{ padding: '16px' }}>Konstanta (USD/bbl)</th><th style={{ padding: '16px' }}>Persentase (%)</th><th style={{ padding: '16px' }}>Berlaku Sejak</th></>)}
-            </tr>
-          </thead>
-          <tbody>
-            {activeTab === 'icp' && (
-              <>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}><td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td><td style={{ padding:'16px' }}>ICP-2603</td><td style={{ padding:'16px' }}>Maret 2026</td><td style={{ padding:'16px',color:'var(--accent)',fontWeight:600 }}>$82.45</td><td style={{ padding:'16px' }}>Ketetapan Menteri ESDM</td></tr>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}><td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td><td style={{ padding:'16px' }}>ICP-2602</td><td style={{ padding:'16px' }}>Februari 2026</td><td style={{ padding:'16px',color:'var(--accent)',fontWeight:600 }}>$80.12</td><td style={{ padding:'16px' }}>Ketetapan Menteri ESDM</td></tr>
-              </>
-            )}
-            
-            {activeTab === 'kurs' && (
-              <>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}><td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td><td style={{ padding:'16px' }}>KRS-260309</td><td style={{ padding:'16px' }}>09 Mar 2026</td><td style={{ padding:'16px',color:'var(--success)',fontWeight:600 }}>Rp 15,450.00</td><td style={{ padding:'16px' }}>Bank Indonesia</td></tr>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}><td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td><td style={{ padding:'16px' }}>KRS-260308</td><td style={{ padding:'16px' }}>08 Mar 2026</td><td style={{ padding:'16px',color:'var(--success)',fontWeight:600 }}>Rp 15,480.00</td><td style={{ padding:'16px' }}>Bank Indonesia</td></tr>
-              </>
-            )}
+      {/* Price History Chart (Collapsible) */}
+      {showHistory && (
+        <div className="card mb-6" style={{ padding: '20px 24px' }}>
+          <h3 className="text-base font-bold mb-1 flex items-center gap-2"><Calendar size={16} color="var(--accent)" /> Riwayat Harga Referensi</h3>
+          <p className="text-xs text-muted mb-4">Trend harga Dated Brent & MOPS Naphtha (konversi per barrel) tiap periode</p>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={historyChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="var(--text-muted)" />
+                <YAxis tick={{ fontSize: 12 }} stroke="var(--text-muted)" domain={['auto', 'auto']} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid var(--border)', fontSize: 13 }} />
+                <Legend />
+                <Line type="monotone" dataKey="Dated Brent" stroke="#00529c" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="MOPS Naphtha" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <th style={{ padding: '8px 12px', textAlign: 'left' }}>Periode</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right' }}>Dated Brent (USD/bbl)</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right' }}>MOPS Naphtha (USD/MT)</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right' }}>Tanggal Input</th>
+              </tr></thead>
+              <tbody>
+                {[...priceHistory].reverse().map((h, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border)', background: i === 0 ? 'rgba(0,82,156,0.02)' : 'transparent' }}>
+                    <td style={{ padding: '8px 12px', fontWeight: i === 0 ? 600 : 400 }}>{h.periode} {i === 0 && <span className="badge badge-success" style={{ fontSize: 10, marginLeft: 6, padding: '2px 6px' }}>Aktif</span>}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--accent)' }}>${h.datedBrent.toFixed(2)}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--warning)' }}>${h.mopsNaphtha.toFixed(2)}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-muted)', fontSize: 12 }}>{new Date(h.timestamp).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-            {activeTab === 'brent' && brentPrices.map((b) => (
-               <tr key={b.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                 <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
-                 <td style={{ padding:'16px' }}>{b.id}</td>
-                 <td style={{ padding:'16px' }}>{b.tanggal}</td>
-                 <td style={{ padding:'16px', fontWeight:600, color:'var(--accent)' }}>${b.harga.toFixed(2)}</td>
-                 <td style={{ padding:'16px' }}>{b.sumber}</td>
-               </tr>
-            ))}
+      {/* Section 1: Primary Crudes */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2"><Activity size={18} color="var(--accent)" /> Minyak Mentah Utama</h2>
+            <p className="text-sm text-muted mt-1">Minyak mentah referensi berdasarkan Kepmen ESDM. Harga = Dated Brent + Alpha</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px' }}
+              onClick={() => {
+                setEditSection('addPrimary');
+                setEditingItem({ id: '', namaCrude: '', kode: '', refType: 'brent', alpha: 0, used: true });
+              }}
+            ><Plus size={12} /> Tambah</button>
+            <button 
+              className="btn btn-outline" 
+              style={{ 
+                padding: '6px 14px', fontSize: '13px',
+                opacity: selectedId && selectedId.startsWith('PC') ? 1 : 0.5,
+                borderColor: selectedId && selectedId.startsWith('PC') ? 'var(--accent)' : 'var(--border)',
+                color: selectedId && selectedId.startsWith('PC') ? 'var(--accent)' : 'inherit'
+              }}
+              disabled={!selectedId || !selectedId.startsWith('PC')}
+              onClick={() => {
+                const item = primaryCrudes.find(c => c.id === selectedId);
+                if (item) { setEditSection('primary'); setEditingItem({ ...item }); }
+              }}
+            ><Edit2 size={12} /> Edit</button>
+          </div>
+        </div>
 
-            {activeTab === 'k3s' && (
-               <>
-                 {k3sList.map((k) => (
-                   <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                     <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
-                     <td style={{ padding:'16px' }}>{k.id}</td>
-                     <td style={{ padding:'16px', fontWeight: 500 }}>{k.nama} <br/><span style={{fontSize:12, color:'var(--text-muted)'}}>{k.email}</span></td>
-                     <td style={{ padding:'16px' }}><span className="badge" style={{background:'rgba(0,82,156,0.1)',color:'var(--accent)'}}>K3S Domestik</span></td>
-                     <td style={{ padding:'16px' }}>{k.negara}</td>
-                     <td style={{ padding:'16px' }}>{k.kontakPIC}</td>
-                     <td style={{ padding:'16px' }}><span className={`badge ${k.status === 'Aktif' ? 'badge-success' : 'badge-draft'}`}>{k.status}</span></td>
-                   </tr>
-                 ))}
-                 {supplierList.map((s) => (
-                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                     <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
-                     <td style={{ padding:'16px' }}>{s.id}</td>
-                     <td style={{ padding:'16px', fontWeight: 500 }}>{s.nama} <br/><span style={{fontSize:12, color:'var(--text-muted)'}}>{s.email}</span></td>
-                     <td style={{ padding:'16px' }}><span className="badge" style={{background:'rgba(245,158,11,0.1)',color:'var(--warning)'}}>Supplier Import</span></td>
-                     <td style={{ padding:'16px' }}>{s.negara}</td>
-                     <td style={{ padding:'16px' }}>{s.kontakPIC}</td>
-                     <td style={{ padding:'16px' }}><span className={`badge ${s.status === 'Aktif' ? 'badge-success' : 'badge-draft'}`}>{s.status}</span></td>
-                   </tr>
-                 ))}
-               </>
-            )}
+        <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border)', background: '#fafafa' }}>
+                <th style={{ padding: '14px 16px', width: 40 }}></th>
+                <th style={{ padding: '14px 16px' }}>Kode</th>
+                <th style={{ padding: '14px 16px' }}>Nama Crude</th>
+                <th style={{ padding: '14px 16px' }}>Referensi</th>
+                <th style={{ padding: '14px 16px' }}>Alpha (USD/bbl)</th>
+                <th style={{ padding: '14px 16px' }}>ICP Price (USD/bbl)</th>
+                <th style={{ padding: '14px 16px' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {primaryCrudes.map(c => {
+                const price = getPrimaryPrice(c.alpha, c.refType);
+                return (
+                  <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: selectedId === c.id ? 'rgba(0,82,156,0.04)' : 'transparent' }}>
+                    <td style={{ padding: '14px 16px' }}>
+                      <input type="checkbox" checked={selectedId === c.id} onChange={() => setSelectedId(selectedId === c.id ? null : c.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                    </td>
+                    <td style={{ padding: '14px 16px' }}><span className="badge" style={{ background: 'rgba(0,82,156,0.08)', color: 'var(--accent)', fontWeight: 700, fontSize: '11px', letterSpacing: '0.5px' }}>{c.kode}</span></td>
+                    <td style={{ padding: '14px 16px', fontWeight: 600 }}>{c.namaCrude}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span className="badge" style={{ 
+                        background: c.refType === 'mops' ? 'rgba(245,158,11,0.08)' : 'rgba(0,82,156,0.08)', 
+                        color: c.refType === 'mops' ? 'var(--warning)' : 'var(--accent)', 
+                        fontWeight: 600, fontSize: '11px' 
+                      }}>
+                        {c.refType === 'mops' ? 'MOPS Naphtha' : 'Dated Brent'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{ color: c.alpha >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
+                        {c.alpha >= 0 ? '+' : ''}{c.alpha.toFixed(2)}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--accent)', fontSize: '15px' }}>${price.toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span className={`badge ${c.used ? 'badge-success' : 'badge-draft'}`} style={{ padding: '4px 10px', fontSize: '11px' }}>
+                        {c.used ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-            {activeTab === 'formula' && formulas.map((f, i) => (
-               <tr key={f.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                 <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
-                 <td style={{ padding:'16px', fontWeight: 500 }}>{f.namaFormula}</td>
-                 <td style={{ padding:'16px' }}><span className="badge badge-draft">{f.dasarHarga}</span></td>
-                 <td style={{ padding:'16px' }}>{f.penyesuaian > 0 ? `+ $${f.penyesuaian}` : `- $${Math.abs(f.penyesuaian)}`} / bbl</td>
-                 <td style={{ padding:'16px' }}>100%</td>
-                 <td style={{ padding:'16px' }}>{f.berlakuDari}</td>
-               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="flex justify-between items-center p-4" style={{ borderTop: '1px solid var(--border)', background: '#f9fafb' }}>
-          <span className="text-sm text-muted">Menampilkan data aktif</span>
-          <div className="pagination">
-             <button className="page-btn active">1</button>
-             <button className="page-btn">2</button>
-             <button className="page-btn">3</button>
+      {/* Section 2: Derived Crudes */}
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2"><ArrowUpDown size={18} color="var(--warning)" /> Minyak Mentah Turunan</h2>
+            <p className="text-sm text-muted mt-1">Harga dihitung otomatis dari minyak mentah utama</p>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex items-center gap-2" style={{ background: 'var(--bg-surface)', padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              <Search size={14} color="var(--text-muted)" />
+              <input type="text" placeholder="Cari nama crude..." value={derivedSearch} onChange={e => setDerivedSearch(e.target.value)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px', width: 160 }} />
+              {derivedSearch && <button onClick={() => setDerivedSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}><X size={14} color="var(--text-muted)" /></button>}
+            </div>
+            <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px' }}
+              onClick={() => {
+                setEditSection('addDerived');
+                setEditingItem({ id: '', namaCrude: '', baseRef: primaryCrudes[0]?.kode || 'SLC', alpha: 0, used: true });
+              }}
+            ><Plus size={12} /> Tambah</button>
+            <button 
+              className="btn btn-outline" 
+              style={{ 
+                padding: '6px 14px', fontSize: '13px',
+                opacity: selectedId && selectedId.startsWith('DC') ? 1 : 0.5,
+                borderColor: selectedId && selectedId.startsWith('DC') ? 'var(--accent)' : 'var(--border)',
+                color: selectedId && selectedId.startsWith('DC') ? 'var(--accent)' : 'inherit'
+              }}
+              disabled={!selectedId || !selectedId.startsWith('DC')}
+              onClick={() => {
+                const item = derivedCrudes.find(c => c.id === selectedId);
+                if (item) { setEditSection('derived'); setEditingItem({ ...item }); }
+              }}
+            ><Edit2 size={12} /> Edit</button>
+          </div>
+        </div>
+        <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border)', background: '#fafafa' }}>
+                <th style={{ padding: '14px 16px', width: 40 }}></th>
+                <th style={{ padding: '14px 16px' }}>Nama Crude</th>
+                <th style={{ padding: '14px 16px' }}>Referensi</th>
+                <th style={{ padding: '14px 16px' }}>Formula</th>
+                <th style={{ padding: '14px 16px' }}>Alpha (USD/bbl)</th>
+                <th style={{ padding: '14px 16px' }}>ICP Price (USD/bbl)</th>
+                <th style={{ padding: '14px 16px' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDerived.length === 0 && (
+                <tr><td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  {derivedSearch ? `Tidak ditemukan crude "${derivedSearch}"` : 'Belum ada data'}
+                </td></tr>
+              )}
+              {filteredDerived.map(c => {
+                const price = getDerivedPrice(c.baseRef, c.alpha);
+                const refCrude = primaryCrudes.find(p => p.kode === c.baseRef);
+                const refPrice = refCrude ? getPrimaryPrice(refCrude.alpha, refCrude.refType) : 0;
+                return (
+                  <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: selectedId === c.id ? 'rgba(0,82,156,0.04)' : 'transparent' }}>
+                    <td style={{ padding: '14px 16px' }}>
+                      <input type="checkbox" checked={selectedId === c.id} onChange={() => setSelectedId(selectedId === c.id ? null : c.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                    </td>
+                    <td style={{ padding: '14px 16px', fontWeight: 600 }}>{c.namaCrude}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span className="badge" style={{ background: 'rgba(245,158,11,0.08)', color: 'var(--warning)', fontWeight: 600, fontSize: '11px' }}>{c.baseRef}</span>
+                    </td>
+                    <td style={{ padding: '14px 16px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {c.baseRef} (${refPrice.toFixed(2)}) {c.alpha !== 0 ? (c.alpha > 0 ? `+ ${c.alpha.toFixed(2)}` : `- ${Math.abs(c.alpha).toFixed(2)}`) : '= sama'}
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{ color: c.alpha >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
+                        {c.alpha === 0 ? '0.00' : (c.alpha > 0 ? '+' : '') + c.alpha.toFixed(2)}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--accent)', fontSize: '15px' }}>${price.toFixed(2)}</td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span className={`badge ${c.used ? 'badge-success' : 'badge-draft'}`} style={{ padding: '4px 10px', fontSize: '11px' }}>
+                        {c.used ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="flex justify-between items-center p-4" style={{ borderTop: '1px solid var(--border)', background: '#f9fafb' }}>
+            <span className="text-sm text-muted">{derivedSearch ? `${filteredDerived.length} dari ${derivedCrudes.length}` : `Total ${derivedCrudes.length}`} minyak mentah turunan</span>
           </div>
         </div>
       </div>
     </div>
   );
+
+  return (
+    <div className="animate-fade-in">
+      {/* Toast */}
+      {toast && (<div style={{ position: 'fixed', top: 24, right: 32, zIndex: 1100, padding: '14px 24px', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', background: 'var(--success)', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeIn 0.3s ease-out' }}><CheckCircle size={18} /> {toast}</div>)}
+
+      <div className="tabs-container flex-wrap" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
+        <button className={`tab-btn ${activeTab === 'icp' ? 'active' : ''}`} onClick={() => setActiveTab('icp')}>Indonesian Crude Price</button>
+        <button className={`tab-btn ${activeTab === 'kurs' ? 'active' : ''}`} onClick={() => setActiveTab('kurs')}>Kurs (BI)</button>
+        <button className={`tab-btn ${activeTab === 'k3s' ? 'active' : ''}`} onClick={() => setActiveTab('k3s')}>K3S & Supplier</button>
+      </div>
+
+      {/* ICP Tab */}
+      {activeTab === 'icp' && renderIcpTab()}
+
+      {/* Kurs Tab */}
+      {activeTab === 'kurs' && (
+        <div>
+          <div className="flex-responsive justify-between items-center mb-6">
+            <div className="flex gap-2"><button className="btn btn-primary flex-1" style={{ padding: '8px 16px' }}><Plus size={14} /> Add Data</button></div>
+            <div className="flex-responsive gap-3 w-full-mobile">
+              <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <input type="text" placeholder="Search..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }} />
+                <Search size={16} color="var(--text-muted)" />
+              </div>
+            </div>
+          </div>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
+                  <th style={{ padding: '16px', width: '48px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db', background: '#fff' }}/></th>
+                  <th style={{ padding: '16px' }}>Id</th><th style={{ padding: '16px' }}>Tanggal</th><th style={{ padding: '16px' }}>JISDOR (IDR)</th><th style={{ padding: '16px' }}>Sumber</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}><td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td><td style={{ padding:'16px' }}>KRS-260309</td><td style={{ padding:'16px' }}>09 Mar 2026</td><td style={{ padding:'16px',color:'var(--success)',fontWeight:600 }}>Rp 15,450.00</td><td style={{ padding:'16px' }}>Bank Indonesia</td></tr>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}><td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td><td style={{ padding:'16px' }}>KRS-260308</td><td style={{ padding:'16px' }}>08 Mar 2026</td><td style={{ padding:'16px',color:'var(--success)',fontWeight:600 }}>Rp 15,480.00</td><td style={{ padding:'16px' }}>Bank Indonesia</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* K3S Tab */}
+      {activeTab === 'k3s' && (
+        <div>
+          <div className="flex-responsive justify-between items-center mb-6">
+            <div className="flex gap-2">
+              <button className="btn btn-primary flex-1" style={{ padding: '8px 16px' }}><Plus size={14} /> Add Data</button>
+              <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}><Edit2 size={14} /> Edit</button>
+              <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)', color: 'var(--danger)' }}><Trash2 size={14} /> Delete</button>
+            </div>
+          </div>
+          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
+                  <th style={{ padding: '16px', width: '48px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db', background: '#fff' }}/></th>
+                  <th style={{ padding: '16px' }}>ID Partner</th><th style={{ padding: '16px' }}>Nama Perusahaan</th><th style={{ padding: '16px' }}>Tipe Entitas</th><th style={{ padding: '16px' }}>Negara</th><th style={{ padding: '16px' }}>Kontak PIC</th><th style={{ padding: '16px' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {k3sList.map((k) => (
+                  <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
+                    <td style={{ padding:'16px' }}>{k.id}</td>
+                    <td style={{ padding:'16px', fontWeight: 500 }}>{k.nama} <br/><span style={{fontSize:12, color:'var(--text-muted)'}}>{k.email}</span></td>
+                    <td style={{ padding:'16px' }}><span className="badge" style={{background:'rgba(0,82,156,0.1)',color:'var(--accent)'}}>K3S Domestik</span></td>
+                    <td style={{ padding:'16px' }}>{k.negara}</td>
+                    <td style={{ padding:'16px' }}>{k.kontakPIC}</td>
+                    <td style={{ padding:'16px' }}><span className={`badge ${k.status === 'Aktif' ? 'badge-success' : 'badge-draft'}`}>{k.status}</span></td>
+                  </tr>
+                ))}
+                {supplierList.map((s) => (
+                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
+                    <td style={{ padding:'16px' }}>{s.id}</td>
+                    <td style={{ padding:'16px', fontWeight: 500 }}>{s.nama} <br/><span style={{fontSize:12, color:'var(--text-muted)'}}>{s.email}</span></td>
+                    <td style={{ padding:'16px' }}><span className="badge" style={{background:'rgba(245,158,11,0.1)',color:'var(--warning)'}}>Supplier Import</span></td>
+                    <td style={{ padding:'16px' }}>{s.negara}</td>
+                    <td style={{ padding:'16px' }}>{s.kontakPIC}</td>
+                    <td style={{ padding:'16px' }}><span className={`badge ${s.status === 'Aktif' ? 'badge-success' : 'badge-draft'}`}>{s.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODALS ===== */}
+
+      {/* Modal: Edit Reference Prices (Dated Brent + MOPS Naphtha + Periode) */}
+      {editSection === 'ref' && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '450px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2"><DollarSign size={20} color="var(--accent)" /> Ubah Harga Referensi</h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="input-group">
+                <label className="input-label">Periode ICP</label>
+                <select className="input-control" value={editingItem.periode} onChange={e => setEditingItem({ ...editingItem, periode: e.target.value })}>
+                  {periodeOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Dated Brent (USD/bbl)</label>
+                <input type="number" step="0.01" className="input-control" value={editingItem.datedBrent} onChange={e => setEditingItem({ ...editingItem, datedBrent: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">MOPS Naphtha (USD/MT)</label>
+                <input type="number" step="0.01" className="input-control" value={editingItem.mopsNaphtha} onChange={e => setEditingItem({ ...editingItem, mopsNaphtha: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div className="p-3 rounded-lg" style={{ background: 'rgba(0,82,156,0.04)', border: '1px solid rgba(0,82,156,0.1)', fontSize: 12, color: 'var(--text-muted)' }}>
+                <CheckCircle size={14} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle', color: 'var(--success)' }} />
+                Data akan tersimpan di riwayat harga untuk tracking historis
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveRef}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Modal: Edit / Add Primary Crude */}
+      {(editSection === 'primary' || editSection === 'addPrimary') && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '450px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                {editSection === 'addPrimary' ? <Plus size={20} color="var(--accent)" /> : <Edit2 size={20} color="var(--accent)" />}
+                {editSection === 'addPrimary' ? 'Tambah Minyak Mentah Utama' : 'Edit Minyak Mentah Utama'}
+              </h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="input-group">
+                <label className="input-label">Kode (huruf kapital, unik)</label>
+                <input type="text" className="input-control" placeholder="contoh: MAHAKAM" value={editingItem.kode}
+                  onChange={e => setEditingItem({ ...editingItem, kode: e.target.value.toUpperCase() })}
+                  readOnly={editSection === 'primary'}
+                  style={editSection === 'primary' ? { background: '#f9fafb', cursor: 'not-allowed' } : {}} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Nama Crude</label>
+                <input type="text" className="input-control" placeholder="contoh: Mahakam Block" value={editingItem.namaCrude} onChange={e => setEditingItem({ ...editingItem, namaCrude: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Harga Referensi</label>
+                <select className="input-control" value={editingItem.refType || 'brent'} onChange={e => setEditingItem({ ...editingItem, refType: e.target.value })}>
+                  <option value="brent">Dated Brent — ${datedBrent.toFixed(2)}/bbl</option>
+                  <option value="mops">MOPS Naphtha — ${mopsNaphtha.toFixed(2)}/MT</option>
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Alpha (USD/bbl) — bisa negatif</label>
+                <input type="number" step="0.01" className="input-control" value={editingItem.alpha} onChange={e => setEditingItem({ ...editingItem, alpha: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div className="p-3 rounded-lg" style={{ background: 'rgba(0,82,156,0.04)', border: '1px solid rgba(0,82,156,0.1)' }}>
+                <div className="text-xs text-muted mb-1">Preview ICP Price</div>
+                {(() => {
+                  const basePrice = (editingItem.refType || 'brent') === 'mops' ? mopsNaphtha : datedBrent;
+                  const preview = basePrice + (editingItem.alpha || 0);
+                  const refLabel = (editingItem.refType || 'brent') === 'mops' ? 'MOPS' : 'Brent';
+                  return <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>${preview.toFixed(2)} <span className="text-xs font-normal text-muted">= {refLabel} (${basePrice.toFixed(2)}) {editingItem.alpha >= 0 ? '+' : ''} {(editingItem.alpha || 0).toFixed(2)}</span></div>;
+                })()}
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(0,166,81,0.05)', border: '1px solid rgba(0,166,81,0.1)' }}>
+                <input type="checkbox" id="primary-used" checked={editingItem.used} onChange={e => setEditingItem({ ...editingItem, used: e.target.checked })} style={{ width: 18, height: 18 }} />
+                <label htmlFor="primary-used" className="text-sm font-medium cursor-pointer">Aktif (Used)</label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSavePrimary}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit / Add Derived Crude */}
+      {(editSection === 'derived' || editSection === 'addDerived') && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '480px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                {editSection === 'addDerived' ? <Plus size={20} color="var(--accent)" /> : <Edit2 size={20} color="var(--accent)" />}
+                {editSection === 'addDerived' ? 'Tambah Minyak Mentah Turunan' : 'Edit Minyak Mentah Turunan'}
+              </h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="input-group">
+                <label className="input-label">Id</label>
+                <input type="text" className="input-control" value={editingItem.id || 'Auto-generated'} readOnly style={{ background: '#f9fafb', cursor: 'not-allowed', color: editingItem.id ? 'inherit' : 'var(--text-muted)' }} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Nama Crude</label>
+                <input type="text" className="input-control" value={editingItem.namaCrude} onChange={e => setEditingItem({ ...editingItem, namaCrude: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Referensi Minyak Mentah Utama</label>
+                <select className="input-control" value={editingItem.baseRef} onChange={e => setEditingItem({ ...editingItem, baseRef: e.target.value })}>
+                  {primaryCrudes.map(p => (
+                    <option key={p.kode} value={p.kode}>{p.namaCrude} ({p.kode}) — ${getPrimaryPrice(p.alpha, p.refType).toFixed(2)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Alpha (USD/bbl) — 0 = sama dengan harga referensi</label>
+                <input type="number" step="0.01" className="input-control" value={editingItem.alpha} onChange={e => setEditingItem({ ...editingItem, alpha: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div className="p-3 rounded-lg" style={{ background: 'rgba(0,82,156,0.04)', border: '1px solid rgba(0,82,156,0.1)' }}>
+                <div className="text-xs text-muted mb-1">Preview ICP Price</div>
+                {(() => {
+                  const price = getDerivedPrice(editingItem.baseRef, editingItem.alpha || 0);
+                  const refCrude = primaryCrudes.find(p => p.kode === editingItem.baseRef);
+                  const refPrice = refCrude ? getPrimaryPrice(refCrude.alpha, refCrude.refType) : 0;
+                  return <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>${price.toFixed(2)} <span className="text-xs font-normal text-muted">= {editingItem.baseRef} (${refPrice.toFixed(2)}) {editingItem.alpha >= 0 ? '+' : ''} {(editingItem.alpha || 0).toFixed(2)}</span></div>;
+                })()}
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'rgba(0,166,81,0.05)', border: '1px solid rgba(0,166,81,0.1)' }}>
+                <input type="checkbox" id="derived-used" checked={editingItem.used} onChange={e => setEditingItem({ ...editingItem, used: e.target.checked })} style={{ width: 18, height: 18 }} />
+                <label htmlFor="derived-used" className="text-sm font-medium cursor-pointer">Aktif (Used)</label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveDerived}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-scale-in { animation: scaleIn 0.2s ease-out; }
+      `}</style>
+    </div>
+  );
 };
+
 
 export const ExceptionSignal = () => {
   const [filterLevel, setFilterLevel] = useState('all');
