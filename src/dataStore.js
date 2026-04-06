@@ -252,6 +252,15 @@ const SEED_DATA = {
     { id: 'DBR-260316', tanggal: '2026-03-16', harga: 72.81, perubahan: -1.20, sumber: 'Platts Brent Assessment' },
   ],
 
+  // Kurs BI (JISDOR) daily prices
+  kursBI: [
+    { id: 'KRS-260330', tanggal: '2026-03-30', harga: 15725.00, sumber: 'Bank Indonesia' },
+    { id: 'KRS-260329', tanggal: '2026-03-29', harga: 15710.00, sumber: 'Bank Indonesia' },
+    { id: 'KRS-260328', tanggal: '2026-03-28', harga: 15735.00, sumber: 'Bank Indonesia' },
+    { id: 'KRS-260327', tanggal: '2026-03-27', harga: 15705.00, sumber: 'Bank Indonesia' },
+    { id: 'KRS-260326', tanggal: '2026-03-26', harga: 15690.00, sumber: 'Bank Indonesia' },
+  ],
+
   // Price Formula Crude Domestik
   priceFormulas: [
     { id: 'PF-001', namaFormula: 'Crude Domestik Standard', dasarHarga: 'ICP', penyesuaian: -1.50, satuan: 'USD/bbl', berlakuDari: '2026-01-01', berlakuSampai: '2026-03-31', keterangan: 'Formula standar crude domestik Q1 2026', status: 'Aktif' },
@@ -540,6 +549,61 @@ export const getK3SList = () => {
 export const getSupplierList = () => {
   const data = getData();
   return data.supplierList || SEED_DATA.supplierList;
+};
+
+export const saveK3S = (k3s) => {
+  const data = getData();
+  if (!data.k3sList) data.k3sList = [...SEED_DATA.k3sList];
+  if (k3s.id) {
+    const idx = data.k3sList.findIndex(x => x.id === k3s.id);
+    if (idx !== -1) data.k3sList[idx] = k3s;
+  } else {
+    data.k3sList.unshift({ ...k3s, id: `K3S-${String(data.k3sList.length + 1).padStart(3, '0')}` });
+  }
+  saveData(data);
+};
+
+export const saveSupplier = (sup) => {
+  const data = getData();
+  if (!data.supplierList) data.supplierList = [...SEED_DATA.supplierList];
+  if (sup.id) {
+    const idx = data.supplierList.findIndex(x => x.id === sup.id);
+    if (idx !== -1) data.supplierList[idx] = sup;
+  } else {
+    data.supplierList.unshift({ ...sup, id: `SUP-${String(data.supplierList.length + 1).padStart(3, '0')}` });
+  }
+  saveData(data);
+};
+
+export const deleteK3S = (id) => {
+  const data = getData();
+  data.k3sList = data.k3sList.filter(x => x.id !== id);
+  saveData(data);
+};
+
+export const deleteSupplier = (id) => {
+  const data = getData();
+  data.supplierList = data.supplierList.filter(x => x.id !== id);
+  saveData(data);
+};
+
+// ─── KURS BI ──────────────────────────────────────────────
+
+export const getKursBIList = () => {
+  const data = getData();
+  return data.kursBI || SEED_DATA.kursBI;
+};
+
+export const saveKursBI = (entry) => {
+  const data = getData();
+  if (!data.kursBI) data.kursBI = [...SEED_DATA.kursBI];
+  if (entry.id) {
+    const idx = data.kursBI.findIndex(x => x.id === entry.id);
+    if (idx !== -1) data.kursBI[idx] = entry;
+  } else {
+    data.kursBI.unshift({ ...entry, id: `KRS-${Date.now()}` });
+  }
+  saveData(data);
 };
 
 // ─── DATED BRENT ──────────────────────────────────────────

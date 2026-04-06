@@ -9,6 +9,7 @@ import {
   getIcpPeriode, saveIcpPeriode, getDatedBrentRef, saveDatedBrentRef,
   getMopsNaphthaRef, saveMopsNaphthaRef, saveRefPrices, getPriceHistory,
   getPrimaryCrudes, savePrimaryCrude, getDerivedCrudes, saveDerivedCrude, getPrimaryCrudePrice,
+  getKursBIList, saveKursBI, saveK3S, saveSupplier, deleteK3S, deleteSupplier,
   JENIS_MM_OPTIONS, 
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, 
   PEMBELIAN_OPTIONS, generateAndAssignInvoiceId 
@@ -84,7 +85,6 @@ export const Dashboard = () => {
           <p className="text-muted mt-2">Gambaran umum penyelesaian transaksi Feedstock & KKKS</p>
         </div>
         <div className="flex gap-4 w-full-mobile">
-          <button className="btn btn-outline w-full-mobile"><Calendar size={16} /> Filter Periode</button>
           <button className="btn btn-primary w-full-mobile"><Activity size={16} /> Unduh Ringkasan</button>
         </div>
       </div>
@@ -1034,12 +1034,22 @@ export const MasterDataPage = () => {
   const [showHistory, setShowHistory] = useState(false);
 
   // Other tabs state
-  const k3sList = getK3SList();
-  const supplierList = getSupplierList();
+  const [kursBIList, setKursBIList] = useState([]);
+  const [kursSearch, setKursSearch] = useState('');
+  const [k3sList, setK3sList] = useState([]);
+  const [supplierList, setSupplierList] = useState([]);
+  const [k3sSearch, setK3sSearch] = useState('');
 
   useEffect(() => {
     refreshIcpData();
+    refreshOtherData();
   }, []);
+
+  const refreshOtherData = () => {
+    setKursBIList(getKursBIList());
+    setK3sList(getK3SList());
+    setSupplierList(getSupplierList());
+  };
 
   const refreshIcpData = () => {
     setDatedBrent(getDatedBrentRef());
@@ -1094,6 +1104,22 @@ export const MasterDataPage = () => {
     setEditingItem(null);
     setSelectedId(null);
     showToast('Minyak Mentah Turunan berhasil disimpan');
+  };
+
+  const handleSaveOther = () => {
+    if (editSection === 'kurs') {
+      saveKursBI(editingItem);
+      showToast('Kurs BI berhasil diperbarui');
+    } else if (editSection === 'k3s') {
+      saveK3S(editingItem);
+      showToast('Partner K3S berhasil diperbarui');
+    } else if (editSection === 'supplier') {
+      saveSupplier(editingItem);
+      showToast('Supplier berhasil diperbarui');
+    }
+    refreshOtherData();
+    setEditSection(null);
+    setEditingItem(null);
   };
 
   // Chart data
@@ -1397,10 +1423,23 @@ export const MasterDataPage = () => {
       {activeTab === 'kurs' && (
         <div>
           <div className="flex-responsive justify-between items-center mb-6">
-            <div className="flex gap-2"><button className="btn btn-primary flex-1" style={{ padding: '8px 16px' }}><Plus size={14} /> Add Data</button></div>
+            <div className="flex gap-2">
+              <button className="btn btn-primary flex-1" style={{ padding: '8px 16px' }}
+                onClick={() => {
+                  setEditSection('kurs');
+                  setEditingItem({ tanggal: new Date().toISOString().split('T')[0], harga: 0, sumber: 'Bank Indonesia' });
+                }}
+              ><Plus size={14} /> Add Data</button>
+            </div>
             <div className="flex-responsive gap-3 w-full-mobile">
               <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                <input type="text" placeholder="Search..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }} />
+                <input 
+                  type="text" 
+                  placeholder="Cari tanggal (YYYY-MM-DD)..." 
+                  value={kursSearch}
+                  onChange={(e) => setKursSearch(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }} 
+                />
                 <Search size={16} color="var(--text-muted)" />
               </div>
             </div>
@@ -1410,12 +1449,22 @@ export const MasterDataPage = () => {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
                   <th style={{ padding: '16px', width: '48px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db', background: '#fff' }}/></th>
-                  <th style={{ padding: '16px' }}>Id</th><th style={{ padding: '16px' }}>Tanggal</th><th style={{ padding: '16px' }}>JISDOR (IDR)</th><th style={{ padding: '16px' }}>Sumber</th>
+                  <th style={{ padding: '16px' }}>Id</th>
+                  <th style={{ padding: '16px' }}>Tanggal</th>
+                  <th style={{ padding: '16px' }}>JISDOR (IDR)</th>
+                  <th style={{ padding: '16px' }}>Sumber</th>
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}><td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td><td style={{ padding:'16px' }}>KRS-260309</td><td style={{ padding:'16px' }}>09 Mar 2026</td><td style={{ padding:'16px',color:'var(--success)',fontWeight:600 }}>Rp 15,450.00</td><td style={{ padding:'16px' }}>Bank Indonesia</td></tr>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}><td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td><td style={{ padding:'16px' }}>KRS-260308</td><td style={{ padding:'16px' }}>08 Mar 2026</td><td style={{ padding:'16px',color:'var(--success)',fontWeight:600 }}>Rp 15,480.00</td><td style={{ padding:'16px' }}>Bank Indonesia</td></tr>
+                {kursBIList.filter(k => k.tanggal.includes(kursSearch)).map(k => (
+                  <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
+                    <td style={{ padding:'16px' }}>{k.id}</td>
+                    <td style={{ padding:'16px' }}>{k.tanggal}</td>
+                    <td style={{ padding:'16px',color:'var(--success)',fontWeight:600 }}>Rp {k.harga.toLocaleString('id-ID', { minimumFractionDigits: 2 })}</td>
+                    <td style={{ padding:'16px' }}>{k.sumber}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -1427,9 +1476,30 @@ export const MasterDataPage = () => {
         <div>
           <div className="flex-responsive justify-between items-center mb-6">
             <div className="flex gap-2">
-              <button className="btn btn-primary flex-1" style={{ padding: '8px 16px' }}><Plus size={14} /> Add Data</button>
-              <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)' }}><Edit2 size={14} /> Edit</button>
-              <button className="btn btn-outline flex-1" style={{ padding: '8px 16px', background: 'var(--bg-surface)', color: 'var(--danger)' }}><Trash2 size={14} /> Delete</button>
+              <button className="btn btn-primary" style={{ padding: '8px 16px' }}
+                onClick={() => {
+                  setEditSection('k3s');
+                  setEditingItem({ nama: '', wilayahKerja: '', negara: 'Indonesia', kontakPIC: '', email: '', status: 'Aktif' });
+                }}
+              ><Plus size={14} /> Add Partner (K3S)</button>
+              <button className="btn btn-outline" style={{ padding: '8px 16px', border: '1px solid var(--warning)', color: 'var(--warning)' }}
+                onClick={() => {
+                  setEditSection('supplier');
+                  setEditingItem({ nama: '', negara: '', komoditas: '', kontakPIC: '', email: '', status: 'Aktif' });
+                }}
+              ><Plus size={14} /> Add Supplier (Import)</button>
+            </div>
+            <div className="flex-responsive gap-3 w-full-mobile">
+              <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <input 
+                  type="text" 
+                  placeholder="Cari partner..." 
+                  value={k3sSearch}
+                  onChange={(e) => setK3sSearch(e.target.value)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }} 
+                />
+                <Search size={16} color="var(--text-muted)" />
+              </div>
             </div>
           </div>
           <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -1437,30 +1507,43 @@ export const MasterDataPage = () => {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
                   <th style={{ padding: '16px', width: '48px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db', background: '#fff' }}/></th>
-                  <th style={{ padding: '16px' }}>ID Partner</th><th style={{ padding: '16px' }}>Nama Perusahaan</th><th style={{ padding: '16px' }}>Tipe Entitas</th><th style={{ padding: '16px' }}>Negara</th><th style={{ padding: '16px' }}>Kontak PIC</th><th style={{ padding: '16px' }}>Status</th>
+                  <th style={{ padding: '16px' }}>ID Partner</th>
+                  <th style={{ padding: '16px' }}>Nama Perusahaan</th>
+                  <th style={{ padding: '16px' }}>Tipe Entitas</th>
+                  <th style={{ padding: '16px' }}>Kontak PIC</th>
+                  <th style={{ padding: '16px' }}>Status</th>
+                  <th style={{ padding: '16px' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {k3sList.map((k) => (
+                {k3sList.filter(k => k.nama.toLowerCase().includes(k3sSearch.toLowerCase())).map((k) => (
                   <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
                     <td style={{ padding:'16px' }}>{k.id}</td>
                     <td style={{ padding:'16px', fontWeight: 500 }}>{k.nama} <br/><span style={{fontSize:12, color:'var(--text-muted)'}}>{k.email}</span></td>
                     <td style={{ padding:'16px' }}><span className="badge" style={{background:'rgba(0,82,156,0.1)',color:'var(--accent)'}}>K3S Domestik</span></td>
-                    <td style={{ padding:'16px' }}>{k.negara}</td>
                     <td style={{ padding:'16px' }}>{k.kontakPIC}</td>
                     <td style={{ padding:'16px' }}><span className={`badge ${k.status === 'Aktif' ? 'badge-success' : 'badge-draft'}`}>{k.status}</span></td>
+                    <td style={{ padding:'16px' }}>
+                      <button className="btn btn-sm btn-outline" style={{ padding: '4px' }} onClick={() => { setEditSection('k3s'); setEditingItem(k); }}>
+                        <Edit2 size={12} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
-                {supplierList.map((s) => (
+                {supplierList.filter(s => s.nama.toLowerCase().includes(k3sSearch.toLowerCase())).map((s) => (
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding:'16px' }}><div style={{ width:16,height:16,borderRadius:4,border:'1px solid #d1d5db' }}/></td>
                     <td style={{ padding:'16px' }}>{s.id}</td>
                     <td style={{ padding:'16px', fontWeight: 500 }}>{s.nama} <br/><span style={{fontSize:12, color:'var(--text-muted)'}}>{s.email}</span></td>
                     <td style={{ padding:'16px' }}><span className="badge" style={{background:'rgba(245,158,11,0.1)',color:'var(--warning)'}}>Supplier Import</span></td>
-                    <td style={{ padding:'16px' }}>{s.negara}</td>
                     <td style={{ padding:'16px' }}>{s.kontakPIC}</td>
                     <td style={{ padding:'16px' }}><span className={`badge ${s.status === 'Aktif' ? 'badge-success' : 'badge-draft'}`}>{s.status}</span></td>
+                    <td style={{ padding:'16px' }}>
+                      <button className="btn btn-sm btn-outline" style={{ padding: '4px' }} onClick={() => { setEditSection('supplier'); setEditingItem(s); }}>
+                        <Edit2 size={12} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1614,6 +1697,122 @@ export const MasterDataPage = () => {
             <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
               <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
               <button className="btn btn-primary" onClick={handleSaveDerived}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add/Edit Kurs BI */}
+      {editSection === 'kurs' && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '400px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2"><DollarSign size={20} color="var(--accent)" /> {editingItem.id ? 'Edit Kurs BI' : 'Tambah Kurs BI'}</h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="input-group">
+                <label className="input-label">Tanggal</label>
+                <input type="date" className="input-control" value={editingItem.tanggal} onChange={e => setEditingItem({ ...editingItem, tanggal: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Nilai Kurs JISDOR (IDR)</label>
+                <input type="number" step="0.01" className="input-control" value={editingItem.harga} onChange={e => setEditingItem({ ...editingItem, harga: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Sumber Data</label>
+                <input type="text" className="input-control" value={editingItem.sumber} onChange={e => setEditingItem({ ...editingItem, sumber: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveOther}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add/Edit K3S */}
+      {editSection === 'k3s' && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '450px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2"><MapPin size={20} color="var(--accent)" /> {editingItem.id ? 'Edit Partner K3S' : 'Tambah Partner K3S'}</h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="input-group">
+                <label className="input-label">Nama Perusahaan</label>
+                <input type="text" className="input-control" placeholder="PT KKKS..." value={editingItem.nama} onChange={e => setEditingItem({ ...editingItem, nama: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Wilayah Kerja / Blok</label>
+                <input type="text" className="input-control" placeholder="Blok..." value={editingItem.wilayahKerja} onChange={e => setEditingItem({ ...editingItem, wilayahKerja: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="input-group">
+                  <label className="input-label">Kontak PIC</label>
+                  <input type="text" className="input-control" value={editingItem.kontakPIC} onChange={e => setEditingItem({ ...editingItem, kontakPIC: e.target.value })} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Status</label>
+                  <select className="input-control" value={editingItem.status} onChange={e => setEditingItem({ ...editingItem, status: e.target.value })}>
+                    <option value="Aktif">Aktif</option>
+                    <option value="Tidak Aktif">Tidak Aktif</option>
+                  </select>
+                </div>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Email Operasional</label>
+                <input type="email" className="input-control" placeholder="email@company.com" value={editingItem.email} onChange={e => setEditingItem({ ...editingItem, email: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveOther}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add/Edit Supplier */}
+      {editSection === 'supplier' && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '450px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2"><DollarSign size={20} color="var(--warning)" /> {editingItem.id ? 'Edit Supplier Import' : 'Tambah Supplier Import'}</h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="input-group">
+                <label className="input-label">Nama Supplier</label>
+                <input type="text" className="input-control" placeholder="Company Ltd..." value={editingItem.nama} onChange={e => setEditingItem({ ...editingItem, nama: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="input-group">
+                  <label className="input-label">Negara</label>
+                  <input type="text" className="input-control" value={editingItem.negara} onChange={e => setEditingItem({ ...editingItem, negara: e.target.value })} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Status</label>
+                  <select className="input-control" value={editingItem.status} onChange={e => setEditingItem({ ...editingItem, status: e.target.value })}>
+                    <option value="Aktif">Aktif</option>
+                    <option value="Tidak Aktif">Tidak Aktif</option>
+                  </select>
+                </div>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Kontak PIC / Dept</label>
+                <input type="text" className="input-control" value={editingItem.kontakPIC} onChange={e => setEditingItem({ ...editingItem, kontakPIC: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Email Komersial</label>
+                <input type="email" className="input-control" placeholder="trading@supplier.com" value={editingItem.email} onChange={e => setEditingItem({ ...editingItem, email: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveOther}><Save size={16} /> Simpan</button>
             </div>
           </div>
         </div>

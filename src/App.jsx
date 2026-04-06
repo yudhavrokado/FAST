@@ -63,6 +63,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         </nav>
 
         <div className="sidebar-footer">
+
           <div className="sidebar-footer-icon"><Wifi size={14} /></div>
           <div className="sidebar-footer-text">
             <div className="sidebar-footer-label">Last Updated</div>
@@ -107,18 +108,7 @@ const TopNav = ({ onMenuClick }) => {
       </div>
 
       <div className="top-nav-right">
-        <div className="date-selectors">
-          <div className="date-chip">
-            <span className="date-chip-label">Start Date</span>
-            <span className="date-chip-val">Dec 2025</span>
-            <ChevronDown size={12} />
-          </div>
-          <div className="date-chip">
-            <span className="date-chip-label">End Date</span>
-            <span className="date-chip-val">Feb 2026</span>
-            <ChevronDown size={12} />
-          </div>
-        </div>
+
 
         <div className="user-profile">
           <div className="user-avatar"><User size={16} /></div>
