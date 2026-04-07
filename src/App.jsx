@@ -42,11 +42,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           </NavLink>
           <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/submission" onClick={onClose}>
             <FileUp size={16} />
-            <span>Invoice Submission</span>
+            <span>Data Submission</span>
           </NavLink>
           <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/verifikasi" onClick={onClose}>
             <CheckSquare size={16} />
-            <span>Invoice Verification</span>
+            <span>Data Verification</span>
           </NavLink>
           <NavLink className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} to="/operasional/master-data" onClick={onClose}>
             <Database size={16} />
@@ -82,9 +82,9 @@ const TopNav = ({ onMenuClick }) => {
   const getBreadcrumb = () => {
     const p = location.pathname;
     if (p.includes('dashboard')) return { parent: 'Dashboard', current: 'Executive Summary' };
-    if (p.includes('operasional/submission/edit')) return { parent: 'Invoice Submission', current: 'Edit Data' };
-    if (p.includes('operasional/submission')) return { parent: 'FAST – System Settlement', current: 'Invoice Submission' };
-    if (p.includes('operasional/verifikasi')) return { parent: 'FAST – System Settlement', current: 'Invoice Verification' };
+    if (p.includes('operasional/submission/edit')) return { parent: 'Data Submission', current: 'Edit Data' };
+    if (p.includes('operasional/submission')) return { parent: 'FAST – System Settlement', current: 'Data Submission' };
+    if (p.includes('operasional/verifikasi')) return { parent: 'FAST – System Settlement', current: 'Data Verification' };
     if (p.includes('operasional/master-data')) return { parent: 'FAST – System Settlement', current: 'Master Data' };
     if (p.includes('settlement/arsip')) return { parent: 'FAST – System Settlement', current: 'Arsip Invoice & Settlement' };
     if (p.includes('settlement')) return { parent: 'FAST – System Settlement', current: 'Exception Signal' };

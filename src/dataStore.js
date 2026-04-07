@@ -154,19 +154,25 @@ const SEED_DATA = {
       invoiceId: null,
       blNumber: 'CT-2026/03-1122',
       blDate: '2026-03-09',
-      vesselName: '',
-      loadPort: '',
-      dischargePort: '',
+      vesselName: 'MT Pertamina Prime',
+      loadPort: 'Dumai',
+      dischargePort: 'Plaju',
       liftingDate: '2026-03-09',
+      periodeLiftingBulan: '03',
+      periodeLiftingTahun: '2026',
+      seller: 'PT KKKS Alpha Energi',
       kkks: 'PT KKKS Alpha Energi',
-      jenisMm: '',
+      jenisMm: 'SLC (Sumatera Light Crude)',
+      tipeLifting: 'vessel',
       pembelian: 'Import',
-      bagianPembelian: '',
-      kategoriInvoice: '',
-      volumeGross: null,
-      volumeNet: null,
-      waterContent: null,
-      apiGravity: null,
+      bagianPembelian: '85% Indonesia',
+      kategoriInvoice: 'Provisional Invoice',
+      totalVolume: 250000,
+      volumeNominasi: 248000,
+      volumeGross: 252000,
+      volumeNet: 250000,
+      waterContent: 0.05,
+      apiGravity: 32.5,
       status: 'draft',
       statusText: 'Draft Tersimpan',
       createdAt: '09 Mar 2026, 10:00',
@@ -372,14 +378,19 @@ export const createDraft = (formData) => {
     loadPort: formData.loadPort || '',
     dischargePort: formData.dischargePort || '',
     liftingDate: formData.liftingDate || '',
-    kkks: formData.kkks || '',
+    periodeLiftingBulan: formData.periodeLiftingBulan || '',
+    periodeLiftingTahun: formData.periodeLiftingTahun || '',
+    seller: formData.seller || '',
+    kkks: formData.seller || formData.kkks || '',
+    tipeLifting: formData.tipeLifting || '',
     kindOfTransaction: formData.kindOfTransaction || '',
     jenisMm: formData.jenisMm || '',
     pembelian: formData.pembelian || '',
     bagianPembelian: formData.bagianPembelian || '',
     kategoriInvoice: formData.kategoriInvoice || '',
     totalVolume: formData.totalVolume ? Number(formData.totalVolume) : null,
-    volumeK3s: formData.volumeK3s ? Number(formData.volumeK3s) : null,
+    volumeNominasi: formData.volumeNominasi ? Number(formData.volumeNominasi) : null,
+    volumeK3s: formData.volumeNominasi ? Number(formData.volumeNominasi) : (formData.volumeK3s ? Number(formData.volumeK3s) : null),
     volumeGoi: formData.volumeGoi ? Number(formData.volumeGoi) : null,
     priceUsdBbl: formData.priceUsdBbl ? Number(formData.priceUsdBbl) : null,
     volumeGross: formData.volumeGross ? Number(formData.volumeGross) : null,
@@ -422,14 +433,19 @@ export const updateLifting = (id, formData) => {
     loadPort: formData.loadPort ?? existing.loadPort,
     dischargePort: formData.dischargePort ?? existing.dischargePort,
     liftingDate: formData.liftingDate ?? existing.liftingDate,
-    kkks: formData.kkks ?? existing.kkks,
+    periodeLiftingBulan: formData.periodeLiftingBulan ?? existing.periodeLiftingBulan,
+    periodeLiftingTahun: formData.periodeLiftingTahun ?? existing.periodeLiftingTahun,
+    seller: formData.seller ?? existing.seller,
+    kkks: formData.seller ?? (formData.kkks ?? existing.kkks),
+    tipeLifting: formData.tipeLifting ?? existing.tipeLifting,
     kindOfTransaction: formData.kindOfTransaction ?? existing.kindOfTransaction,
     jenisMm: formData.jenisMm ?? existing.jenisMm,
     pembelian: formData.pembelian ?? existing.pembelian,
     bagianPembelian: formData.bagianPembelian ?? existing.bagianPembelian,
     kategoriInvoice: formData.kategoriInvoice ?? existing.kategoriInvoice,
     totalVolume: formData.totalVolume !== undefined ? (formData.totalVolume ? Number(formData.totalVolume) : null) : existing.totalVolume,
-    volumeK3s: formData.volumeK3s !== undefined ? (formData.volumeK3s ? Number(formData.volumeK3s) : null) : existing.volumeK3s,
+    volumeNominasi: formData.volumeNominasi !== undefined ? (formData.volumeNominasi ? Number(formData.volumeNominasi) : null) : existing.volumeNominasi,
+    volumeK3s: formData.volumeNominasi !== undefined ? (formData.volumeNominasi ? Number(formData.volumeNominasi) : null) : (formData.volumeK3s !== undefined ? (formData.volumeK3s ? Number(formData.volumeK3s) : null) : existing.volumeK3s),
     volumeGoi: formData.volumeGoi !== undefined ? (formData.volumeGoi ? Number(formData.volumeGoi) : null) : existing.volumeGoi,
     priceUsdBbl: formData.priceUsdBbl !== undefined ? (formData.priceUsdBbl ? Number(formData.priceUsdBbl) : null) : existing.priceUsdBbl,
     volumeGross: formData.volumeGross !== undefined ? (formData.volumeGross ? Number(formData.volumeGross) : null) : existing.volumeGross,
@@ -437,6 +453,11 @@ export const updateLifting = (id, formData) => {
     waterContent: formData.waterContent !== undefined ? (formData.waterContent ? Number(formData.waterContent) : null) : existing.waterContent,
     apiGravity: formData.apiGravity !== undefined ? (formData.apiGravity ? Number(formData.apiGravity) : null) : existing.apiGravity,
     catatan: formData.catatan ?? existing.catatan,
+    poMySap: formData.poMySap ?? existing.poMySap,
+    totalAmount: formData.totalAmount ?? existing.totalAmount,
+    provEntilement: formData.provEntilement ?? existing.provEntilement,
+    statusSp3: formData.statusSp3 ?? existing.statusSp3,
+    nomorSp3: formData.nomorSp3 ?? existing.nomorSp3,
     updatedAt: getTimestamp(),
     files: {
       invoice: formData.fileInvoice ?? existing.files?.invoice,
@@ -604,6 +625,14 @@ export const saveKursBI = (entry) => {
     data.kursBI.unshift({ ...entry, id: `KRS-${Date.now()}` });
   }
   saveData(data);
+};
+
+export const getLatestKursBI = () => {
+  const list = getKursBIList();
+  if (list && list.length > 0) {
+    return list[0]; // Assumes first is the latest by date (unshift used)
+  }
+  return null;
 };
 
 // ─── DATED BRENT ──────────────────────────────────────────
@@ -794,19 +823,26 @@ export const DISCHARGE_PORT_OPTIONS = [
 ];
 
 export const KIND_OF_TRANSACTION_OPTIONS = [
+  'Provisional',
+  'Final',
+  'Adjustment',
   'Adjusment SP3 Kurang Bayar',
   'Adjusment SP3 Lebih Bayar',
   'Adjusment SP3 PPL Kurang Bayar',
   'Adjusment SP3 PPL Lebih Bayar',
-  'Final',
   'PPL Provisional',
   'PPL Realisasi',
   'PPL Realisasi (Provisional)',
-  'Provisional',
   'SP3 PPL',
   'SP3 Reguler (Final)',
   'SP3 Reguler (Nett Off)',
   'SP3 Reguler (Prov)',
+];
+
+export const STATUS_SP3_OPTIONS = [
+  'Create SP3',
+  'Done',
+  'Wait Invoice'
 ];
 
 export const PEMBELIAN_OPTIONS = [
