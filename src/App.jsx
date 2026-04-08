@@ -132,7 +132,7 @@ export default function App() {
         <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="main-content">
           <TopNav onMenuClick={() => setSidebarOpen(true)} />
-          <div className="page-container">
+          <div className="page-container" style={{ width: '100%', maxWidth: 'none' }}>
             <Routes>
               <Route path="/" element={<Navigate to="/operasional/submission" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />

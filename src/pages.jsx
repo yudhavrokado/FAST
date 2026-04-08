@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare, X, Eye, Bell, MapPin } from 'lucide-react';
+import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare, X, Eye, Bell, MapPin, Zap, Info } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import {
   getAllLiftings, getLiftingById, createDraft, updateLifting, submitLifting, createAndSubmit,
@@ -2229,11 +2229,29 @@ export const ExceptionSignal = () => {
 
 export const SettlementArchive = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [liftings, setLiftings] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    // Only show approved liftings in Archive
+    setLiftings(getAllLiftings().filter(l => l.status === 'approved' || l.status === 'selesai' || l.status === 'Selesai'));
+  }, []);
+
+  const filteredData = liftings.filter(item => {
+    return (item.invoiceId || item.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+           (item.kkks || '').toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
   if (selectedInvoice) {
     return <SettlementSheet invoice={selectedInvoice} onBack={() => setSelectedInvoice(null)} />;
   }
+
+  const formatVol = (v) => Number(v || 0).toLocaleString();
+  const formatIdr = (v) => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
+  const formatUsd = (v) => '$' + Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in" style={{ width: 'calc(100% + 48px)', maxWidth: 'none', margin: '-20px -24px', padding: '24px' }}>
       <div className="flex-responsive justify-between items-center mb-8">
         <div>
           <h1>Arsip Output Settlement</h1>
@@ -2242,7 +2260,13 @@ export const SettlementArchive = () => {
         <div className="flex w-full-mobile">
           <div className="search-bar flex items-center gap-2 w-full-mobile" style={{ background: 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
             <Search size={16} color="var(--text-muted)" />
-            <input type="text" placeholder="Temukan Invoice..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }} />
+            <input 
+              type="text" 
+              placeholder="Temukan Invoice atau KKKS..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }} 
+            />
           </div>
         </div>
       </div>
@@ -2253,24 +2277,44 @@ export const SettlementArchive = () => {
               <th>Nomor Tagihan (ID Invoice)</th>
               <th>Entitas Tertaut</th>
               <th>Tanggal Settlement</th>
-              <th>Volume Akhir (BBL)</th>
-              <th>Nominal Setelmen Akhir (IDR)</th>
+              <th>Volume Realisasi (BBL)</th>
+              <th>Nominal Settlement Akhir (USD)</th>
+              <th>Nominal Settlement Akhir (IDR)</th>
               <th>Detail Dokumen</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="font-medium" style={{ color: 'var(--accent-light)' }}>INV/26/BL-8812</td>
-              <td>PT KKKS Alpha Energi</td><td>09 Mar 2026</td><td>250,000</td>
-              <td className="font-medium" style={{ color: 'var(--success)' }}>Rp 318,463,125,000</td>
-              <td><button onClick={() => setSelectedInvoice({ id: 'INV/26/BL-8812', bl: 'BL-2026-8812', kkks: 'PT KKKS Alpha Energi', volume: 250000, rp: '318,463,125,000', usd: '20,612,500.00' })} className="btn btn-sm btn-primary" style={{ padding: '6px 12px' }}>Buka Kalkulasi PDF</button></td>
-            </tr>
-            <tr>
-              <td className="font-medium" style={{ color: 'var(--accent-light)' }}>INV/26/BL-8813</td>
-              <td>PT KKKS Bravo Petroleum</td><td>08 Mar 2026</td><td>125,500</td>
-              <td className="font-medium" style={{ color: 'var(--success)' }}>Rp 159,864,832,100</td>
-              <td><button onClick={() => setSelectedInvoice({ id: 'INV/26/BL-8813', bl: 'BL-2026-8813', kkks: 'PT KKKS Bravo Petroleum', volume: 125500, rp: '159,864,832,100', usd: '10,347,238.12' })} className="btn btn-sm btn-primary" style={{ padding: '6px 12px' }}>Buka Kalkulasi PDF</button></td>
-            </tr>
+            {filteredData.map((row) => {
+              const totalUsd = (parseFloat(row.kkksVolume || 0) * parseFloat(row.kkksPrice || 0)) + (parseFloat(row.skkVolume || 0) * parseFloat(row.skkPrice || 0));
+              const totalIdr = totalUsd * (parseFloat(row.kursBeliBi || 15450));
+              
+              return (
+                <tr key={row.id}>
+                  <td className="font-medium" style={{ color: 'var(--accent-light)' }}>{row.invoiceId || row.id}</td>
+                  <td>{row.kkks}</td>
+                  <td>{row.submittedAt ? row.submittedAt.split(',')[0] : 'N/A'}</td>
+                  <td>{formatVol(row.totalVolume)}</td>
+                  <td className="font-medium" style={{ color: 'var(--accent)' }}>{formatUsd(totalUsd)}</td>
+                  <td className="font-medium" style={{ color: 'var(--success)' }}>{formatIdr(totalIdr)}</td>
+                  <td>
+                    <button 
+                      onClick={() => setSelectedInvoice(row)} 
+                      className="btn btn-sm btn-primary" 
+                      style={{ padding: '6px 12px' }}
+                    >
+                      Buka Kalkulasi PDF
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {filteredData.length === 0 && (
+              <tr>
+                <td colSpan="7" className="text-center py-12 text-muted">
+                  Tidak ada data settlement yang ditemukan.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -2280,99 +2324,205 @@ export const SettlementArchive = () => {
 
 
 export const SettlementSheet = ({ invoice, onBack }) => {
+  const [poMySap, setPoMySap] = useState(invoice.poMySap || '');
+  const [poHardcopy, setPoHardcopy] = useState(invoice.poHardcopy || '');
+
+  const formatVol = (v) => Number(v || 0).toLocaleString();
+  const formatCur = (v) => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatIdr = (v) => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
+
+  const kkksPrice = parseFloat(invoice.kkksPrice || 0);
+  const skkPrice = parseFloat(invoice.skkPrice || 0);
+  const totalQuantity = parseFloat(invoice.totalVolume || 0);
+  const kkksQuantity = parseFloat(invoice.kkksVolume || 0);
+  const skkQuantity = parseFloat(invoice.skkVolume || 0);
+  
+  const kkksAmountUsd = (kkksQuantity * kkksPrice);
+  const skkAmountUsd = (skkQuantity * skkPrice);
+  const subTotalUsd = kkksAmountUsd + skkAmountUsd;
+  const vatAmountUsd = subTotalUsd * 0.11; // VAT 11%
+  const totalUsdWithVat = subTotalUsd + vatAmountUsd;
+  
+  const kurs = parseFloat(invoice.kursBeliBi || 15450);
+  const alpha = 2.50; // Mock Alpha if not found, usually Price - ICP
+  
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in" style={{ width: 'calc(100% + 48px)', maxWidth: 'none', margin: '-20px -24px', padding: '24px' }}>
       <div className="flex justify-between items-center mb-6">
         <button onClick={onBack} className="btn btn-outline" style={{ border: 'none', padding: 0 }}><ChevronLeft size={20} /> Kembali ke Daftar Arsip</button>
-        <button className="btn btn-primary"><Download size={16} /> Unduh Format Cetak (PDF)</button>
+        <div className="flex gap-3">
+          <button className="btn btn-outline" onClick={() => alert('Data PO Tersimpan (Simulasi)')}><Save size={16} /> Simpan Data PO</button>
+          <button className="btn btn-primary"><Download size={16} /> Unduh Format Cetak (PDF)</button>
+        </div>
       </div>
 
-      <div className="card mx-auto calculation-sheet-card" style={{ background: 'white', color: '#111827', maxWidth: '800px', padding: '48px' }}>
-        <div className="flex justify-between items-start mb-8 pb-8 calculation-sheet-header" style={{ borderBottom: '2px solid #e5e7eb' }}>
+      <div className="card calculation-sheet-card" style={{ background: 'white', color: '#111827', width: '100%', maxWidth: 'none', padding: '64px', boxShadow: 'none', border: 'none', borderRadius: 0 }}>
+        {/* PO Inputs - Floating inputs for metadata */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '48px', padding: '24px', background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
           <div>
-            <h2 style={{ color: '#1e3a8a', fontWeight: 'bold', fontSize: '24px', letterSpacing: '-1px' }}>PERTAMINA FAST</h2>
-            <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Feedstock Automation Settlement Tracking</div>
+            <label style={{ fontSize: '10px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>No. PO MySAP</label>
+            <input 
+              value={poMySap} 
+              onChange={e => setPoMySap(e.target.value)} 
+              placeholder="Masukkan No. PO MySAP..."
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700 }}
+            />
           </div>
-          <div className="text-right">
-            <h3 style={{ fontSize: '20px', fontWeight: 'bold' }}>CALCULATION SHEET (INVOICE)</h3>
-            <div style={{ fontSize: '15px', color: '#374151', marginTop: '4px', fontWeight: 600 }}>NO: {invoice.id}</div>
-            <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Diterbitkan secara elektronik pada: 09 Mar 2026</div>
+          <div>
+            <label style={{ fontSize: '10px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>No. PO Hardcopy</label>
+            <input 
+              value={poHardcopy} 
+              onChange={e => setPoHardcopy(e.target.value)} 
+              placeholder="Masukkan No. PO Hardcopy..."
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700 }}
+            />
           </div>
         </div>
 
-        <div className="grid-cols-2 mb-8" style={{ fontSize: '14px', gap: '40px' }}>
-          <div>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', color: '#374151' }}>PIHAK PENYERAH (KKKS)</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: '#6b7280' }}>Nama Institusi:</span> <strong>{invoice.kkks}</strong></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: '#6b7280' }}>Kode Referensi Lifting:</span> <strong>{invoice.bl}</strong></div>
+        {/* Centered Main Header */}
+        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+          <h1 style={{ fontSize: '26px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Perhitungan Nilai Pembayaran</h1>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: '#334155' }}>Nomor Invoice: {invoice.id || invoice.invoiceId}</div>
+          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>Diterbitkan pada: {invoice.submittedAt || getTimestamp()}</div>
+        </div>
+
+        {/* Logistics & Reference Info */}
+        <div className="grid grid-cols-2 mb-12" style={{ fontSize: '13px', gap: '64px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Jenis Transaksi:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.kindOfTransaction || 'Final'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Seller / Consignor:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.kkks}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Entity:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.kkks}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Kapal / Pipeline:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.vesselName || 'MT Agung Samudra'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Dischport:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.dischargePort || 'Balongan'}</span>
+            </div>
           </div>
-          <div>
-            <div style={{ fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', color: '#374151' }}>DATA REFERENSI (FEEDSTOCK)</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: '#6b7280' }}>Indonesian Crude Price (ICP):</span> <strong>$82.45 / BBL</strong></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: '#6b7280' }}>Kurs Tengah Jisdor BI:</span> <strong>Rp 15,450.00</strong></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>BL Date:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.blDate}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Tanggal Invoice:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.invoiceDate || '01 Mar 2026'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Due Date:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.dueDateInvoice}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>PO MySAP:</span> 
+              <span style={{ fontWeight: 800 }}>{poMySap || '-'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Acuan Harga:</span> 
+              <span style={{ fontWeight: 800 }}>{invoice.acuanHarga || 'ICP SLC + Alpha'}</span>
+            </div>
           </div>
         </div>
 
-        <div style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '4px', overflow: 'hidden', marginBottom: '24px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+        {/* Supporting PO Info */}
+        <div style={{ marginBottom: '32px', fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>
+          Perhitungan didasarkan pada PO nomor: <strong style={{ color: '#111827' }}>{poHardcopy || '-'}</strong>
+        </div>
+
+        {/* Calculation Table */}
+        <div style={{ width: '100%', border: '2px solid #f1f5f9', borderRadius: '8px', overflow: 'hidden', marginBottom: '48px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
             <thead>
-              <tr style={{ background: '#f3f4f6', borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>URAIAN TRANSAKSI (PER ITEM)</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#374151' }}>KLAIM BERSIH (BBL)</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#374151' }}>TARIF ($)</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#374151' }}>NILAI TOTAL (USD)</th>
+              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #f1f5f9' }}>
+                <th style={{ padding: '16px', textAlign: 'left', fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Rincian Entitlement</th>
+                <th style={{ padding: '16px', textAlign: 'right', fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Total Quantity (BBL)</th>
+                <th style={{ padding: '16px', textAlign: 'right', fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Quantity Seller (KKKS)</th>
+                <th style={{ padding: '16px', textAlign: 'right', fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Alpha (USD/BBL)</th>
+                <th style={{ padding: '16px', textAlign: 'right', fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Total Price (USD/BBL)</th>
+                <th style={{ padding: '16px', textAlign: 'right', fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>Amount (USD)</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <td style={{ padding: '12px 16px', color: '#111827' }}>Penyerahan Minyak Mentah (SLC) - Lifting ID {invoice.bl}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', color: '#111827' }}>{invoice.volume.toLocaleString()} BBL</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', color: '#111827' }}>$82.45</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', color: '#111827' }}>${invoice.usd}</td>
+              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '16px', fontWeight: 700 }}>1. Entitlement KKKS Saja</td>
+                <td style={{ padding: '16px', textAlign: 'right' }}>{formatVol(totalQuantity)}</td>
+                <td style={{ padding: '16px', textAlign: 'right' }}>{formatVol(kkksQuantity)}</td>
+                <td style={{ padding: '16px', textAlign: 'right' }}>${formatCur(alpha)}</td>
+                <td style={{ padding: '16px', textAlign: 'right' }}>${formatCur(kkksPrice)}</td>
+                <td style={{ padding: '16px', textAlign: 'right', fontWeight: 700 }}>${formatCur(kkksAmountUsd)}</td>
               </tr>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                <td colSpan="3" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#111827' }}>Sub Total Transaksi USD:</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 'bold', color: '#111827' }}>${invoice.usd}</td>
+              <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '16px', fontWeight: 700 }}>2. Entitlement SKK Migas (GOI)</td>
+                <td style={{ padding: '16px', textAlign: 'right' }}>{formatVol(totalQuantity)}</td>
+                <td style={{ padding: '16px', textAlign: 'right' }}>{formatVol(skkQuantity)}</td>
+                <td style={{ padding: '16px', textAlign: 'right' }}>$0.00</td>
+                <td style={{ padding: '16px', textAlign: 'right' }}>${formatCur(skkPrice)}</td>
+                <td style={{ padding: '16px', textAlign: 'right', fontWeight: 700 }}>${formatCur(skkAmountUsd)}</td>
+              </tr>
+              {/* VAT Row */}
+              <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#fdfdfd' }}>
+                <td colSpan="5" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#64748b' }}>Subtotal (USD)</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700 }}>${formatCur(subTotalUsd)}</td>
+              </tr>
+              <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#fdfdfd' }}>
+                <td colSpan="5" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#64748b' }}>VAT (11%)</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700 }}>${formatCur(vatAmountUsd)}</td>
+              </tr>
+              {/* Summary Rows */}
+              <tr style={{ background: '#f8fafc' }}>
+                <td colSpan="5" style={{ padding: '20px 16px', textAlign: 'right', fontWeight: 900, color: '#00529c', fontSize: '13px' }}>TOTAL KEWAJIBAN PEMBAYARAN (USD)</td>
+                <td style={{ padding: '20px 16px', textAlign: 'right', fontWeight: 900, color: '#00529c', fontSize: '14px' }}>${formatCur(totalUsdWithVat)}</td>
+              </tr>
+              <tr style={{ background: '#eff6ff' }}>
+                <td colSpan="5" style={{ padding: '20px 16px', textAlign: 'right', fontWeight: 900, color: '#059669', fontSize: '13px' }}>TOTAL KEWAJIBAN PEMBAYARAN (IDR)</td>
+                <td style={{ padding: '20px 16px', textAlign: 'right', fontWeight: 900, color: '#059669', fontSize: '16px' }}>{formatIdr(totalUsdWithVat * kurs)}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '8px', border: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 'bold', color: '#1e3a8a' }}>
-            <div>TOTAL KEWAJIBAN PEMBAYARAN</div>
-            <div style={{ fontSize: '12px', fontWeight: 'normal', color: '#6b7280', marginTop: '4px' }}>Ekuivalen Rupiah (Konversi Kurs Live)</div>
+        <div className="flex justify-end gap-16 mt-24 mb-12">
+          <div className="text-center" style={{ width: '280px' }}>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '80px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>PIC Akhir (P-Sign)</div>
+            <div style={{ fontWeight: 900, fontSize: '15px', borderBottom: '1px solid #111827', display: 'inline-block', paddingBottom: '4px' }}>VP Feedstock Pertamina</div>
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px' }}>Authorized Digital Signature</div>
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#047857' }}>Rp {invoice.rp}</div>
         </div>
-
-        <div className="flex gap-16 mt-16 pb-4" style={{ borderBottom: '1px solid #e5e7eb', color: '#111827' }}>
-          <div className="text-center">
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '50px' }}>Direview Oleh KKKS</div>
-            <div style={{ fontWeight: 'bold', textDecoration: 'underline' }}>Representative {invoice.kkks}</div>
-            <div style={{ fontSize: '12px' }}>Lead Commercial Operation</div>
-          </div>
-          <div className="text-center" style={{ marginLeft: 'auto', marginRight: '32px' }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '50px' }}>Disahkan Secara Elektronik</div>
-            <div style={{ fontWeight: 'bold', textDecoration: 'underline' }}>VP Feedstock Pertamina</div>
-            <div style={{ fontSize: '12px' }}>Authorized E-Signature - Valid</div>
-          </div>
+        
+        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px dashed #e2e8f0', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
+          Generated by Pertamina FAST • Dokumen ini diproses secara otomatis dan sah tanpa tanda tangan basah.
         </div>
       </div>
     </div>
   );
 };
-
 export const VerificationDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [lifting, setLifting] = useState(null);
-  const [decision, setDecision] = useState(null);
+  const [decision, setDecision] = useState(null); // 'approve', 'revise', 'reject'
   const [catatan, setCatatan] = useState('');
+  const [acuanHarga, setAcuanHarga] = useState('');
   const [toast, setToast] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  useEffect(() => { const data = getLiftingById(id); if (data) setLifting(data); }, [id]);
+  useEffect(() => { 
+    const data = getLiftingById(id); 
+    if (data) {
+      setLifting(data);
+      setAcuanHarga(data.acuanHarga || '');
+    }
+  }, [id]);
 
   const primaries = getPrimaryCrudes();
   const deriveds = getDerivedCrudes();
@@ -2384,9 +2534,21 @@ export const VerificationDetail = () => {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const handleConfirm = () => {
-    if (!decision) { showToast('Pilih keputusan Approve atau Reject'); return; }
-    if (decision === 'approve') { approveLifting(id, catatan); showToast('APPROVED!'); }
-    else { if (!catatan.trim()) { showToast('Catatan wajib saat Reject'); return; } rejectLifting(id, catatan); showToast('DITOLAK'); }
+    if (!decision) { showToast('Pilih keputusan: Approve, Revise, atau Reject'); return; }
+    
+    if (decision === 'approve') { 
+      approveLifting(id, catatan, acuanHarga); 
+      showToast('Lifting Berhasil Disetujui (Approved)'); 
+    } else if (decision === 'revise') {
+      if (!catatan.trim()) { showToast('Catatan wajib diisi untuk permintaan revisi'); return; }
+      rejectLifting(id, catatan, false); // False = status 'revisi'
+      showToast('Permintaan Revisi Dikirim ke Submitter');
+    } else if (decision === 'reject') {
+      if (!catatan.trim()) { showToast('Catatan wajib diisi untuk penolakan'); return; }
+      rejectLifting(id, catatan, true); // True = status 'rejected'
+      showToast('Lifting Ditolak (Rejected)');
+    }
+    
     setTimeout(() => navigate('/operasional/verifikasi'), 1500);
   };
 
@@ -2399,398 +2561,277 @@ export const VerificationDetail = () => {
   );
 
   const statusBadge = {
-    submitted: <span className="badge badge-warning">Menunggu Review L1</span>,
-    approved: <span className="badge badge-success">Approved</span>,
-    revisi: <span className="badge badge-danger">Butuh Perbaikan</span>
+    submitted: <span className="badge badge-warning" style={{ fontSize: '10px', padding: '4px 12px' }}>Menunggu Review L1</span>,
+    approved: <span className="badge badge-success" style={{ fontSize: '10px', padding: '4px 12px' }}>Approved</span>,
+    revisi: <span className="badge badge-danger" style={{ fontSize: '10px', padding: '4px 12px' }}>Butuh Perbaikan</span>,
+    rejected: <span className="badge badge-danger" style={{ background: '#000', fontSize: '10px', padding: '4px 12px' }}>Rejected</span>,
+    draft: <span className="badge badge-draft" style={{ fontSize: '10px', padding: '4px 12px' }}>Draft</span>
   };
 
+  const tol = lifting.volumeNominasi ? Math.abs((lifting.totalVolume - lifting.volumeNominasi) / lifting.volumeNominasi * 100) : 0;
+  const isOk = tol <= 5;
+
+  // Formatting helpers
+  const formatVol = (v) => Number(v || 0).toLocaleString();
+  const formatCur = (v) => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatIdr = (v) => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
+
+  const LabelVal = ({ label, val, subVal, color }) => (
+    <div style={{ marginBottom: '32px' }}>
+      <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>{label}</div>
+      <div style={{ fontSize: '14px', fontWeight: 700, color: color || '#1e293b' }}>
+        {val || '-'}
+        {subVal && <span style={{ marginLeft: '8px', fontSize: '9px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', ...subVal.style }}>{subVal.text}</span>}
+      </div>
+    </div>
+  );
+
+  const cardStyle = {
+    background: '#ffffff',
+    borderRadius: '16px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+    border: '1px solid #f1f5f9',
+    padding: '40px',
+    marginBottom: '32px'
+  };
+
+  const sectionHeaderStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '40px',
+    paddingBottom: '20px',
+    borderBottom: '1px solid #f1f5f9'
+  };
+
+  const grid3Col = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '40px'
+  };
+
+  const entCardStyle = (color) => ({
+    background: `linear-gradient(to bottom right, #ffffff, #fcfdfe)`,
+    borderRadius: '20px',
+    padding: '32px',
+    border: '1px solid #f1f5f9',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+    marginTop: '24px'
+  });
+
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in" style={{ background: '#f8fafc', minHeight: '100vh', padding: '40px' }}>
       {toast && (
-        <div style={{ position: 'fixed', top: 24, right: 32, zIndex: 100, padding: '14px 24px', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', background: decision === 'reject' ? 'var(--danger)' : 'var(--success)', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeIn 0.3s peak-out' }}>
-          {decision === 'reject' ? <AlertCircle size={18} /> : <CheckCircle size={18} />} {toast}
+        <div style={{ position: 'fixed', top: 24, right: 32, zIndex: 2000, padding: '16px 24px', borderRadius: '12px', color: '#fff', fontWeight: 700, fontSize: '14px', boxShadow: '0 12px 32px rgba(0,0,0,0.15)', background: decision === 'reject' ? '#ef4444' : decision === 'revise' ? '#f59e0b' : '#10b981', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <CheckCircle size={20} /> {toast}
         </div>
       )}
 
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="btn btn-outline" style={{ padding: '8px', border: 'none' }}><ChevronLeft size={20} /></button>
-        <div>
-          <h1>Detail Verifikasi Lifting</h1>
-          <p className="text-muted mt-2">B/L: <span className="font-semibold text-main">{lifting.blNumber}</span> • ID: <span style={{ color: 'var(--accent)' }}>{lifting.id}</span></p>
+      <div style={{ width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
+          <button onClick={() => navigate('/operasional/verifikasi')} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>
+            <ChevronLeft size={20} />
+          </button>
+          <div>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>Detail Verifikasi Lifting</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 800, color: '#94a3b8', marginTop: '4px' }}>
+              <span>B/L: {lifting.blNumber}</span>
+              <span style={{ opacity: 0.3 }}>•</span>
+              <span style={{ color: '#00529c' }}>ID: {lifting.id}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '32px', alignItems: 'start' }}>
+          {/* Main Content */}
+          <div style={{ flex: 1 }}>
+            {/* Section 1: Review Data Lifting */}
+            <div style={cardStyle}>
+              <div style={sectionHeaderStyle}>
+                <h2 style={{ fontSize: '14px', fontWeight: 900, color: '#00529c', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Activity size={18} /> Review Data Lifting
+                </h2>
+                {statusBadge[lifting.status]}
+              </div>
+
+              <div style={grid3Col}>
+                <div>
+                  <LabelVal label="Periode Lifting" val={lifting.periodeLiftingBulan ? (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][parseInt(lifting.periodeLiftingBulan) - 1] + ' ' + lifting.periodeLiftingTahun) : '-'} />
+                  <LabelVal label="Seller / KKKS" val={lifting.seller || lifting.kkks} />
+                  <LabelVal label="Jenis Cargo" val={lifting.jenisMm} />
+                  <LabelVal label="B/L Date" val={lifting.blDate} />
+                  <LabelVal label="Tipe Lifting / Vessel" val={lifting.tipeLifting === 'pipeline' ? 'Pipeline' : lifting.vesselName} />
+                  <LabelVal label="Port (Load / Discharge)" val={`${lifting.loadPort || '-'} / ${lifting.dischargePort || '-'}`} />
+                </div>
+                <div>
+                  <LabelVal label="Total Volume Realisasi (BBLS)" val={formatVol(lifting.totalVolume)} />
+                  <LabelVal label="Operation Tolerance (%)" val={tol.toFixed(2) + '%'} subVal={isOk ? { text: 'OKE', style: { background: '#ecfdf5', color: '#10b981' } } : null} color="#00529c" />
+                  <LabelVal label="Volume Net (BBLS)" val={formatVol(lifting.volumeNet || lifting.totalVolume)} color="#00529c" />
+                  <LabelVal label="Water Content" val={(lifting.waterContent || '0.05') + '%'} color="#00529c" />
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Catatan Operasional</div>
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#94a3b8', lineHeight: '1.6' }}>{lifting.catatan || 'Tidak ada catatan...'}</div>
+                </div>
+                <div>
+                  <LabelVal label="Total Volume Nominasi" val={formatVol(lifting.volumeNominasi)} />
+                  <LabelVal label="API Gravity" val={(lifting.apiGravity || '32.5') + '°'} />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Detail Penagihan & Keuangan */}
+            <div style={cardStyle}>
+              <div style={sectionHeaderStyle}>
+                <h2 style={{ fontSize: '14px', fontWeight: 900, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <DollarSign size={18} /> Detail Penagihan & Keuangan
+                </h2>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '48px' }}>
+                <div>
+                  <LabelVal label="Kind of Transaction" val={lifting.kindOfTransaction} />
+                  <LabelVal label="Invoice Number" val={lifting.invoiceNumber} color="#00529c" />
+                </div>
+                <div>
+                  <LabelVal label="Tanggal (Inv / Due)" val={`${lifting.invoiceDate || '-'} / ${lifting.dueDateInvoice || '-'}`} />
+                  <LabelVal label="Kurs BI (Jisdor)" val={formatIdr(lifting.kursBeliBi)} />
+                </div>
+              </div>
+
+              {/* Financial Comparisons */}
+              {[
+                { label: 'Entitlement KKKS Saja', vol: lifting.kkksVolume, price: lifting.kkksPrice, color: '#00529c' },
+                { label: 'Entitlement SKK Migas (GOI)', vol: lifting.skkVolume, price: lifting.skkPrice, color: '#10b981' }
+              ].map((ent, i) => (
+                <div key={i} style={{ marginBottom: '40px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: ent.color }}></div>
+                    <h3 style={{ fontSize: '12px', fontWeight: 900, color: ent.color, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{ent.label}</h3>
+                  </div>
+
+                  <div style={entCardStyle(ent.color)}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '64px' }}>
+                      {/* Submited */}
+                      <div>
+                        <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '12px', borderBottom: '1px dashed #e2e8f0', marginBottom: '24px' }}>Data Submitted (Actual)</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Price (USD/bbl)</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>${formatCur(ent.price)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Volume (BBL)</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{formatVol(ent.vol)}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Amount USD</div>
+                            <div style={{ fontSize: '18px', fontWeight: 900, color: ent.color }}>${formatCur(parseFloat(ent.vol) * parseFloat(ent.price))}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Amount IDR</div>
+                            <div style={{ fontSize: '18px', fontWeight: 900, color: '#10b981' }}>{formatIdr(parseFloat(ent.vol) * parseFloat(ent.price) * parseFloat(lifting.kursBeliBi))}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Recalculated */}
+                      <div style={{ borderLeft: '1px solid #f1f5f9', paddingLeft: '64px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '12px', borderBottom: '1px dashed #e2e8f0', marginBottom: '24px' }}>System Recalculated (Master Ref)</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Ref. Price ({lifting.jenisMm})</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#f59e0b' }}>${formatCur(refPrice)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Ref. Alpha</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#00529c' }}>${formatCur(refAlpha)}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '6px' }}>Amount USD (REF)</div>
+                            <div style={{ fontSize: '16px', fontWeight: 800, color: '#cbd5e1' }}>${formatCur(parseFloat(ent.vol) * refPrice)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '6px' }}>Amount IDR (REF)</div>
+                            <div style={{ fontSize: '16px', fontWeight: 800, color: '#cbd5e1' }}>{formatIdr(parseFloat(ent.vol) * refPrice * parseFloat(lifting.kursBeliBi))}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Documents */}
+              <div style={{ marginTop: '64px', paddingTop: '48px', borderTop: '1px solid #f1f5f9' }}>
+                <h3 style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '32px' }}>Dokumen Pendukung</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
+                  {[
+                    { label: 'Invoice', file: lifting.fileInvoice, icon: <FileText size={18} /> },
+                    { label: 'Bill of Lading', file: lifting.fileBL, icon: <Activity size={18} /> },
+                    { label: 'Faktur Pajak', file: lifting.fileFakturPajak, icon: <DollarSign size={18} /> },
+                    { label: 'Dokumen Lain', file: lifting.fileDocLain, icon: <Info size={18} /> }
+                  ].map((doc, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: '12px', border: '1px solid #f1f5f9', background: doc.file ? '#fff' : '#f8fafc', opacity: doc.file ? 1 : 0.4, transition: 'all 0.2s', cursor: doc.file ? 'pointer' : 'default' }}>
+                      <div style={{ color: doc.file ? '#00529c' : '#94a3b8' }}>{doc.icon}</div>
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 900, color: '#1e293b', textTransform: 'uppercase' }}>{doc.label}</div>
+                        <div style={{ fontSize: '9px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '120px' }}>{doc.file || 'Tidak ada file'}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div style={{ width: '380px', position: 'sticky', top: '40px' }}>
+            <div style={{ ...cardStyle, borderTop: '6px solid #00529c', padding: '0' }}>
+               <div style={{ padding: '32px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Zap size={22} color="#00529c" fill="#00529c" />
+                  <h2 style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tindakan Lanjutan</h2>
+               </div>
+
+               <div style={{ padding: '32px' }}>
+                 <div style={{ marginBottom: '40px' }}>
+                   <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '20px' }}>Keputusan L1</label>
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                     <button onClick={() => setDecision('approve')} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '2px solid', fontWeight: 900, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', borderColor: decision === 'approve' ? '#10b981' : '#f1f5f9', background: decision === 'approve' ? '#ecfdf5' : '#ffffff', color: decision === 'approve' ? '#10b981' : '#64748b' }}>Approve</button>
+                     <button onClick={() => setDecision('reject')} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '2px solid', fontWeight: 900, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', borderColor: decision === 'reject' ? '#ef4444' : '#f1f5f9', background: decision === 'reject' ? '#fef2f2' : '#ffffff', color: decision === 'reject' ? '#ef4444' : '#64748b' }}>Reject</button>
+                   </div>
+                 </div>
+
+                 <div style={{ marginBottom: '32px' }}>
+                   <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '12px' }}>Acuan Harga (Free Text)</label>
+                   <input value={acuanHarga} onChange={e => setAcuanHarga(e.target.value)} placeholder="Ex: ICP Kalimantan + Alpha..." style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '13px', fontWeight: 600, outline: 'none' }} />
+                 </div>
+
+                 <div style={{ marginBottom: '40px' }}>
+                   <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '12px' }}>Catatan Verifikasi</label>
+                   <textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Tambahkan alasan atau catatan pemeriksaan..." style={{ width: '100%', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '13px', fontWeight: 600, minHeight: '160px', outline: 'none', resize: 'none' }} />
+                 </div>
+
+                 <button disabled={!decision} onClick={handleConfirm} style={{ width: '100%', padding: '20px', borderRadius: '12px', background: decision ? '#1a3a5f' : '#cbd5e1', color: '#ffffff', fontWeight: 900, fontSize: '16px', border: 'none', cursor: decision ? 'pointer' : 'not-allowed', boxShadow: decision ? '0 10px 25px rgba(26,58,95,0.2)' : 'none' }}>Simpan & Kirim</button>
+
+                 <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '1px dashed #e2e8f0' }}>
+                   <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px' }}>Audit Informasi</div>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>Status:</span>
+                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#1e293b', textTransform: 'uppercase' }}>{lifting.status}</span>
+                   </div>
+                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>Terakhir Update:</span>
+                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#1e293b' }}>{lifting.updatedAt || 'Recently'}</span>
+                   </div>
+                 </div>
+               </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', alignItems: 'start' }} className="mb-8">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          {/* Section 1: Data Lifting Review */}
-          <div className="card shadow-sm" style={{ padding: '24px' }}>
-            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--accent)' }}>
-                <Activity size={20} /> Review Data Lifting
-              </h2>
-              {statusBadge[lifting.status]}
-            </div>
-
-            <div className="grid grid-cols-2 text-sm" style={{ gap: '24px' }}>
-              <div>
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Periode Lifting</div>
-                <div className="font-medium mb-4">{lifting.periodeLiftingBulan ? [`Januari`, `Februari`, `Maret`, `April`, `Mei`, `Juni`, `Juli`, `Agustus`, `September`, `Oktober`, `November`, `Desember`][parseInt(lifting.periodeLiftingBulan) - 1] : '-'} {lifting.periodeLiftingTahun}</div>
-
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Seller / KKKS</div>
-                <div className="font-medium mb-4">{lifting.seller || lifting.kkks}</div>
-
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Crude / Condensate</div>
-                <div className="font-medium mb-4">{lifting.jenisMm || '-'}</div>
-
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">B/L Date</div>
-                <div className="font-medium mb-4">{lifting.blDate || lifting.liftingDate}</div>
-
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Tipe Lifting / Vessel</div>
-                <div className="font-medium mb-4">{lifting.tipeLifting === 'pipeline' ? 'Pipeline' : (lifting.vesselName || 'Vessel')}</div>
-
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Port (Load / Discharge)</div>
-                <div className="font-medium mb-4">{lifting.loadPort || '-'} / {lifting.dischargePort || '-'}</div>
-              </div>
-              <div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Total Volume (bbls)</div>
-                    <div className="font-bold text-main" style={{ fontSize: '15px' }}>{lifting.totalVolume?.toLocaleString() || '-'}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Volume Nominasi</div>
-                    <div className="font-bold text-main" style={{ fontSize: '15px' }}>{lifting.volumeNominasi?.toLocaleString() || '-'}</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Operation Tolerance (%)</div>
-                    <div className="font-bold text-accent" style={{ fontSize: '15px' }}>
-                      {(parseFloat(lifting.volumeNominasi) && parseFloat(lifting.totalVolume))
-                        ? (Math.abs((parseFloat(lifting.volumeNominasi) - parseFloat(lifting.totalVolume)) / parseFloat(lifting.volumeNominasi)) * 100).toFixed(2) + '%'
-                        : '0.00%'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">API Gravity</div>
-                    <div className="font-bold text-main" style={{ fontSize: '18px' }}>{lifting.apiGravity ?? '-'}°</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Volume Net (BBLS)</div>
-                    <div className="font-extrabold text-accent" style={{ fontSize: '18px' }}>{lifting.volumeNet?.toLocaleString()}</div>
-                  </div>
-                </div>
-
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Water Content</div>
-                <div className="font-medium mb-4">{lifting.waterContent ?? '-'}%</div>
-
-                <div className="mt-4 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
-                  <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Catatan Operasional</div>
-                  <div className="text-xs italic">{lifting.catatan || 'Tidak ada catatan...'}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Billing & Finance */}
-          <div className="card shadow-sm" style={{ padding: '24px' }}>
-            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--success)' }}>
-                <DollarSign size={20} /> Detail Penagihan & Keuangan
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 text-sm mb-8" style={{ gap: '24px' }}>
-              <div>
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Kind of Transaction</div>
-                <div className="font-medium mb-4">{lifting.kindOfTransaction || '-'}</div>
-
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Invoice Number</div>
-                <div className="font-bold mb-4" style={{ color: 'var(--accent)', fontFamily: 'monospace', fontSize: '15px' }}>{lifting.invoiceNumber || '-'}</div>
-              </div>
-              <div>
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Tanggal (Inv / Due)</div>
-                <div className="font-medium mb-4">{lifting.invoiceDate || '-'} / {lifting.dueDateInvoice || '-'}</div>
-
-                <div className="text-muted mb-1 text-xs uppercase tracking-wider font-semibold">Kurs BI (Jisdor)</div>
-                <div className="font-bold">Rp {Number(lifting.kursBeliBi || 0).toLocaleString('id-ID')}</div>
-              </div>
-            </div>
-
-            {/* Sub-Section 1: KKKS dan SHU */}
-            <div className="mb-6 p-5 rounded-xl transition-all" style={{ background: 'rgba(0,82,156,0.03)', border: '1px solid rgba(0,82,156,0.1)' }}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xs font-bold text-muted uppercase flex items-center gap-2">
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} /> 
-                  Entitlement KKKS dan SHU
-                </h3>
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                {/* User Submitted Data */}
-                <div>
-                  <div className="text-[10px] uppercase text-muted font-bold mb-3 border-b border-dashed pb-1">Data Submitted (Actual)</div>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <div className="text-[10px] text-muted">Price (USD)</div>
-                      <div className="font-semibold text-sm">${Number(lifting.kkksPrice || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted">Volume (bbl)</div>
-                      <div className="font-semibold text-sm">{Number(lifting.kkksVolume || 0).toLocaleString()}</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div>
-                      <div className="text-[10px] text-muted">AMOUNT USD</div>
-                      <div className="font-bold text-base" style={{ color: 'var(--accent)' }}>
-                        ${Number((parseFloat(lifting.kkksVolume) || 0) * (parseFloat(lifting.kkksPrice) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted">AMOUNT IDR</div>
-                      <div className="font-bold text-base" style={{ color: 'var(--success)' }}>
-                        Rp {Number((parseFloat(lifting.kkksVolume) || 0) * (parseFloat(lifting.kkksPrice) || 0) * (parseFloat(lifting.kursBeliBi) || 0)).toLocaleString('id-ID')}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* System Calculated from Master Data */}
-                <div style={{ borderLeft: '1px solid rgba(0,0,0,0.05)', paddingLeft: '24px' }}>
-                  <div className="text-[10px] uppercase text-muted font-bold mb-3 border-b border-dashed pb-1">System Recalculated (Master Ref)</div>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <div className="text-[10px] text-muted">Ref. Price ({lifting.jenisMm})</div>
-                      <div className="font-semibold text-sm" style={{ color: (lifting.kkksPrice != refPrice) ? 'var(--warning)' : 'inherit' }}>
-                        ${refPrice.toLocaleString(undefined, {minimumFractionDigits:2})}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted">Ref. Alpha</div>
-                      <div className="font-semibold text-sm">${refAlpha.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div>
-                      <div className="text-[10px] text-muted">AMOUNT USD (REF)</div>
-                      <div className="font-bold text-base text-muted opacity-80">
-                        ${Number((parseFloat(lifting.kkksVolume) || 0) * refPrice).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted">AMOUNT IDR (REF)</div>
-                      <div className="font-bold text-base text-muted opacity-80">
-                        Rp {Number((parseFloat(lifting.kkksVolume) || 0) * refPrice * (parseFloat(lifting.kursBeliBi) || 0)).toLocaleString('id-ID')}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sub-Section 2: SKK Migas */}
-            <div className="mb-8 p-5 rounded-xl transition-all" style={{ background: 'rgba(0,166,81,0.03)', border: '1px solid rgba(0,166,81,0.1)' }}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xs font-bold text-muted uppercase flex items-center gap-2">
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} /> 
-                  Entitlement SKK Migas
-                </h3>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                {/* User Submitted Data */}
-                <div>
-                  <div className="text-[10px] uppercase text-muted font-bold mb-3 border-b border-dashed pb-1">Data Submitted (Actual)</div>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <div className="text-[10px] text-muted">Price (USD)</div>
-                      <div className="font-semibold text-sm">${Number(lifting.skkPrice || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted">Volume (bbl)</div>
-                      <div className="font-semibold text-sm">{Number(lifting.skkVolume || 0).toLocaleString()}</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div>
-                      <div className="text-[10px] text-muted">AMOUNT USD</div>
-                      <div className="font-bold text-base" style={{ color: 'var(--accent)' }}>
-                        ${Number((parseFloat(lifting.skkVolume) || 0) * (parseFloat(lifting.skkPrice) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted">AMOUNT IDR</div>
-                      <div className="font-bold text-base" style={{ color: 'var(--success)' }}>
-                        Rp {Number((parseFloat(lifting.skkVolume) || 0) * (parseFloat(lifting.skkPrice) || 0) * (parseFloat(lifting.kursBeliBi) || 0)).toLocaleString('id-ID')}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* System Calculated from Master Data */}
-                <div style={{ borderLeft: '1px solid rgba(0,0,0,0.05)', paddingLeft: '24px' }}>
-                  <div className="text-[10px] uppercase text-muted font-bold mb-3 border-b border-dashed pb-1">System Recalculated (Master Ref)</div>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <div className="text-[10px] text-muted">Ref. Price ({lifting.jenisMm})</div>
-                      <div className="font-semibold text-sm" style={{ color: (lifting.skkPrice != refPrice) ? 'var(--warning)' : 'inherit' }}>
-                        ${refPrice.toLocaleString(undefined, {minimumFractionDigits:2})}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted">Ref. Alpha</div>
-                      <div className="font-semibold text-sm">${refAlpha.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div>
-                      <div className="text-[10px] text-muted">AMOUNT USD (REF)</div>
-                      <div className="font-bold text-base text-muted opacity-80">
-                        ${Number((parseFloat(lifting.skkVolume) || 0) * refPrice).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-muted">AMOUNT IDR (REF)</div>
-                      <div className="font-bold text-base text-muted opacity-80">
-                        Rp {Number((parseFloat(lifting.skkVolume) || 0) * refPrice * (parseFloat(lifting.kursBeliBi) || 0)).toLocaleString('id-ID')}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {lifting.verifikasiCatatan && (
-              <div className="mt-6 p-4 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <div className="text-xs font-semibold uppercase mb-1" style={{ color: '#ef4444' }}>Catatan Verifikasi L1</div>
-                <div className="text-sm">{lifting.verifikasiCatatan}</div>
-              </div>
-            )}
-            <div>
-              <h3 className="text-xs font-bold text-muted uppercase mb-3">Dokumen Terlampir</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                {lifting.fileInvoice && (
-                  <div className="flex items-center justify-between p-3 rounded" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <FileText size={16} color="var(--accent)" />
-                      <span className="text-xs font-medium truncate">Invoice_{lifting.blNumber}.pdf</span>
-                    </div>
-                    <button className="btn btn-sm btn-outline" style={{ padding: '4px' }}><Download size={12} /></button>
-                  </div>
-                )}
-                {lifting.fileBL && (
-                  <div className="flex items-center justify-between p-3 rounded" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <FileText size={16} color="var(--accent)" />
-                      <span className="text-xs font-medium truncate">BL_{lifting.blNumber}.pdf</span>
-                    </div>
-                    <button className="btn btn-sm btn-outline" style={{ padding: '4px' }}><Download size={12} /></button>
-                  </div>
-                )}
-                {lifting.fileFakturPajak && (
-                  <div className="flex items-center justify-between p-3 rounded" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <FileText size={16} color="var(--accent)" />
-                      <span className="text-xs font-medium truncate">FakturPajak_{lifting.blNumber}.pdf</span>
-                    </div>
-                    <button className="btn btn-sm btn-outline" style={{ padding: '4px' }}><Download size={12} /></button>
-                  </div>
-                )}
-                {lifting.fileDocLain && (
-                  <div className="flex items-center justify-between p-3 rounded" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <FileText size={16} color="var(--accent)" />
-                      <span className="text-xs font-medium truncate">Lainnya_{lifting.blNumber}.pdf</span>
-                    </div>
-                    <button className="btn btn-sm btn-outline" style={{ padding: '4px' }}><Download size={12} /></button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card shadow-md" style={{ borderTop: `4px solid ${lifting.status === 'revisi' ? 'var(--danger)' : lifting.status === 'approved' ? 'var(--success)' : 'var(--accent)'}`, position: 'sticky', top: '24px' }}>
-          <h2 className="text-lg font-semibold mb-6 pb-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <Activity size={20} /> Tindakan Lanjutan
-          </h2>
-          {lifting.status === 'submitted' && (<>
-            <div className="mb-6">
-              <label className="text-sm font-semibold text-muted mb-3 block">Keputusan L1</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button onClick={() => setDecision('approve')} className="btn" style={{ borderColor: decision === 'approve' ? 'var(--success)' : 'var(--border)', color: decision === 'approve' ? '#fff' : 'var(--success)', background: decision === 'approve' ? 'var(--success)' : 'rgba(0,166,81,0.05)', padding: '16px', width: '100%' }}>Approve</button>
-                <button onClick={() => setDecision('reject')} className="btn" style={{ borderColor: decision === 'reject' ? 'var(--danger)' : 'var(--border)', color: decision === 'reject' ? '#fff' : 'var(--danger)', background: decision === 'reject' ? 'var(--danger)' : 'rgba(238,49,42,0.05)', padding: '16px', width: '100%' }}>Reject</button>
-              </div>
-            </div>
-            <textarea className="input-control" placeholder="Catatan..." style={{ width: '100%', minHeight: '100px' }} value={catatan} onChange={e => setCatatan(e.target.value)} />
-            <button onClick={handleConfirm} className="btn btn-primary w-full mt-4">Simpan & Kirim</button>
-          </>)}
-          {lifting.status === 'approved' && (
-            <button className="btn btn-primary w-full" style={{ background: 'var(--success)' }} onClick={() => setShowPaymentModal(true)}>Verifikasi L2 (Finance)</button>
-          )}
-        </div>
-      </div>
-
-      {showPaymentModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
-          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
-              <h2 className="text-xl font-bold flex items-center gap-2"><DollarSign size={22} color="var(--success)" /> Verifikasi Pembayaran & Penerimaan Dana (L2)</h2>
-              <button onClick={() => setShowPaymentModal(false)} className="btn btn-outline" style={{ padding: '6px' }}><X size={20} /></button>
-            </div>
-
-            <div className="grid grid-cols-2 mb-6" style={{ gap: '32px' }}>
-              <div>
-                <div className="mb-4">
-                  <label className="input-label">Tanggal Pembayaran Diterima <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <input type="date" className="input-control w-full" defaultValue={new Date().toISOString().split('T')[0]} />
-                </div>
-                <div className="mb-4">
-                  <label className="input-label">Bank Penerima (Rekening Penampung) <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <select className="input-control w-full">
-                    <option>Bank Mandiri - USD Rek. 123456</option>
-                    <option>Bank BRI - USD Rek. 654321</option>
-                    <option>Bank BNI - USD Rek. 987654</option>
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <label className="input-label">Nominal Diterima (USD) <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <input type="text" className="input-control w-full font-medium text-success" defaultValue={`$${lifting?.totalAmount ? Number(lifting.totalAmount).toLocaleString() : '0.00'}`} />
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-4">
-                  <label className="input-label">Upload Bukti Rekening Koran / MT103</label>
-                  <div style={{ padding: '24px', border: '2px dashed var(--border)', borderRadius: '8px', textAlign: 'center', background: 'var(--bg-surface)' }}>
-                    <Upload size={24} color="var(--accent)" style={{ margin: '0 auto 8px' }} />
-                    <div className="text-sm font-semibold mb-1">Unggah Bukti Transaksi</div>
-                    <div className="text-xs text-muted">Maksimal ukuran file 2MB (PDF/JPG)</div>
-                  </div>
-                </div>
-                <div className="mb-6">
-                  <label className="input-label">Catatan Tambahan (Opsional)</label>
-                  <textarea className="input-control w-full" rows="3" placeholder="Contoh: Dana masuk utuh sesuai tagihan..."></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-              <button className="btn btn-primary px-8 shadow" style={{ background: 'var(--success)', border: 'none', fontSize: '15px' }} onClick={() => {
-                setShowPaymentModal(false);
-                showToast('Setelmen Pembayaran Berhasil Diselesaikan!');
-                setTimeout(() => navigate('/operasional/verifikasi'), 1500);
-              }}><CheckCircle size={18} /> Konfirmasi Selesai & Tutup Siklus Dokumen</button>
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="text-xs text-muted mt-6 text-center">Update terakhir: {lifting.updatedAt}</div>
     </div>
   );
 };

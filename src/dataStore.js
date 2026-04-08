@@ -58,20 +58,33 @@ const SEED_DATA = {
       dischargePort: 'Balongan',
       liftingDate: '2026-03-08',
       kkks: 'PT KKKS Alpha Energi',
-      jenisMm: 'Crude Oil',
+      jenisMm: 'SLC (Sumatera Light Crude)',
       bagianPembelian: '85% Indonesia',
       kategoriInvoice: 'First Invoice',
       volumeGross: 152000,
-      volumeNet: 150000,
+      totalVolume: 150000,
+      volumeNominasi: 150000,
+      volumeK3s: 127500, // 85%
+      volumeGoi: 22500,  // 15%
+      kkksVolume: 127500,
+      skkVolume: 22500,
+      kkksPrice: 82.45,
+      skkPrice: 82.45,
+      priceUsdBbl: 82.45,
+      kursBeliBi: 15450,
+      dueDateInvoice: '2026-04-08',
+      dueDateFinal: '2026-04-15',
       waterContent: 0.05,
       apiGravity: 32.5,
-      status: 'submitted',
-      statusText: 'Menunggu Review L1',
+      status: 'approved',
+      statusText: 'Approved',
       createdAt: '08 Mar 2026, 14:30',
       updatedAt: '08 Mar 2026, 14:30',
       submittedAt: '08 Mar 2026, 14:30',
       catatan: '',
       verifikasiCatatan: '',
+      fileInvoice: 'invoice_alpha_8812.pdf',
+      fileBL: 'bl_alpha_8812.pdf'
     },
     {
       id: 'LFT-20260301-C3D4',
@@ -83,43 +96,99 @@ const SEED_DATA = {
       dischargePort: 'Plaju',
       liftingDate: '2026-03-01',
       kkks: 'PT KKKS Bravo Petroleum',
-      jenisMm: 'Condensate',
+      jenisMm: 'Arjuna',
       bagianPembelian: '100% Indonesia',
       kategoriInvoice: 'Second Invoice',
       volumeGross: 128000,
-      volumeNet: 125500,
+      totalVolume: 125500,
+      volumeNominasi: 130000, // Discrepancy for testing
+      volumeK3s: 125500,
+      volumeGoi: 0,
+      kkksVolume: 125500,
+      skkVolume: 0,
+      kkksPrice: 84.12,
+      skkPrice: 0,
+      priceUsdBbl: 84.12,
+      kursBeliBi: 15450,
+      dueDateInvoice: '2026-04-01',
+      dueDateFinal: '2026-04-08',
       waterContent: 0.03,
       apiGravity: 33.1,
       status: 'approved',
-      statusText: 'Approved (Tembus L2)',
+      statusText: 'Approved',
       createdAt: '01 Mar 2026, 09:15',
       updatedAt: '01 Mar 2026, 09:15',
       submittedAt: '01 Mar 2026, 09:15',
       approvedAt: '02 Mar 2026, 10:00',
       catatan: '',
-      verifikasiCatatan: '',
+      verifikasiCatatan: 'Data sesuai dengan B/L dan Nominasi bulan lalu.',
+      fileInvoice: 'invoice_bravo_8813.pdf'
+    },
+    {
+      id: 'LFT-20260406-YSLE',
+      blNumber: 'CT-2026/04-2201',
+      blDate: '2026-04-06',
+      vesselName: 'MT Phoenix',
+      loadPort: 'Tuban',
+      dischargePort: 'Cilacap',
+      liftingDate: '2026-04-06',
+      kkks: 'PT Delta Energy',
+      jenisMm: 'Banyu Urip',
+      bagianPembelian: '85% Indonesia',
+      kategoriInvoice: 'First Invoice',
+      totalVolume: 500000,
+      volumeNominasi: 480000, // +4.1% (within 5% tolerance)
+      volumeK3s: 425000,
+      volumeGoi: 75000,
+      kkksVolume: 425000,
+      skkVolume: 75000,
+      kkksPrice: 79.50,
+      skkPrice: 79.50,
+      priceUsdBbl: 79.50,
+      kursBeliBi: 15450,
+      dueDateInvoice: '2026-05-06',
+      dueDateFinal: '2026-05-13',
+      status: 'submitted',
+      statusText: 'Submitted',
+      createdAt: '06 Apr 2026, 10:00',
+      updatedAt: '06 Apr 2026, 10:00',
+      submittedAt: '06 Apr 2026, 10:00',
+      catatan: 'Lifting April batch 1',
+      verifikasiCatatan: ''
     },
     {
       id: 'LFT-20260303-E5F6',
       invoiceId: 'INV/26/BL-8814',
-      blNumber: 'CT-2026/03-0092',
+      blNumber: 'CT-2026/03-1118',
       blDate: '2026-03-03',
-      vesselName: 'MT Nusantara Express',
-      loadPort: 'Balikpapan',
+      vesselName: 'MT Segara',
+      loadPort: 'Bontang',
       dischargePort: 'Bontang',
       liftingDate: '2026-03-03',
       kkks: 'PT KKKS Charlie',
-      jenisMm: 'Crude Oil',
+      jenisMm: 'Duri',
       bagianPembelian: '70% Indonesia, 30% Singapore',
       kategoriInvoice: 'Provisional Invoice',
       volumeGross: 155000,
       volumeNet: 150000,
+      totalVolume: 150000,
+      volumeNominasi: 155000,
+      volumeK3s: 105000,
+      volumeGoi: 45000,
+      kkksVolume: 105000,
+      skkVolume: 45000,
+      kkksPrice: 75.20,
+      skkPrice: 75.20,
+      priceUsdBbl: 75.20,
+      kursBeliBi: 15450,
+      dueDateInvoice: '2026-04-03',
+      dueDateFinal: '2026-04-10',
       waterContent: 0.08,
       apiGravity: 31.2,
       status: 'revisi',
-      statusText: 'Butuh Perbaikan',
-      createdAt: '03 Mar 2026, 11:00',
-      updatedAt: '05 Mar 2026, 14:00',
+      statusText: 'Need Revision',
+      createdAt: '26 Mar 2026, 10:00',
+      updatedAt: '28 Mar 2026, 12:00',
       submittedAt: '03 Mar 2026, 11:00',
       catatan: '',
       verifikasiCatatan: 'Angka Net Volume keliru. Mohon cek water content.',
@@ -133,16 +202,28 @@ const SEED_DATA = {
       loadPort: 'Bontang',
       liftingDate: '2026-03-10',
       kkks: 'Pertamina EP',
-      jenisMm: 'LPG',
+      jenisMm: 'Attaka',
       pembelian: 'Domestik',
       bagianPembelian: '100% Indonesia',
       kategoriInvoice: 'Final Invoice',
       volumeGross: 310000,
       volumeNet: 300000,
+      totalVolume: 300000,
+      volumeNominasi: 295000,
+      volumeK3s: 300000,
+      volumeGoi: 0,
+      kkksVolume: 300000,
+      skkVolume: 0,
+      kkksPrice: 81.10,
+      skkPrice: 0,
+      priceUsdBbl: 81.10,
+      kursBeliBi: 15450,
+      dueDateInvoice: '2026-04-10',
+      dueDateFinal: '2026-04-17',
       waterContent: 0.02,
       apiGravity: 34.0,
       status: 'submitted',
-      statusText: 'Menunggu Review L1',
+      statusText: 'Submitted',
       createdAt: '10 Mar 2026, 08:00',
       updatedAt: '10 Mar 2026, 08:00',
       submittedAt: '10 Mar 2026, 08:00',
@@ -171,10 +252,20 @@ const SEED_DATA = {
       volumeNominasi: 248000,
       volumeGross: 252000,
       volumeNet: 250000,
+      volumeK3s: 212500,
+      volumeGoi: 37500,
+      kkksVolume: 212500,
+      skkVolume: 37500,
+      kkksPrice: 82.45,
+      skkPrice: 82.45,
+      priceUsdBbl: 82.45,
+      kursBeliBi: 15450,
+      dueDateInvoice: '2026-04-09',
+      dueDateFinal: '2026-04-16',
       waterContent: 0.05,
       apiGravity: 32.5,
       status: 'draft',
-      statusText: 'Draft Tersimpan',
+      statusText: 'Draft',
       createdAt: '09 Mar 2026, 10:00',
       updatedAt: '09 Mar 2026, 10:00',
       submittedAt: null,
@@ -191,21 +282,33 @@ const SEED_DATA = {
       dischargePort: 'Cilacap',
       liftingDate: '2026-03-05',
       kkks: 'PT Delta Energy',
-      jenisMm: 'Crude Oil',
+      jenisMm: 'SLC (Sumatera Light Crude)',
       pembelian: 'Import',
       bagianPembelian: '60% Indonesia, 40% Japan',
       kategoriInvoice: 'First Invoice',
       volumeGross: 88000,
       volumeNet: 85000,
+      totalVolume: 85000,
+      volumeNominasi: 85500,
+      volumeK3s: 51000,
+      volumeGoi: 34000,
+      kkksVolume: 51000,
+      skkVolume: 34000,
+      kkksPrice: 80.00,
+      skkPrice: 80.00,
+      priceUsdBbl: 80.00,
+      kursBeliBi: 15450,
+      dueDateInvoice: '2026-04-05',
+      dueDateFinal: '2026-04-12',
       waterContent: 0.06,
       apiGravity: 30.8,
       status: 'revisi',
-      statusText: 'Butuh Perbaikan',
-      createdAt: '05 Mar 2026, 13:00',
-      updatedAt: '07 Mar 2026, 09:30',
-      submittedAt: '05 Mar 2026, 13:00',
+      statusText: 'Need Revision',
+      createdAt: '25 Feb 2026, 16:20',
+      updatedAt: '25 Feb 2026, 16:55',
+      submittedAt: '25 Feb 2026, 16:20',
       catatan: '',
-      verifikasiCatatan: 'Lampiran manifest buram, mohon unggah ulang.',
+      verifikasiCatatan: 'File B/L tidak terbaca. Mohon unggah ulang.',
     },
   ],
 
@@ -315,6 +418,13 @@ const SEED_DATA = {
     { id: 'DC-009', namaCrude: 'Sepinggan', baseRef: 'ATTAKA', alpha: 0.50, used: false },
     { id: 'DC-010', namaCrude: 'Cepu (Light)', baseRef: 'BANYUURIP', alpha: -0.20, used: true },
   ],
+  // Value Added Tax (VAT) history
+  vatList: [
+    { id: 'VAT-001', bulan: 'Januari', tahun: '2026', rate: 11 },
+    { id: 'VAT-002', bulan: 'Februari', tahun: '2026', rate: 11 },
+    { id: 'VAT-003', bulan: 'Maret', tahun: '2026', rate: 11 },
+    { id: 'VAT-004', bulan: 'April', tahun: '2026', rate: 11 },
+  ],
 };
 
 /**
@@ -398,7 +508,7 @@ export const createDraft = (formData) => {
     waterContent: formData.waterContent ? Number(formData.waterContent) : null,
     apiGravity: formData.apiGravity ? Number(formData.apiGravity) : null,
     status: 'draft',
-    statusText: 'Draft Tersimpan',
+    statusText: 'Draft',
     createdAt: getTimestamp(),
     updatedAt: getTimestamp(),
     submittedAt: null,
@@ -426,6 +536,7 @@ export const updateLifting = (id, formData) => {
     invoiceNumber: formData.invoiceNumber ?? existing.invoiceNumber,
     invoiceDate: formData.invoiceDate ?? existing.invoiceDate,
     dueDateInvoice: formData.dueDateInvoice ?? existing.dueDateInvoice,
+    dueDateFinal: formData.dueDateFinal ?? existing.dueDateFinal,
     blNumber: formData.blNumber ?? existing.blNumber,
     blDate: formData.blDate ?? existing.blDate,
     vesselName: formData.vesselName ?? existing.vesselName,
@@ -445,14 +556,21 @@ export const updateLifting = (id, formData) => {
     kategoriInvoice: formData.kategoriInvoice ?? existing.kategoriInvoice,
     totalVolume: formData.totalVolume !== undefined ? (formData.totalVolume ? Number(formData.totalVolume) : null) : existing.totalVolume,
     volumeNominasi: formData.volumeNominasi !== undefined ? (formData.volumeNominasi ? Number(formData.volumeNominasi) : null) : existing.volumeNominasi,
-    volumeK3s: formData.volumeNominasi !== undefined ? (formData.volumeNominasi ? Number(formData.volumeNominasi) : null) : (formData.volumeK3s !== undefined ? (formData.volumeK3s ? Number(formData.volumeK3s) : null) : existing.volumeK3s),
+    volumeK3s: formData.volumeK3s !== undefined ? (formData.volumeK3s ? Number(formData.volumeK3s) : null) : existing.volumeK3s,
     volumeGoi: formData.volumeGoi !== undefined ? (formData.volumeGoi ? Number(formData.volumeGoi) : null) : existing.volumeGoi,
     priceUsdBbl: formData.priceUsdBbl !== undefined ? (formData.priceUsdBbl ? Number(formData.priceUsdBbl) : null) : existing.priceUsdBbl,
-    volumeGross: formData.volumeGross !== undefined ? (formData.volumeGross ? Number(formData.volumeGross) : null) : existing.volumeGross,
-    volumeNet: formData.volumeNet !== undefined ? (formData.volumeNet ? Number(formData.volumeNet) : null) : existing.volumeNet,
-    waterContent: formData.waterContent !== undefined ? (formData.waterContent ? Number(formData.waterContent) : null) : existing.waterContent,
-    apiGravity: formData.apiGravity !== undefined ? (formData.apiGravity ? Number(formData.apiGravity) : null) : existing.apiGravity,
+    kursBeliBi: formData.kursBeliBi ?? existing.kursBeliBi,
+    kkksProvEntitlement: formData.kkksProvEntitlement ?? existing.kkksProvEntitlement,
+    kkksVolume: formData.kkksVolume ?? existing.kkksVolume,
+    kkksAlpha: formData.kkksAlpha ?? existing.kkksAlpha,
+    kkksPrice: formData.kkksPrice ?? existing.kkksPrice,
+    skkProvEntitlement: formData.skkProvEntitlement ?? existing.skkProvEntitlement,
+    skkVolume: formData.skkVolume ?? existing.skkVolume,
+    skkAlpha: formData.skkAlpha ?? existing.skkAlpha,
+    skkPrice: formData.skkPrice ?? existing.skkPrice,
+    alpha: formData.alpha ?? existing.alpha,
     catatan: formData.catatan ?? existing.catatan,
+    remarks: formData.remarks ?? existing.remarks,
     poMySap: formData.poMySap ?? existing.poMySap,
     totalAmount: formData.totalAmount ?? existing.totalAmount,
     provEntilement: formData.provEntilement ?? existing.provEntilement,
@@ -479,7 +597,7 @@ export const submitLifting = (id) => {
     ...data.liftings[index],
     invoiceId: data.liftings[index].invoiceId || generateInvoiceId(),
     status: 'submitted',
-    statusText: 'Menunggu Review L1',
+    statusText: 'Submitted',
     submittedAt: getTimestamp(),
     updatedAt: getTimestamp(),
   };
@@ -507,7 +625,7 @@ export const createAndSubmit = (formData) => {
   return submitLifting(draft.id);
 };
 
-export const approveLifting = (id, catatan = '') => {
+export const approveLifting = (id, catatan = '', acuanHarga = '') => {
   const data = getData();
   const index = data.liftings.findIndex((l) => l.id === id);
   if (index === -1) return null;
@@ -515,24 +633,28 @@ export const approveLifting = (id, catatan = '') => {
   data.liftings[index] = {
     ...data.liftings[index],
     status: 'approved',
-    statusText: 'Approved (Tembus L2)',
+    statusText: 'Approved',
     approvedAt: getTimestamp(),
     updatedAt: getTimestamp(),
     verifikasiCatatan: catatan || data.liftings[index].verifikasiCatatan,
+    acuanHarga: acuanHarga || data.liftings[index].acuanHarga,
   };
   saveData(data);
   return data.liftings[index];
 };
 
-export const rejectLifting = (id, catatan = '') => {
+export const rejectLifting = (id, catatan = '', isFinalReject = false) => {
   const data = getData();
   const index = data.liftings.findIndex((l) => l.id === id);
   if (index === -1) return null;
 
+  const targetStatus = isFinalReject ? 'rejected' : 'revisi';
+  const targetLabel = isFinalReject ? 'Rejected' : 'Need Revision';
+
   data.liftings[index] = {
     ...data.liftings[index],
-    status: 'revisi',
-    statusText: 'Butuh Perbaikan',
+    status: targetStatus,
+    statusText: targetLabel,
     updatedAt: getTimestamp(),
     verifikasiCatatan: catatan,
   };
@@ -544,7 +666,7 @@ export const deleteLifting = (id) => {
   const data = getData();
   const index = data.liftings.findIndex((l) => l.id === id);
   if (index === -1) return false;
-  if (data.liftings[index].status !== 'draft') return false;
+  if (data.liftings[index].status !== 'draft' && data.liftings[index].status !== 'revisi') return false;
 
   data.liftings.splice(index, 1);
   saveData(data);
@@ -767,6 +889,31 @@ export const saveDerivedCrude = (crude) => {
     const nextId = `DC-${String(data.derivedCrudes.length + 1).padStart(3, '0')}`;
     data.derivedCrudes.push({ ...crude, id: nextId });
   }
+  saveData(data);
+};
+
+// ─── VAT LIST ─────────────────────────────────────────────
+
+export const getVatList = () => {
+  const data = getData();
+  return data.vatList || SEED_DATA.vatList;
+};
+
+export const saveVat = (vat) => {
+  const data = getData();
+  if (!data.vatList) data.vatList = [...SEED_DATA.vatList];
+  if (vat.id) {
+    const idx = data.vatList.findIndex(x => x.id === vat.id);
+    if (idx !== -1) data.vatList[idx] = vat;
+  } else {
+    data.vatList.unshift({ ...vat, id: `VAT-${Date.now()}` });
+  }
+  saveData(data);
+};
+
+export const deleteVat = (id) => {
+  const data = getData();
+  data.vatList = data.vatList.filter(x => x.id !== id);
   saveData(data);
 };
 
