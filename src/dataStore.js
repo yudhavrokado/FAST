@@ -81,6 +81,8 @@ const SEED_DATA = {
       createdAt: '08 Mar 2026, 14:30',
       updatedAt: '08 Mar 2026, 14:30',
       submittedAt: '08 Mar 2026, 14:30',
+      createdBy: 'Budi Santoso (Pertamina)',
+      updatedBy: 'Rahmat Hidayat (Pertamina)',
       catatan: '',
       verifikasiCatatan: '',
       fileInvoice: 'invoice_alpha_8812.pdf',
@@ -153,6 +155,8 @@ const SEED_DATA = {
       createdAt: '06 Apr 2026, 10:00',
       updatedAt: '06 Apr 2026, 10:00',
       submittedAt: '06 Apr 2026, 10:00',
+      createdBy: 'Siti Aminah (KKKS Alpha)',
+      updatedBy: 'Andi Wijaya (KKKS Alpha)',
       catatan: 'Lifting April batch 1',
       verifikasiCatatan: ''
     },
@@ -190,6 +194,8 @@ const SEED_DATA = {
       createdAt: '26 Mar 2026, 10:00',
       updatedAt: '28 Mar 2026, 12:00',
       submittedAt: '03 Mar 2026, 11:00',
+      createdBy: 'John Doe (Pertamina)',
+      updatedBy: 'Samsul Arifin (Verifikator)',
       catatan: '',
       verifikasiCatatan: 'Angka Net Volume keliru. Mohon cek water content.',
     },
@@ -227,6 +233,8 @@ const SEED_DATA = {
       createdAt: '10 Mar 2026, 08:00',
       updatedAt: '10 Mar 2026, 08:00',
       submittedAt: '10 Mar 2026, 08:00',
+      createdBy: 'Ahmad Faisal (Pertamina EP)',
+      updatedBy: 'Ahmad Faisal (Pertamina EP)',
       catatan: '',
       verifikasiCatatan: '',
     },
@@ -269,6 +277,8 @@ const SEED_DATA = {
       createdAt: '09 Mar 2026, 10:00',
       updatedAt: '09 Mar 2026, 10:00',
       submittedAt: null,
+      createdBy: 'John Doe (Pertamina)',
+      updatedBy: 'John Doe (Pertamina)',
       catatan: '',
       verifikasiCatatan: '',
     },
@@ -445,6 +455,24 @@ const getData = () => {
   if (!raw) return { ...SEED_DATA };
   
   const saved = JSON.parse(raw);
+  // Ensure liftings have the new fields
+  if (saved.liftings) {
+    const personnel = [
+      'John Doe (Pertamina)',
+      'Andi Wijaya (KKKS Alpha)',
+      'Budi Santoso (Pertamina)',
+      'Siti Aminah (KKKS Alpha)',
+      'Rahmat Hidayat (Pertamina)',
+      'Samsul Arifin (Verifikator)',
+      'Ahmad Faisal (Pertamina EP)'
+    ];
+    saved.liftings = saved.liftings.map((l, index) => ({
+      ...l,
+      createdBy: l.createdBy || personnel[index % personnel.length],
+      updatedBy: l.updatedBy || personnel[(index + 1) % personnel.length]
+    }));
+  }
+
   // Merge top-level keys to ensure new datasets from SEED_DATA are available
   const merged = { ...SEED_DATA, ...saved };
   return merged;
@@ -478,6 +506,8 @@ export const createDraft = (formData) => {
   const newLifting = {
     id: generateId(),
     invoiceId: null,
+    createdBy: formData.createdBy || 'John Doe (Pertamina)',
+    updatedBy: formData.createdBy || 'John Doe (Pertamina)',
     invoiceNumber: formData.invoiceNumber || '',
     invoiceDate: formData.invoiceDate || '',
     dueDateInvoice: formData.dueDateInvoice || '',
@@ -512,6 +542,7 @@ export const createDraft = (formData) => {
     createdAt: getTimestamp(),
     updatedAt: getTimestamp(),
     submittedAt: null,
+    createdBy: formData.createdBy || 'John Doe (Pertamina)', 
     catatan: formData.catatan || '',
     verifikasiCatatan: '',
     files: {
@@ -577,6 +608,7 @@ export const updateLifting = (id, formData) => {
     statusSp3: formData.statusSp3 ?? existing.statusSp3,
     nomorSp3: formData.nomorSp3 ?? existing.nomorSp3,
     updatedAt: getTimestamp(),
+    updatedBy: formData.updatedBy || 'John Doe (Pertamina)', 
     files: {
       invoice: formData.fileInvoice ?? existing.files?.invoice,
       bl: formData.fileBL ?? existing.files?.bl,

@@ -10,6 +10,7 @@ import {
   getMopsNaphthaRef, saveMopsNaphthaRef, saveRefPrices, getPriceHistory,
   getPrimaryCrudes, savePrimaryCrude, getDerivedCrudes, saveDerivedCrude, getPrimaryCrudePrice,
   getKursBIList, getLatestKursBI, saveKursBI, saveK3S, saveSupplier, deleteK3S, deleteSupplier,
+  getVatList, saveVat, deleteVat,
   JENIS_MM_OPTIONS,
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, STATUS_SP3_OPTIONS,
   PEMBELIAN_OPTIONS, generateAndAssignInvoiceId
@@ -617,56 +618,84 @@ export const DataSubmission = () => {
 
       {/* ── Draft Data Table ── */}
       <div className="card">
-        <h2 className="mb-4 text-base font-semibold" style={{ paddingLeft: '8px' }}>Input Detail Invoice & Penagihan</h2>
+        <h2 className="mb-4 text-base font-semibold" style={{ paddingLeft: '8px' }}>Detail Invoice & Penagihan</h2>
         <div className="table-container">
-          <table>
+          <table style={{ minWidth: '1000px' }}>
             <thead>
               <tr style={{ background: 'var(--bg-surface)' }}>
                 <th>Nomor B/L & Tgl</th>
+                <th>Created By</th>
+                <th>Updated By</th>
                 <th>Vessel / Pipeline</th>
                 <th>Transaction & MM</th>
-                <th>Total Vol (Bbls)</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'center' }}>Aksi (Isi Penagihan)</th>
+                <th style={{ textAlign: 'right' }}>Total Volume Nominasi (bbls)</th>
+                <th style={{ textAlign: 'right' }}>Total Volume Realisasi (bbls)</th>
+                <th style={{ textAlign: 'center' }}>Status</th>
+                <th style={{ textAlign: 'center' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {liftings.map(l => (
-                <tr key={l.id}>
-                  <td>
-                    <div style={{ fontWeight: 600 }}>{l.blNumber || 'No B/L'}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.blDate || '-'}</div>
-                  </td>
-                  <td>
-                    <div>{l.isPipeline ? <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>Pipeline</span> : (l.vesselName || 'MT Unassigned')}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadPort || 'Unknown'} → {l.dischargePort || 'Unknown'}</div>
-                  </td>
-                  <td>
-                    <div>{l.kindOfTransaction || 'Regular'}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Crude Oil'}</div>
-                  </td>
-                  <td><span style={{ fontWeight: 500 }}>{l.totalVolume ? parseFloat(l.totalVolume).toLocaleString() : '-'}</span></td>
-                  <td>
-                    <span className={`badge badge-${l.status}`}>{l.status || 'Draft'}</span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <div className="flex justify-center gap-2">
-                      {l.status === 'draft' ? (
-                        <button className="btn btn-primary btn-sm" style={{ padding: '6px 12px', borderRadius: '4px' }} onClick={() => handleOpenPenagihan(l)}>
-                          <FileText size={14} /> Isi Detail Penagihan
-                        </button>
-                      ) : (
-                        <button className="btn btn-outline btn-sm" style={{ padding: '6px 12px', borderRadius: '4px' }} onClick={() => navigate(`/operasional/submission/edit/${l.id}`)}>
-                          <Edit2 size={14} /> Lihat Detail
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {liftings.map(l => {
+                // Status mapping and styling
+                const statusStyles = {
+                  draft: { label: 'Drafted', bg: '#f1f5f9', color: '#64748b' },
+                  submitted: { label: 'Submitted', bg: 'rgba(0,131,255,0.1)', color: '#0083ff' },
+                  revisi: { label: 'Need Revision', bg: 'rgba(245,158,11,0.1)', color: '#f59e0b' },
+                  approved: { label: 'Approved', bg: 'rgba(0,166,81,0.1)', color: '#00a651' },
+                  rejected: { label: 'Rejected', bg: 'rgba(239,68,68,0.1)', color: '#ef4444' }
+                };
+                const st = statusStyles[l.status] || statusStyles.draft;
+
+                return (
+                  <tr key={l.id}>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{l.blNumber || 'No B/L'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.blDate || '-'}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '13px', fontWeight: 500 }}>{l.createdBy || 'John Doe (Pertamina)'}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>{l.updatedBy || '-'}</div>
+                    </td>
+                    <td>
+                      <div>{l.isPipeline ? <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>Pipeline</span> : (l.vesselName || 'MT Unassigned')}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadPort || 'Unknown'} → {l.dischargePort || 'Unknown'}</div>
+                    </td>
+                    <td>
+                      <div>{l.kindOfTransaction || 'Regular'}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Crude Oil'}</div>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 500 }}>
+                      {l.volumeNominasi ? parseFloat(l.volumeNominasi).toLocaleString() : '-'}
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--accent)' }}>
+                      {l.totalVolume ? parseFloat(l.totalVolume).toLocaleString() : '-'}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, fontWeight: 700, minWidth: '100px', textAlign: 'center' }}>
+                        {st.label}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <div className="flex justify-center gap-2">
+                        {l.status === 'draft' || l.status === 'revisi' ? (
+                          <button className="btn btn-primary btn-sm" style={{ padding: '6px 14px', borderRadius: '4px' }} onClick={() => handleOpenPenagihan(l)}>
+                            {l.status === 'revisi' ? <Edit2 size={13} /> : <Plus size={13} />} {l.status === 'revisi' ? 'Revisi Data' : 'Isi Penagihan'}
+                          </button>
+                        ) : (
+                          <button className="btn btn-outline btn-sm" style={{ padding: '6px 14px', borderRadius: '4px' }} onClick={() => navigate(`/operasional/submission/edit/${l.id}`)}>
+                            <Eye size={13} /> Detail
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {liftings.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="text-center py-6 text-muted">Belum ada data lifting yang tersimpan.</td>
+                  <td colSpan="8" className="text-center py-6 text-muted">Belum ada data lifting yang tersimpan.</td>
                 </tr>
               )}
             </tbody>
@@ -687,7 +716,8 @@ export const EditLifting = () => {
   const emptyForm = {
     invoiceNumber: '',
     invoiceDate: '',
-    dueDateInvoice: '',
+    dueDateInvoice: '', // Provisional
+    dueDateFinal: '',
     blNumber: '',
     blDate: '',
     kkks: '',
@@ -711,6 +741,7 @@ export const EditLifting = () => {
     apiGravity: '',
     waterContent: '',
     catatan: '',
+    remarks: '',
     poMySap: '',
     totalAmount: '',
     alpha: 0,
@@ -721,6 +752,7 @@ export const EditLifting = () => {
     fileInvoice: null,
     fileBL: null,
     fileDocLain: null,
+    icpPrice: 0,
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -732,11 +764,17 @@ export const EditLifting = () => {
     const data = getLiftingById(id);
     if (data) {
       const latestKurs = getLatestKursBI();
+      const primaries = getPrimaryCrudes();
+      const deriveds = getDerivedCrudes();
+      const crude = primaries.find(c => (c.namaCrude || c.nama) === data.jenisMm) || deriveds.find(c => (c.namaCrude || c.nama) === data.jenisMm);
+      const currentIcp = crude ? getPrimaryCrudePrice(crude.kode || crude.baseRef) : 0;
+
       setForm({
         ...data,
         invoiceNumber: data.invoiceNumber || '',
         invoiceDate: data.invoiceDate || '',
         dueDateInvoice: data.dueDateInvoice || '',
+        dueDateFinal: data.dueDateFinal || '',
         kindOfTransaction: data.kindOfTransaction || 'Provisional',
         pembelian: data.pembelian || 'Domestik',
         kategoriInvoice: data.kategoriInvoice || 'Provisional Invoice',
@@ -747,14 +785,8 @@ export const EditLifting = () => {
         statusSp3: data.statusSp3 || 'Create SP3',
         nomorSp3: data.nomorSp3 || `SP3-${Math.floor(100000 + Math.random() * 900000)}`,
         alpha: data.alpha ?? 0,
-        periodeLiftingBulan: data.periodeLiftingBulan || '',
-        periodeLiftingTahun: data.periodeLiftingTahun || '',
-        seller: data.seller || data.kkks || '',
-        tipeLifting: data.tipeLifting || 'vessel',
-        vesselName: data.vesselName || '',
-        loadPort: data.loadPort || '',
-        dischargePort: data.dischargePort || '',
-        jenisMm: data.jenisMm || '',
+        remarks: data.remarks || '',
+        icpPrice: currentIcp,
       });
       setOriginalStatus(data.status);
     }
@@ -767,11 +799,11 @@ export const EditLifting = () => {
       const crude = primaries.find(c => (c.namaCrude || c.nama) === form.jenisMm) || deriveds.find(c => (c.namaCrude || c.nama) === form.jenisMm);
       if (crude) {
         const primaryPrice = getPrimaryCrudePrice(crude.kode || crude.baseRef);
-        const finalPrice = crude.kode ? primaryPrice : (primaryPrice + (crude.alpha || 0));
-        // Update both alpha and price based on selected crude
+        const finalPrice = primaryPrice + (crude.alpha || 0);
         setForm(prev => ({
           ...prev,
           alpha: crude.alpha ?? prev.alpha,
+          icpPrice: primaryPrice,
           priceUsdBbl: finalPrice || prev.priceUsdBbl
         }));
       }
@@ -812,13 +844,21 @@ export const EditLifting = () => {
   };
 
   const handleSubmit = () => {
-    if (!form.kindOfTransaction || !form.invoiceNumber || !form.invoiceDate || !form.dueDateInvoice || !form.totalVolume || !form.priceUsdBbl) {
+    if (!form.kindOfTransaction || !form.invoiceNumber || !form.invoiceDate || !form.dueDateInvoice || !form.volumeNominasi) {
       showToast('Lengkapi field wajib yang bertanda bintang (*) sebelum submit', 'error'); return;
     }
     updateLifting(id, form);
     submitLifting(id);
     showToast('Data berhasil disubmit ke verifikasi L1');
     setTimeout(() => navigate('/operasional/submission'), 1200);
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus data ini?')) {
+      deleteLifting(id);
+      showToast('Data berhasil dihapus');
+      navigate('/operasional/submission');
+    }
   };
 
   const statusBadge = {
@@ -828,7 +868,7 @@ export const EditLifting = () => {
     approved: { bg: 'rgba(0, 166, 81, 0.1)', color: 'var(--success)', text: 'Approved' },
   };
   const st = statusBadge[originalStatus] || { bg: '#f1f5f9', color: 'var(--text-muted)', text: originalStatus };
-  const isReadOnly = originalStatus !== 'draft';
+  const isReadOnly = originalStatus !== 'draft' && originalStatus !== 'revisi';
 
   return (
     <div className="animate-fade-in">
@@ -857,7 +897,7 @@ export const EditLifting = () => {
         <div style={{ display: 'flex', gap: '32px' }}>
           {/* Left Column: Data Lifting Review */}
           <div style={{ flex: 1, borderRight: '1px solid var(--border)', paddingRight: '24px' }}>
-            <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Review Data Lifting</h2>
+            <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div className="input-group">
                 <label className="input-label">Periode Bulan</label>
@@ -895,8 +935,12 @@ export const EditLifting = () => {
                 </select>
               </div>
               <div className="input-group">
-                <label className="input-label">BL Date</label>
+                <label className="input-label">B/L Dated</label>
                 <input type="date" className="input-control" disabled={isReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">B/L Number</label>
+                <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} placeholder="Contoh: BL-2026/01" />
               </div>
               <div className="input-group">
                 <label className="input-label">Tipe Lifting</label>
@@ -906,7 +950,7 @@ export const EditLifting = () => {
                 </select>
               </div>
               {form.tipeLifting === 'vessel' && (
-                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <div className="input-group" style={{ gridColumn: 'span 1' }}>
                   <label className="input-label">Vessel Name</label>
                   <input type="text" className="input-control" disabled={isReadOnly} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
                 </div>
@@ -924,28 +968,27 @@ export const EditLifting = () => {
                 </select>
               </div>
               <div className="input-group">
-                <label className="input-label">Total Volume (bbls)</label>
+                <label className="input-label">Total Volume Realisasi (bbls)</label>
                 <input type="number" className="input-control" disabled={isReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Volume Nominasi</label>
+                <label className="input-label">Total Volume Nominasi <span className="text-danger">*</span></label>
                 <input type="number" className="input-control" disabled={isReadOnly} value={form.volumeNominasi} onChange={e => handleChange('volumeNominasi', e.target.value)} />
               </div>
               <div className="input-group">
                 <label className="input-label">Operation Tolerance (%)</label>
                 <div className="input-control" style={{ background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', fontWeight: 600, color: 'var(--accent)' }}>
-                  {(parseFloat(form.volumeNominasi) && parseFloat(form.totalVolume)) 
-                    ? (((parseFloat(form.volumeNominasi) - parseFloat(form.totalVolume)) / parseFloat(form.volumeNominasi)) * 100).toFixed(2) + '%' 
+                  {(parseFloat(form.volumeNominasi) && parseFloat(form.totalVolume))
+                    ? (((parseFloat(form.volumeNominasi) - parseFloat(form.totalVolume)) / parseFloat(form.volumeNominasi)) * 100).toFixed(2) + '%'
                     : '0.00%'}
                 </div>
               </div>
             </div>
 
             <div className="mt-8 pt-6" style={{ borderTop: '1px dashed var(--border)' }}>
-              <h3 className="text-sm font-semibold mb-4">Update Info Lifting (Jika perlu)</h3>
               <div className="input-group mb-4">
-                <label className="input-label">Catatan Operasional</label>
-                <textarea className="input-control" rows="3" disabled={isReadOnly} value={form.catatan} onChange={e => handleChange('catatan', e.target.value)} placeholder="Tulis catatan tambahan..."></textarea>
+                <label className="input-label">Remarks (Free Text)</label>
+                <textarea className="input-control" rows="3" disabled={isReadOnly} value={form.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="Tulis catatan tambahan..."></textarea>
               </div>
             </div>
           </div>
@@ -969,20 +1012,34 @@ export const EditLifting = () => {
                 <input type="date" className="input-control" disabled={isReadOnly} value={form.invoiceDate} onChange={e => handleChange('invoiceDate', e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Due Date <span className="text-danger">*</span></label>
+                <label className="input-label">B/L Number</label>
+                <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Due Date Provisional <span className="text-danger">*</span></label>
                 <input type="date" className="input-control" disabled={isReadOnly} value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Due Date Final</label>
+                <input type="date" className="input-control" disabled={isReadOnly} value={form.dueDateFinal} onChange={e => handleChange('dueDateFinal', e.target.value)} />
               </div>
               <div className="input-group">
                 <label className="input-label">Kurs BI (Jisdor) <span className="text-danger">*</span></label>
                 <input type="number" className="input-control" disabled={isReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
               </div>
+              <div className="input-group">
+                <label className="input-label">Total Price (USD/bbl)</label>
+                <div className="input-control" style={{ background: 'var(--bg-surface)', fontWeight: 700, color: 'var(--accent)' }}>
+                  ${(parseFloat(form.priceUsdBbl) || 0).toFixed(2)}
+                </div>
+              </div>
             </div>
 
-            {/* Section 1: KKKS dan SHU */}
-            <div className="mt-8 p-6 rounded-xl" style={{ background: 'rgba(0,82,156,0.02)', border: '1px solid rgba(0,82,156,0.1)' }}>
+            {/* Section 1: Entitlement KKKS */}
+            <div className="mt-8 p-6 rounded-xl" style={{ border: '2px solid rgba(0,82,156,0.1)', background: '#fff' }}>
               <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} /> 
-                Entitlement KKKS dan SHU
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                Entitlement KKKS
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="input-group">
@@ -994,11 +1051,15 @@ export const EditLifting = () => {
                   <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksVolume} onChange={e => handleChange('kkksVolume', e.target.value)} />
                 </div>
                 <div className="input-group">
+                  <label className="input-label text-xs">ICP (USD/bbl)</label>
+                  <div className="input-control text-sm" style={{ background: '#f8fafc' }}>${(parseFloat(form.icpPrice) || 0).toFixed(2)}</div>
+                </div>
+                <div className="input-group">
                   <label className="input-label text-xs">Alpha (USD/bbl)</label>
                   <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksAlpha} onChange={e => handleChange('kkksAlpha', e.target.value)} />
                 </div>
                 <div className="input-group">
-                  <label className="input-label text-xs">Price (USD/bbl)</label>
+                  <label className="input-label text-xs">Total Price (USD/bbl)</label>
                   <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksPrice} onChange={e => handleChange('kkksPrice', e.target.value)} />
                 </div>
               </div>
@@ -1006,23 +1067,17 @@ export const EditLifting = () => {
                 <div style={{ flex: 1 }}>
                   <div className="text-xs text-muted mb-1">Amount (USD)</div>
                   <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
-                    ${Number((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className="text-xs text-muted mb-1">Amount (IDR)</div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
-                    Rp {Number((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0) * (parseFloat(form.kursBeliBi) || 0)).toLocaleString('id-ID')}
+                    ${Number((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Section 2: SKK Migas */}
-            <div className="mt-6 p-6 rounded-xl" style={{ background: 'rgba(0,166,81,0.02)', border: '1px solid rgba(0,166,81,0.1)' }}>
+            <div className="mt-6 p-6 rounded-xl" style={{ border: '2px solid rgba(0,166,81,0.1)', background: '#fff' }}>
               <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} /> 
-                Entitlement SKK Migas
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
+                Entitlement SKK Migas (GOI)
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="input-group">
@@ -1034,25 +1089,23 @@ export const EditLifting = () => {
                   <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkVolume} onChange={e => handleChange('skkVolume', e.target.value)} />
                 </div>
                 <div className="input-group">
-                  <label className="input-label text-xs">Alpha (USD/bbl)</label>
-                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkAlpha} onChange={e => handleChange('skkAlpha', e.target.value)} />
+                  <label className="input-label text-xs">ICP (USD/bbl)</label>
+                  <div className="input-control text-sm" style={{ background: '#f8fafc' }}>${(parseFloat(form.icpPrice) || 0).toFixed(2)}</div>
                 </div>
                 <div className="input-group">
-                  <label className="input-label text-xs">Price (USD/bbl)</label>
+                  <label className="input-label text-xs">Alpha (USD/bbl)</label>
+                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkAlpha || 0} onChange={e => handleChange('skkAlpha', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label text-xs">Total Price (USD/bbl)</label>
                   <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkPrice} onChange={e => handleChange('skkPrice', e.target.value)} />
                 </div>
               </div>
               <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
                 <div style={{ flex: 1 }}>
                   <div className="text-xs text-muted mb-1">Amount (USD)</div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
-                    ${Number((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className="text-xs text-muted mb-1">Amount (IDR)</div>
                   <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
-                    Rp {Number((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0) * (parseFloat(form.kursBeliBi) || 0)).toLocaleString('id-ID')}
+                    ${Number((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
@@ -1067,7 +1120,7 @@ export const EditLifting = () => {
                 <div className={`card-upload ${form.fileInvoice ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-invoice').click()}>
                   <input type="file" id="file-invoice" hidden onChange={e => handleFileChange('fileInvoice', e.target.files[0])} />
                   <div className="card-upload-icon">{form.fileInvoice ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
-                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Invoice PDF</span>
+                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Invoice</span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {form.fileInvoice || (isReadOnly ? 'Tidak ada file' : 'Drop file invoice')}
                   </span>
@@ -1075,7 +1128,7 @@ export const EditLifting = () => {
                 <div className={`card-upload ${form.fileBL ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-bl').click()}>
                   <input type="file" id="file-bl" hidden onChange={e => handleFileChange('fileBL', e.target.files[0])} />
                   <div className="card-upload-icon">{form.fileBL ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
-                  <span style={{ fontSize: '13px', fontWeight: 600 }}>B/L PDF</span>
+                  <span style={{ fontSize: '13px', fontWeight: 600 }}>B/L</span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {form.fileBL || (isReadOnly ? 'Tidak ada file' : 'Drop file B/L')}
                   </span>
@@ -1101,7 +1154,8 @@ export const EditLifting = () => {
 
             {!isReadOnly && (
               <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-                <button className="btn btn-outline" onClick={() => navigate('/operasional/submission')}>Simpan Draft</button>
+                <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Delete Data</button>
+                <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
                 <button className="btn btn-primary" onClick={handleSubmit}><CheckCircle size={16} /> Submit Verifikasi</button>
               </div>
             )}
@@ -1257,6 +1311,10 @@ export const MasterDataPage = () => {
   const [k3sList, setK3sList] = useState([]);
   const [supplierList, setSupplierList] = useState([]);
   const [k3sSearch, setK3sSearch] = useState('');
+  const [vatList, setVatList] = useState([]);
+
+  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const years = [2024, 2025, 2026, 2027];
 
   useEffect(() => {
     refreshIcpData();
@@ -1267,6 +1325,7 @@ export const MasterDataPage = () => {
     setKursBIList(getKursBIList());
     setK3sList(getK3SList());
     setSupplierList(getSupplierList());
+    setVatList(getVatList());
   };
 
   const refreshIcpData = () => {
@@ -1299,7 +1358,8 @@ export const MasterDataPage = () => {
 
   // Save handlers
   const handleSaveRef = () => {
-    saveRefPrices({ periode: editingItem.periode, datedBrent: editingItem.datedBrent, mopsNaphtha: editingItem.mopsNaphtha });
+    const combinedPeriode = `${editingItem.bulan} ${editingItem.tahun}`;
+    saveRefPrices({ periode: combinedPeriode, datedBrent: editingItem.datedBrent, mopsNaphtha: editingItem.mopsNaphtha });
     refreshIcpData();
     setEditSection(null);
     setEditingItem(null);
@@ -1307,7 +1367,8 @@ export const MasterDataPage = () => {
   };
 
   const handleSavePrimary = () => {
-    savePrimaryCrude(editingItem);
+    const combinedPeriode = `${editingItem.bulan} ${editingItem.tahun}`;
+    savePrimaryCrude({ ...editingItem, periode: combinedPeriode });
     refreshIcpData();
     setEditSection(null);
     setEditingItem(null);
@@ -1334,6 +1395,9 @@ export const MasterDataPage = () => {
     } else if (editSection === 'supplier') {
       saveSupplier(editingItem);
       showToast('Supplier berhasil diperbarui');
+    } else if (editSection === 'vat') {
+      saveVat(editingItem);
+      showToast('Master Data VAT berhasil diperbarui');
     }
     refreshOtherData();
     setEditSection(null);
@@ -1374,7 +1438,8 @@ export const MasterDataPage = () => {
           </button>
           <button className="btn btn-primary" style={{ padding: '8px 16px' }} onClick={() => {
             setEditSection('ref');
-            setEditingItem({ periode: icpPeriode, datedBrent, mopsNaphtha });
+            const [b, t] = icpPeriode.split(' ');
+            setEditingItem({ bulan: b || months[new Date().getMonth()], tahun: t || new Date().getFullYear(), datedBrent, mopsNaphtha });
           }}><Edit2 size={14} /> Ubah Harga Referensi</button>
         </div>
       </div>
@@ -1457,7 +1522,7 @@ export const MasterDataPage = () => {
             <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px' }}
               onClick={() => {
                 setEditSection('addPrimary');
-                setEditingItem({ id: '', namaCrude: '', kode: '', refType: 'brent', alpha: 0, used: true });
+                setEditingItem({ id: '', namaCrude: '', kode: '', refType: 'brent', alpha: 0, used: true, bulan: months[new Date().getMonth()], tahun: new Date().getFullYear() });
               }}
             ><Plus size={12} /> Tambah</button>
             <button
@@ -1471,7 +1536,8 @@ export const MasterDataPage = () => {
               disabled={!selectedId || !selectedId.startsWith('PC')}
               onClick={() => {
                 const item = primaryCrudes.find(c => c.id === selectedId);
-                if (item) { setEditSection('primary'); setEditingItem({ ...item }); }
+                const [b, t] = (item.periode || '').split(' ');
+                if (item) { setEditSection('primary'); setEditingItem({ ...item, bulan: b || months[new Date().getMonth()], tahun: t || new Date().getFullYear() }); }
               }}
             ><Edit2 size={12} /> Edit</button>
           </div>
@@ -1623,15 +1689,67 @@ export const MasterDataPage = () => {
     </div>
   );
 
+  const renderVatTab = () => (
+    <div>
+      <div className="flex-responsive justify-between items-center mb-6">
+        <div className="flex gap-2">
+          <button className="btn btn-primary" style={{ padding: '8px 16px' }}
+            onClick={() => {
+              setEditSection('vat');
+              setEditingItem({ bulan: months[new Date().getMonth()], tahun: new Date().getFullYear(), rate: 11 });
+            }}
+          ><Plus size={14} /> Add VAT Rate</button>
+        </div>
+      </div>
+      <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
+              <th style={{ padding: '16px', width: '48px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db', background: '#fff' }} /></th>
+              <th style={{ padding: '16px' }}>Periode Bulan</th>
+              <th style={{ padding: '16px' }}>Periode Tahun</th>
+              <th style={{ padding: '16px' }}>VAT Rate (%)</th>
+              <th style={{ padding: '16px' }}>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vatList.map((v) => (
+              <tr key={v.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '16px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db' }} /></td>
+                <td style={{ padding: '16px' }}>{v.bulan}</td>
+                <td style={{ padding: '16px' }}>{v.tahun}</td>
+                <td style={{ padding: '16px', fontWeight: 700, color: 'var(--accent)' }}>{v.rate}%</td>
+                <td style={{ padding: '16px' }}>
+                  <div className="flex gap-2">
+                    <button className="btn btn-sm btn-outline" style={{ padding: '4px' }} onClick={() => { setEditSection('vat'); setEditingItem(v); }}>
+                      <Edit2 size={12} />
+                    </button>
+                    <button className="btn btn-sm btn-outline text-danger" style={{ padding: '4px' }} onClick={() => { if (window.confirm('Hapus data VAT ini?')) { deleteVat(v.id); refreshOtherData(); showToast('VAT berhasil dihapus'); } }}>
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {vatList.length === 0 && (
+              <tr><td colSpan={5} className="text-center py-8 text-muted">Belum ada data VAT.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="animate-fade-in">
       {/* Toast */}
       {toast && (<div style={{ position: 'fixed', top: 24, right: 32, zIndex: 1100, padding: '14px 24px', borderRadius: '10px', color: '#fff', fontWeight: 600, fontSize: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', background: 'var(--success)', display: 'flex', alignItems: 'center', gap: 10, animation: 'fadeIn 0.3s ease-out' }}><CheckCircle size={18} /> {toast}</div>)}
 
-      <div className="tabs-container flex-wrap" style={{ overflowX: 'auto', whiteSpace: 'nowrap' }}>
-        <button className={`tab-btn ${activeTab === 'icp' ? 'active' : ''}`} onClick={() => setActiveTab('icp')}>Indonesian Crude Price</button>
-        <button className={`tab-btn ${activeTab === 'kurs' ? 'active' : ''}`} onClick={() => setActiveTab('kurs')}>Kurs (BI)</button>
-        <button className={`tab-btn ${activeTab === 'k3s' ? 'active' : ''}`} onClick={() => setActiveTab('k3s')}>K3S & Supplier</button>
+      <div className="flex gap-1 mb-8 p-1 rounded-xl" style={{ background: 'rgba(0,82,156,0.05)', alignSelf: 'flex-start' }}>
+        <button className={`btn ${activeTab === 'icp' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('icp')} style={{ padding: '10px 24px', borderRadius: '10px' }}>ICP & Harga Referensi</button>
+        <button className={`btn ${activeTab === 'kurs' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('kurs')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Kurs BI (JISDOR)</button>
+        <button className={`btn ${activeTab === 'k3s' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('k3s')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Partner K3S & Supplier</button>
+        <button className={`btn ${activeTab === 'vat' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('vat')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Master Data VAT</button>
       </div>
 
       {/* ICP Tab */}
@@ -1770,7 +1888,45 @@ export const MasterDataPage = () => {
         </div>
       )}
 
+      {/* VAT Tab */}
+      {activeTab === 'vat' && renderVatTab()}
+
       {/* ===== MODALS ===== */}
+      {/* Modal: VAT Rate */}
+      {editSection === 'vat' && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '450px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2"><DollarSign size={20} color="var(--accent)" /> {editingItem.id ? 'Edit VAT Rate' : 'Tambah VAT Rate'}</h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="input-group">
+                  <label className="input-label">Periode Bulan</label>
+                  <select className="input-control" value={editingItem.bulan} onChange={e => setEditingItem({ ...editingItem, bulan: e.target.value })}>
+                    {months.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Periode Tahun</label>
+                  <select className="input-control" value={editingItem.tahun} onChange={e => setEditingItem({ ...editingItem, tahun: e.target.value })}>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="input-group">
+                <label className="input-label">VAT Rate (%)</label>
+                <input type="number" step="0.1" className="input-control" placeholder="11.0" value={editingItem.rate} onChange={e => setEditingItem({ ...editingItem, rate: parseFloat(e.target.value) || 0 })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveOther}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Edit Reference Prices (Dated Brent + MOPS Naphtha + Periode) */}
       {editSection === 'ref' && editingItem && (
@@ -1781,11 +1937,19 @@ export const MasterDataPage = () => {
               <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
             </div>
             <div className="grid gap-4 mb-6">
-              <div className="input-group">
-                <label className="input-label">Periode ICP</label>
-                <select className="input-control" value={editingItem.periode} onChange={e => setEditingItem({ ...editingItem, periode: e.target.value })}>
-                  {periodeOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="input-group">
+                  <label className="input-label">Bulan</label>
+                  <select className="input-control" value={editingItem.bulan} onChange={e => setEditingItem({ ...editingItem, bulan: e.target.value })}>
+                    {months.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Tahun</label>
+                  <select className="input-control" value={editingItem.tahun} onChange={e => setEditingItem({ ...editingItem, tahun: e.target.value })}>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="input-group">
                 <label className="input-label">Dated Brent (USD/bbl)</label>
@@ -1831,6 +1995,20 @@ export const MasterDataPage = () => {
               <div className="input-group">
                 <label className="input-label">Nama Crude</label>
                 <input type="text" className="input-control" placeholder="contoh: Mahakam Block" value={editingItem.namaCrude} onChange={e => setEditingItem({ ...editingItem, namaCrude: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="input-group">
+                  <label className="input-label">Bulan</label>
+                  <select className="input-control" value={editingItem.bulan} onChange={e => setEditingItem({ ...editingItem, bulan: e.target.value })}>
+                    {months.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Tahun</label>
+                  <select className="input-control" value={editingItem.tahun} onChange={e => setEditingItem({ ...editingItem, tahun: e.target.value })}>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="input-group">
                 <label className="input-label">Harga Referensi</label>
@@ -2238,8 +2416,8 @@ export const SettlementArchive = () => {
   }, []);
 
   const filteredData = liftings.filter(item => {
-    return (item.invoiceId || item.id || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-           (item.kkks || '').toLowerCase().includes(searchTerm.toLowerCase());
+    return (item.invoiceId || item.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.kkks || '').toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   if (selectedInvoice) {
@@ -2260,12 +2438,12 @@ export const SettlementArchive = () => {
         <div className="flex w-full-mobile">
           <div className="search-bar flex items-center gap-2 w-full-mobile" style={{ background: 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
             <Search size={16} color="var(--text-muted)" />
-            <input 
-              type="text" 
-              placeholder="Temukan Invoice atau KKKS..." 
+            <input
+              type="text"
+              placeholder="Temukan Invoice atau KKKS..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }} 
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }}
             />
           </div>
         </div>
@@ -2287,7 +2465,7 @@ export const SettlementArchive = () => {
             {filteredData.map((row) => {
               const totalUsd = (parseFloat(row.kkksVolume || 0) * parseFloat(row.kkksPrice || 0)) + (parseFloat(row.skkVolume || 0) * parseFloat(row.skkPrice || 0));
               const totalIdr = totalUsd * (parseFloat(row.kursBeliBi || 15450));
-              
+
               return (
                 <tr key={row.id}>
                   <td className="font-medium" style={{ color: 'var(--accent-light)' }}>{row.invoiceId || row.id}</td>
@@ -2297,9 +2475,9 @@ export const SettlementArchive = () => {
                   <td className="font-medium" style={{ color: 'var(--accent)' }}>{formatUsd(totalUsd)}</td>
                   <td className="font-medium" style={{ color: 'var(--success)' }}>{formatIdr(totalIdr)}</td>
                   <td>
-                    <button 
-                      onClick={() => setSelectedInvoice(row)} 
-                      className="btn btn-sm btn-primary" 
+                    <button
+                      onClick={() => setSelectedInvoice(row)}
+                      className="btn btn-sm btn-primary"
                       style={{ padding: '6px 12px' }}
                     >
                       Buka Kalkulasi PDF
@@ -2336,16 +2514,16 @@ export const SettlementSheet = ({ invoice, onBack }) => {
   const totalQuantity = parseFloat(invoice.totalVolume || 0);
   const kkksQuantity = parseFloat(invoice.kkksVolume || 0);
   const skkQuantity = parseFloat(invoice.skkVolume || 0);
-  
+
   const kkksAmountUsd = (kkksQuantity * kkksPrice);
   const skkAmountUsd = (skkQuantity * skkPrice);
   const subTotalUsd = kkksAmountUsd + skkAmountUsd;
   const vatAmountUsd = subTotalUsd * 0.11; // VAT 11%
   const totalUsdWithVat = subTotalUsd + vatAmountUsd;
-  
+
   const kurs = parseFloat(invoice.kursBeliBi || 15450);
   const alpha = 2.50; // Mock Alpha if not found, usually Price - ICP
-  
+
   return (
     <div className="animate-fade-in" style={{ width: 'calc(100% + 48px)', maxWidth: 'none', margin: '-20px -24px', padding: '24px' }}>
       <div className="flex justify-between items-center mb-6">
@@ -2361,18 +2539,18 @@ export const SettlementSheet = ({ invoice, onBack }) => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '48px', padding: '24px', background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
           <div>
             <label style={{ fontSize: '10px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>No. PO MySAP</label>
-            <input 
-              value={poMySap} 
-              onChange={e => setPoMySap(e.target.value)} 
+            <input
+              value={poMySap}
+              onChange={e => setPoMySap(e.target.value)}
               placeholder="Masukkan No. PO MySAP..."
               style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700 }}
             />
           </div>
           <div>
             <label style={{ fontSize: '10px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>No. PO Hardcopy</label>
-            <input 
-              value={poHardcopy} 
-              onChange={e => setPoHardcopy(e.target.value)} 
+            <input
+              value={poHardcopy}
+              onChange={e => setPoHardcopy(e.target.value)}
               placeholder="Masukkan No. PO Hardcopy..."
               style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700 }}
             />
@@ -2390,45 +2568,45 @@ export const SettlementSheet = ({ invoice, onBack }) => {
         <div className="grid grid-cols-2 mb-12" style={{ fontSize: '13px', gap: '64px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Jenis Transaksi:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Jenis Transaksi:</span>
               <span style={{ fontWeight: 800 }}>{invoice.kindOfTransaction || 'Final'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Seller / Consignor:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Seller / Consignor:</span>
               <span style={{ fontWeight: 800 }}>{invoice.kkks}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Entity:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Entity:</span>
               <span style={{ fontWeight: 800 }}>{invoice.kkks}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Kapal / Pipeline:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Kapal / Pipeline:</span>
               <span style={{ fontWeight: 800 }}>{invoice.vesselName || 'MT Agung Samudra'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Dischport:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Dischport:</span>
               <span style={{ fontWeight: 800 }}>{invoice.dischargePort || 'Balongan'}</span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>BL Date:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>BL Date:</span>
               <span style={{ fontWeight: 800 }}>{invoice.blDate}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Tanggal Invoice:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Tanggal Invoice:</span>
               <span style={{ fontWeight: 800 }}>{invoice.invoiceDate || '01 Mar 2026'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Due Date:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Due Date:</span>
               <span style={{ fontWeight: 800 }}>{invoice.dueDateInvoice}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>PO MySAP:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>PO MySAP:</span>
               <span style={{ fontWeight: 800 }}>{poMySap || '-'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Acuan Harga:</span> 
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Acuan Harga:</span>
               <span style={{ fontWeight: 800 }}>{invoice.acuanHarga || 'ICP SLC + Alpha'}</span>
             </div>
           </div>
@@ -2498,7 +2676,7 @@ export const SettlementSheet = ({ invoice, onBack }) => {
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px' }}>Authorized Digital Signature</div>
           </div>
         </div>
-        
+
         <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px dashed #e2e8f0', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
           Generated by Pertamina FAST • Dokumen ini diproses secara otomatis dan sah tanpa tanda tangan basah.
         </div>
@@ -2516,8 +2694,8 @@ export const VerificationDetail = () => {
   const [toast, setToast] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  useEffect(() => { 
-    const data = getLiftingById(id); 
+  useEffect(() => {
+    const data = getLiftingById(id);
     if (data) {
       setLifting(data);
       setAcuanHarga(data.acuanHarga || '');
@@ -2535,10 +2713,10 @@ export const VerificationDetail = () => {
 
   const handleConfirm = () => {
     if (!decision) { showToast('Pilih keputusan: Approve, Revise, atau Reject'); return; }
-    
-    if (decision === 'approve') { 
-      approveLifting(id, catatan, acuanHarga); 
-      showToast('Lifting Berhasil Disetujui (Approved)'); 
+
+    if (decision === 'approve') {
+      approveLifting(id, catatan, acuanHarga);
+      showToast('Lifting Berhasil Disetujui (Approved)');
     } else if (decision === 'revise') {
       if (!catatan.trim()) { showToast('Catatan wajib diisi untuk permintaan revisi'); return; }
       rejectLifting(id, catatan, false); // False = status 'revisi'
@@ -2548,7 +2726,7 @@ export const VerificationDetail = () => {
       rejectLifting(id, catatan, true); // True = status 'rejected'
       showToast('Lifting Ditolak (Rejected)');
     }
-    
+
     setTimeout(() => navigate('/operasional/verifikasi'), 1500);
   };
 
@@ -2645,62 +2823,78 @@ export const VerificationDetail = () => {
         <div style={{ display: 'flex', gap: '32px', alignItems: 'start' }}>
           {/* Main Content */}
           <div style={{ flex: 1 }}>
-            {/* Section 1: Review Data Lifting */}
+            {/* Section 1: Rincian Data Lifting Minyak */}
             <div style={cardStyle}>
               <div style={sectionHeaderStyle}>
                 <h2 style={{ fontSize: '14px', fontWeight: 900, color: '#00529c', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Activity size={18} /> Review Data Lifting
+                  <Activity size={18} /> Review Data Lifting Minyak
                 </h2>
                 {statusBadge[lifting.status]}
               </div>
 
               <div style={grid3Col}>
                 <div>
-                  <LabelVal label="Periode Lifting" val={lifting.periodeLiftingBulan ? (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][parseInt(lifting.periodeLiftingBulan) - 1] + ' ' + lifting.periodeLiftingTahun) : '-'} />
-                  <LabelVal label="Seller / KKKS" val={lifting.seller || lifting.kkks} />
+                  <LabelVal label="Periode Bulan / Tahun" val={lifting.periodeLiftingBulan ? (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][parseInt(lifting.periodeLiftingBulan) - 1] + ' ' + lifting.periodeLiftingTahun) : '-'} />
+                  <LabelVal label="Seller" val={lifting.seller || lifting.kkks} />
                   <LabelVal label="Jenis Cargo" val={lifting.jenisMm} />
-                  <LabelVal label="B/L Date" val={lifting.blDate} />
-                  <LabelVal label="Tipe Lifting / Vessel" val={lifting.tipeLifting === 'pipeline' ? 'Pipeline' : lifting.vesselName} />
-                  <LabelVal label="Port (Load / Discharge)" val={`${lifting.loadPort || '-'} / ${lifting.dischargePort || '-'}`} />
+                  <LabelVal label="B/L Dated" val={lifting.blDate} />
+                  <LabelVal label="B/L Number" val={lifting.blNumber} />
+                  <LabelVal label="Tipe Lifting" val={lifting.tipeLifting === 'pipeline' ? 'Pipeline' : 'Vessel'} />
                 </div>
                 <div>
-                  <LabelVal label="Total Volume Realisasi (BBLS)" val={formatVol(lifting.totalVolume)} />
+                  {lifting.tipeLifting === 'vessel' && <LabelVal label="Vessel Name" val={lifting.vesselName} />}
+                  <LabelVal label="Loading Port" val={lifting.loadPort} />
+                  <LabelVal label="Discharge Port" val={lifting.dischargePort} />
+                  <LabelVal label="Total Volume Realisasi (bbls)" val={formatVol(lifting.totalVolume)} />
+                  <LabelVal label="Total Volume Nominasi" val={formatVol(lifting.volumeNominasi)} subVal={{ text: '*', style: { color: 'var(--danger)', background: 'transparent', padding: 0 } }} />
                   <LabelVal label="Operation Tolerance (%)" val={tol.toFixed(2) + '%'} subVal={isOk ? { text: 'OKE', style: { background: '#ecfdf5', color: '#10b981' } } : null} color="#00529c" />
-                  <LabelVal label="Volume Net (BBLS)" val={formatVol(lifting.volumeNet || lifting.totalVolume)} color="#00529c" />
-                  <LabelVal label="Water Content" val={(lifting.waterContent || '0.05') + '%'} color="#00529c" />
-                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Catatan Operasional</div>
-                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#94a3b8', lineHeight: '1.6' }}>{lifting.catatan || 'Tidak ada catatan...'}</div>
                 </div>
-                <div>
-                  <LabelVal label="Total Volume Nominasi" val={formatVol(lifting.volumeNominasi)} />
-                  <LabelVal label="API Gravity" val={(lifting.apiGravity || '32.5') + '°'} />
+                <div style={{ gridColumn: 'span 1' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Remarks (Free Text)</div>
+                  <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#475569', lineHeight: '1.6', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>{lifting.remarks || lifting.catatan || '-'}</div>
                 </div>
               </div>
             </div>
 
-            {/* Section 2: Detail Penagihan & Keuangan */}
+            {/* Section 2: Review Detail Penagihan & Keuangan */}
             <div style={cardStyle}>
               <div style={sectionHeaderStyle}>
                 <h2 style={{ fontSize: '14px', fontWeight: 900, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <DollarSign size={18} /> Detail Penagihan & Keuangan
+                  <DollarSign size={18} /> Review Detail Penagihan & Keuangan
                 </h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginBottom: '48px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '40px', marginBottom: '48px' }}>
                 <div>
                   <LabelVal label="Kind of Transaction" val={lifting.kindOfTransaction} />
                   <LabelVal label="Invoice Number" val={lifting.invoiceNumber} color="#00529c" />
                 </div>
                 <div>
-                  <LabelVal label="Tanggal (Inv / Due)" val={`${lifting.invoiceDate || '-'} / ${lifting.dueDateInvoice || '-'}`} />
+                  <LabelVal label="B/L Number" val={lifting.blNumber} />
                   <LabelVal label="Kurs BI (Jisdor)" val={formatIdr(lifting.kursBeliBi)} />
+                </div>
+                <div>
+                  <LabelVal label="Tgl Invoice / Jatuh Tempo Provisional" val={`${lifting.invoiceDate || '-'} / ${lifting.dueDateInvoice || '-'}`} />
+                  <LabelVal label="Jatuh Tempo Final" val={lifting.dueDateFinal || '-'} />
                 </div>
               </div>
 
               {/* Financial Comparisons */}
               {[
-                { label: 'Entitlement KKKS Saja', vol: lifting.kkksVolume, price: lifting.kkksPrice, color: '#00529c' },
-                { label: 'Entitlement SKK Migas (GOI)', vol: lifting.skkVolume, price: lifting.skkPrice, color: '#10b981' }
+                { 
+                  label: 'Entitlement KKKS', 
+                  vol: lifting.kkksVolume, 
+                  price: lifting.kkksPrice, 
+                  alpha: lifting.kkksAlpha,
+                  color: '#00529c' 
+                },
+                { 
+                  label: 'Entitlement SKK Migas (GOI)', 
+                  vol: lifting.skkVolume, 
+                  price: lifting.skkPrice, 
+                  alpha: lifting.skkAlpha,
+                  color: '#10b981' 
+                }
               ].map((ent, i) => (
                 <div key={i} style={{ marginBottom: '40px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -2715,7 +2909,15 @@ export const VerificationDetail = () => {
                         <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '12px', borderBottom: '1px dashed #e2e8f0', marginBottom: '24px' }}>Data Submitted (Actual)</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
                           <div>
-                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Price (USD/bbl)</div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>ICP (USD/bbl)</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>${formatCur(lifting.icpPrice)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Alpha (USD/bbl)</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>${formatCur(ent.alpha)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Total Price (USD/bbl)</div>
                             <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>${formatCur(ent.price)}</div>
                           </div>
                           <div>
@@ -2740,15 +2942,19 @@ export const VerificationDetail = () => {
                         <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '12px', borderBottom: '1px dashed #e2e8f0', marginBottom: '24px' }}>System Recalculated (Master Ref)</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
                           <div>
-                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Ref. Price ({lifting.jenisMm})</div>
-                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#f59e0b' }}>${formatCur(refPrice)}</div>
+                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Ref. Base Price</div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#f59e0b' }}>${formatCur(refBasePrice)}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Ref. Alpha</div>
                             <div style={{ fontSize: '15px', fontWeight: 800, color: '#00529c' }}>${formatCur(refAlpha)}</div>
                           </div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                        <div style={{ mt: '32px' }}>
+                          <div style={{ fontSize: '9px', fontWeight: 800, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '6px' }}>Total Ref. Price</div>
+                          <div style={{ fontSize: '20px', fontWeight: 900, color: '#cbd5e1' }}>${formatCur(refPrice)}</div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginTop: '24px' }}>
                           <div>
                             <div style={{ fontSize: '9px', fontWeight: 800, color: '#cbd5e1', textTransform: 'uppercase', marginBottom: '6px' }}>Amount USD (REF)</div>
                             <div style={{ fontSize: '16px', fontWeight: 800, color: '#cbd5e1' }}>${formatCur(parseFloat(ent.vol) * refPrice)}</div>
@@ -2770,7 +2976,7 @@ export const VerificationDetail = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
                   {[
                     { label: 'Invoice', file: lifting.fileInvoice, icon: <FileText size={18} /> },
-                    { label: 'Bill of Lading', file: lifting.fileBL, icon: <Activity size={18} /> },
+                    { label: 'B/L', file: lifting.fileBL, icon: <Activity size={18} /> },
                     { label: 'Faktur Pajak', file: lifting.fileFakturPajak, icon: <DollarSign size={18} /> },
                     { label: 'Dokumen Lain', file: lifting.fileDocLain, icon: <Info size={18} /> }
                   ].map((doc, i) => (
@@ -2790,44 +2996,44 @@ export const VerificationDetail = () => {
           {/* Sidebar */}
           <div style={{ width: '380px', position: 'sticky', top: '40px' }}>
             <div style={{ ...cardStyle, borderTop: '6px solid #00529c', padding: '0' }}>
-               <div style={{ padding: '32px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Zap size={22} color="#00529c" fill="#00529c" />
-                  <h2 style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tindakan Lanjutan</h2>
-               </div>
+              <div style={{ padding: '32px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Zap size={22} color="#00529c" fill="#00529c" />
+                <h2 style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Tindakan Lanjutan</h2>
+              </div>
 
-               <div style={{ padding: '32px' }}>
-                 <div style={{ marginBottom: '40px' }}>
-                   <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '20px' }}>Keputusan L1</label>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                     <button onClick={() => setDecision('approve')} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '2px solid', fontWeight: 900, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', borderColor: decision === 'approve' ? '#10b981' : '#f1f5f9', background: decision === 'approve' ? '#ecfdf5' : '#ffffff', color: decision === 'approve' ? '#10b981' : '#64748b' }}>Approve</button>
-                     <button onClick={() => setDecision('reject')} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '2px solid', fontWeight: 900, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', borderColor: decision === 'reject' ? '#ef4444' : '#f1f5f9', background: decision === 'reject' ? '#fef2f2' : '#ffffff', color: decision === 'reject' ? '#ef4444' : '#64748b' }}>Reject</button>
-                   </div>
-                 </div>
+              <div style={{ padding: '32px' }}>
+                <div style={{ marginBottom: '40px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '20px' }}>Keputusan L1</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <button onClick={() => setDecision('approve')} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '2px solid', fontWeight: 900, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', borderColor: decision === 'approve' ? '#10b981' : '#f1f5f9', background: decision === 'approve' ? '#ecfdf5' : '#ffffff', color: decision === 'approve' ? '#10b981' : '#64748b' }}>Approve</button>
+                    <button onClick={() => setDecision('reject')} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '2px solid', fontWeight: 900, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', borderColor: decision === 'reject' ? '#ef4444' : '#f1f5f9', background: decision === 'reject' ? '#fef2f2' : '#ffffff', color: decision === 'reject' ? '#ef4444' : '#64748b' }}>Reject</button>
+                  </div>
+                </div>
 
-                 <div style={{ marginBottom: '32px' }}>
-                   <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '12px' }}>Acuan Harga (Free Text)</label>
-                   <input value={acuanHarga} onChange={e => setAcuanHarga(e.target.value)} placeholder="Ex: ICP Kalimantan + Alpha..." style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '13px', fontWeight: 600, outline: 'none' }} />
-                 </div>
+                <div style={{ marginBottom: '32px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '12px' }}>Acuan Harga (Free Text)</label>
+                  <input value={acuanHarga} onChange={e => setAcuanHarga(e.target.value)} placeholder="Ex: ICP Kalimantan + Alpha..." style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '13px', fontWeight: 600, outline: 'none' }} />
+                </div>
 
-                 <div style={{ marginBottom: '40px' }}>
-                   <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '12px' }}>Catatan Verifikasi</label>
-                   <textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Tambahkan alasan atau catatan pemeriksaan..." style={{ width: '100%', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '13px', fontWeight: 600, minHeight: '160px', outline: 'none', resize: 'none' }} />
-                 </div>
+                <div style={{ marginBottom: '40px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '12px' }}>Catatan Verifikasi</label>
+                  <textarea value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Tambahkan alasan atau catatan pemeriksaan..." style={{ width: '100%', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '13px', fontWeight: 600, minHeight: '160px', outline: 'none', resize: 'none' }} />
+                </div>
 
-                 <button disabled={!decision} onClick={handleConfirm} style={{ width: '100%', padding: '20px', borderRadius: '12px', background: decision ? '#1a3a5f' : '#cbd5e1', color: '#ffffff', fontWeight: 900, fontSize: '16px', border: 'none', cursor: decision ? 'pointer' : 'not-allowed', boxShadow: decision ? '0 10px 25px rgba(26,58,95,0.2)' : 'none' }}>Simpan & Kirim</button>
+                <button disabled={!decision} onClick={handleConfirm} style={{ width: '100%', padding: '20px', borderRadius: '12px', background: decision ? '#1a3a5f' : '#cbd5e1', color: '#ffffff', fontWeight: 900, fontSize: '16px', border: 'none', cursor: decision ? 'pointer' : 'not-allowed', boxShadow: decision ? '0 10px 25px rgba(26,58,95,0.2)' : 'none' }}>Simpan & Kirim</button>
 
-                 <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '1px dashed #e2e8f0' }}>
-                   <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px' }}>Audit Informasi</div>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>Status:</span>
-                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#1e293b', textTransform: 'uppercase' }}>{lifting.status}</span>
-                   </div>
-                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>Terakhir Update:</span>
-                     <span style={{ fontSize: '11px', fontWeight: 900, color: '#1e293b' }}>{lifting.updatedAt || 'Recently'}</span>
-                   </div>
-                 </div>
-               </div>
+                <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '1px dashed #e2e8f0' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 900, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px' }}>Audit Informasi</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>Status:</span>
+                    <span style={{ fontSize: '11px', fontWeight: 900, color: '#1e293b', textTransform: 'uppercase' }}>{lifting.status}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>Terakhir Update:</span>
+                    <span style={{ fontSize: '11px', fontWeight: 900, color: '#1e293b' }}>{lifting.updatedAt || 'Recently'}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
