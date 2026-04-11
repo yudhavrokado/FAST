@@ -320,7 +320,7 @@ export const DataSubmission = () => {
   };
 
   const handleSaveDataLifting = () => {
-    if (!form.totalVolume) { showToast('Masukkan Total Volume terlebih dahulu', 'error'); return; }
+    if (!form.volumeNominasi) { showToast('Masukkan Volume Nominasi terlebih dahulu', 'error'); return; }
     createDraft(form);
     showToast('Data Lifting berhasil disimpan sebagai Draft.');
     setForm(emptyLiftingForm);
@@ -535,7 +535,7 @@ export const DataSubmission = () => {
 
               {/* Section 2: Bill of Lading & Lifting Type */}
               <div className="input-group">
-                <label className="input-label">B/L Dated <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">B/L Dated</label>
                 <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
               </div>
               <div className="input-group">
@@ -572,17 +572,17 @@ export const DataSubmission = () => {
                 </select>
               </div>
               <div className="input-group">
-                <label className="input-label">Bill of Lading Number <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">B/L Number</label>
                 <input type="text" className="input-control" placeholder="Contoh: BL-88204" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
               </div>
 
               {/* Section 4: Volumes */}
               <div className="input-group">
-                <label className="input-label">Total Volume Realisasi(dalam bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">Total Volume Realisasi(dalam bbls)</label>
                 <input type="number" className="input-control" placeholder="0" value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Volume Nominasi (dalam bbls)</label>
+                <label className="input-label">Volume Nominasi (dalam bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="number" className="input-control" placeholder="0" value={form.volumeNominasi} onChange={e => handleChange('volumeNominasi', e.target.value)} />
               </div>
               <div className="input-group">
@@ -2376,7 +2376,7 @@ export const SettlementArchive = () => {
   }, []);
 
   const approvedLiftings = allLiftings.filter(l => l.status === 'approved' || l.status === 'selesai' || l.status === 'Selesai');
-  
+
   const filteredOutput = approvedLiftings.filter(item => {
     return (item.invoiceId || item.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.kkks || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -2391,7 +2391,7 @@ export const SettlementArchive = () => {
   const exportToExcel = () => {
     const headers = [
       'ID', 'Status', 'Invoice No', 'B/L Number', 'B/L Date', 'Vessel/Pipeline', 'Load Port', 'Discharge Port',
-      'Seller', 'KKKS', 'Jenis Cargo', 'Transaction', 'Nominal Volume', 'Real Volume', 'Price USD', 'ICP', 
+      'Seller', 'KKKS', 'Jenis Cargo', 'Transaction', 'Nominal Volume', 'Real Volume', 'Price USD', 'ICP',
       'Alpha', 'Kurs BI', 'Total Amount USD', 'Created By', 'Created At'
     ].join(',');
 
@@ -2525,7 +2525,7 @@ export const SettlementArchive = () => {
                 return (
                   <tr key={row.id}>
                     <td style={{ position: 'sticky', left: 0, background: 'white', zIndex: 10, fontWeight: 700, color: 'var(--accent)' }}>{row.id}</td>
-                    <td><span className="badge" style={{ 
+                    <td><span className="badge" style={{
                       background: row.status === 'approved' ? 'rgba(0,166,81,0.1)' : row.status === 'revisi' ? 'rgba(245,158,11,0.1)' : 'rgba(100,116,139,0.1)',
                       color: row.status === 'approved' ? 'var(--success)' : row.status === 'revisi' ? 'var(--warning)' : 'var(--text-muted)'
                     }}>{row.status?.toUpperCase()}</span></td>
