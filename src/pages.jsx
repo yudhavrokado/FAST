@@ -521,7 +521,7 @@ export const DataSubmission = () => {
                 </datalist>
               </div>
               <div className="input-group">
-                <label className="input-label">Crude <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">Jenis Cargp <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
                   <option value="">-- Pilih Master Data --</option>
                   <optgroup label="Primary Crudes">
@@ -535,7 +535,7 @@ export const DataSubmission = () => {
 
               {/* Section 2: Bill of Lading & Lifting Type */}
               <div className="input-group">
-                <label className="input-label">Bill of Lading Dated <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">B/L Dated <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
               </div>
               <div className="input-group">
@@ -578,7 +578,7 @@ export const DataSubmission = () => {
 
               {/* Section 4: Volumes */}
               <div className="input-group">
-                <label className="input-label">Total Volume (dalam bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">Total Volume Realisasi(dalam bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="number" className="input-control" placeholder="0" value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
               <div className="input-group">
@@ -624,14 +624,15 @@ export const DataSubmission = () => {
             <thead>
               <tr style={{ background: 'var(--bg-surface)' }}>
                 <th>Nomor B/L & Tgl</th>
-                <th>Created By</th>
-                <th>Updated By</th>
-                <th>Vessel / Pipeline</th>
-                <th>Transaction & MM</th>
-                <th style={{ textAlign: 'right' }}>Total Volume Nominasi (bbls)</th>
-                <th style={{ textAlign: 'right' }}>Total Volume Realisasi (bbls)</th>
-                <th style={{ textAlign: 'center' }}>Status</th>
                 <th style={{ textAlign: 'center' }}>Aksi</th>
+                <th>Created By</th>
+                <th>Vessel / Pipeline</th>
+                <th>Transaction & Cargo</th>
+                <th>Loading Port</th>
+                <th style={{ textAlign: 'right' }}>Total Volume Nominasi (bbls)</th>
+                <th style={{ textAlign: 'center' }}>BL Date</th>
+                <th style={{ textAlign: 'center' }}>Status</th>
+                <th>Updated By</th>
               </tr>
             </thead>
             <tbody>
@@ -652,31 +653,6 @@ export const DataSubmission = () => {
                       <div style={{ fontWeight: 600 }}>{l.blNumber || 'No B/L'}</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.blDate || '-'}</div>
                     </td>
-                    <td>
-                      <div style={{ fontSize: '13px', fontWeight: 500 }}>{l.createdBy || 'John Doe (Pertamina)'}</div>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>{l.updatedBy || '-'}</div>
-                    </td>
-                    <td>
-                      <div>{l.isPipeline ? <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>Pipeline</span> : (l.vesselName || 'MT Unassigned')}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadPort || 'Unknown'} → {l.dischargePort || 'Unknown'}</div>
-                    </td>
-                    <td>
-                      <div>{l.kindOfTransaction || 'Regular'}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Crude Oil'}</div>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 500 }}>
-                      {l.volumeNominasi ? parseFloat(l.volumeNominasi).toLocaleString() : '-'}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--accent)' }}>
-                      {l.totalVolume ? parseFloat(l.totalVolume).toLocaleString() : '-'}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, fontWeight: 700, minWidth: '100px', textAlign: 'center' }}>
-                        {st.label}
-                      </span>
-                    </td>
                     <td style={{ textAlign: 'center' }}>
                       <div className="flex justify-center gap-2">
                         {l.status === 'draft' || l.status === 'revisi' ? (
@@ -690,12 +666,40 @@ export const DataSubmission = () => {
                         )}
                       </div>
                     </td>
+                    <td>
+                      <div style={{ fontSize: '13px', fontWeight: 500 }}>{l.createdBy || 'John Doe (Pertamina)'}</div>
+                    </td>
+                    <td>
+                      <div>{l.isPipeline ? <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>Pipeline</span> : (l.vesselName || 'MT Unassigned')}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadPort || 'Unknown'} → {l.dischargePort || 'Unknown'}</div>
+                    </td>
+                    <td>
+                      <div>{l.kindOfTransaction || 'Regular'}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Crude Oil'}</div>
+                    </td>
+                    <td style={{ fontWeight: 500 }}>
+                      {l.loadPort || '-'}
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 500 }}>
+                      {l.volumeNominasi ? parseFloat(l.volumeNominasi).toLocaleString() : '-'}
+                    </td>
+                    <td style={{ textAlign: 'center', fontSize: '13px' }}>
+                      {l.blDate || '-'}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, fontWeight: 700, minWidth: '100px', textAlign: 'center' }}>
+                        {st.label}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>{l.updatedBy || '-'}</div>
+                    </td>
                   </tr>
                 );
               })}
               {liftings.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="text-center py-6 text-muted">Belum ada data lifting yang tersimpan.</td>
+                  <td colSpan="10" className="text-center py-6 text-muted">Belum ada data lifting yang tersimpan.</td>
                 </tr>
               )}
             </tbody>
@@ -1011,10 +1015,7 @@ export const EditLifting = () => {
                 <label className="input-label">Invoice Date <span className="text-danger">*</span></label>
                 <input type="date" className="input-control" disabled={isReadOnly} value={form.invoiceDate} onChange={e => handleChange('invoiceDate', e.target.value)} />
               </div>
-              <div className="input-group">
-                <label className="input-label">B/L Number</label>
-                <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
-              </div>
+
               <div className="input-group">
                 <label className="input-label">Due Date Provisional <span className="text-danger">*</span></label>
                 <input type="date" className="input-control" disabled={isReadOnly} value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
@@ -1024,7 +1025,7 @@ export const EditLifting = () => {
                 <input type="date" className="input-control" disabled={isReadOnly} value={form.dueDateFinal} onChange={e => handleChange('dueDateFinal', e.target.value)} />
               </div>
               <div className="input-group">
-                <label className="input-label">Kurs BI (Jisdor) <span className="text-danger">*</span></label>
+                <label className="input-label">Kurs BI (IDR/USD) <span className="text-danger">*</span></label>
                 <input type="number" className="input-control" disabled={isReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
               </div>
               <div className="input-group">
@@ -1052,7 +1053,7 @@ export const EditLifting = () => {
                 </div>
                 <div className="input-group">
                   <label className="input-label text-xs">ICP (USD/bbl)</label>
-                  <div className="input-control text-sm" style={{ background: '#f8fafc' }}>${(parseFloat(form.icpPrice) || 0).toFixed(2)}</div>
+                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
                 </div>
                 <div className="input-group">
                   <label className="input-label text-xs">Alpha (USD/bbl)</label>
@@ -1090,7 +1091,7 @@ export const EditLifting = () => {
                 </div>
                 <div className="input-group">
                   <label className="input-label text-xs">ICP (USD/bbl)</label>
-                  <div className="input-control text-sm" style={{ background: '#f8fafc' }}>${(parseFloat(form.icpPrice) || 0).toFixed(2)}</div>
+                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
                 </div>
                 <div className="input-group">
                   <label className="input-label text-xs">Alpha (USD/bbl)</label>
@@ -1306,8 +1307,6 @@ export const MasterDataPage = () => {
   const [showHistory, setShowHistory] = useState(false);
 
   // Other tabs state
-  const [kursBIList, setKursBIList] = useState([]);
-  const [kursSearch, setKursSearch] = useState('');
   const [k3sList, setK3sList] = useState([]);
   const [supplierList, setSupplierList] = useState([]);
   const [k3sSearch, setK3sSearch] = useState('');
@@ -1322,7 +1321,6 @@ export const MasterDataPage = () => {
   }, []);
 
   const refreshOtherData = () => {
-    setKursBIList(getKursBIList());
     setK3sList(getK3SList());
     setSupplierList(getSupplierList());
     setVatList(getVatList());
@@ -1377,7 +1375,8 @@ export const MasterDataPage = () => {
   };
 
   const handleSaveDerived = () => {
-    saveDerivedCrude(editingItem);
+    const combinedPeriode = `${editingItem.bulan} ${editingItem.tahun}`;
+    saveDerivedCrude({ ...editingItem, periode: combinedPeriode });
     refreshIcpData();
     setEditSection(null);
     setEditingItem(null);
@@ -1386,10 +1385,7 @@ export const MasterDataPage = () => {
   };
 
   const handleSaveOther = () => {
-    if (editSection === 'kurs') {
-      saveKursBI(editingItem);
-      showToast('Kurs BI berhasil diperbarui');
-    } else if (editSection === 'k3s') {
+    if (editSection === 'k3s') {
       saveK3S(editingItem);
       showToast('Partner K3S berhasil diperbarui');
     } else if (editSection === 'supplier') {
@@ -1464,7 +1460,7 @@ export const MasterDataPage = () => {
             </div>
             <div style={{ flex: 1 }}>
               <div className="text-xs text-muted font-semibold uppercase" style={{ letterSpacing: '0.5px' }}>MOPS Naphtha</div>
-              <div className="text-xl font-bold" style={{ color: 'var(--warning)' }}>${mopsNaphtha.toFixed(2)} <span className="text-xs font-normal text-muted">/ MT</span></div>
+              <div className="text-xl font-bold" style={{ color: 'var(--warning)' }}>${mopsNaphtha.toFixed(2)} <span className="text-xs font-normal text-muted">/ bbl</span></div>
             </div>
           </div>
         </div>
@@ -1611,7 +1607,7 @@ export const MasterDataPage = () => {
             <button className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px' }}
               onClick={() => {
                 setEditSection('addDerived');
-                setEditingItem({ id: '', namaCrude: '', baseRef: primaryCrudes[0]?.kode || 'SLC', alpha: 0, used: true });
+                setEditingItem({ id: '', namaCrude: '', baseRef: primaryCrudes[0]?.kode || 'SLC', alpha: 0, used: true, bulan: months[new Date().getMonth()], tahun: new Date().getFullYear() });
               }}
             ><Plus size={12} /> Tambah</button>
             <button
@@ -1625,7 +1621,8 @@ export const MasterDataPage = () => {
               disabled={!selectedId || !selectedId.startsWith('DC')}
               onClick={() => {
                 const item = derivedCrudes.find(c => c.id === selectedId);
-                if (item) { setEditSection('derived'); setEditingItem({ ...item }); }
+                const [b, t] = (item.periode || '').split(' ');
+                if (item) { setEditSection('derived'); setEditingItem({ ...item, bulan: b || months[new Date().getMonth()], tahun: t || new Date().getFullYear() }); }
               }}
             ><Edit2 size={12} /> Edit</button>
           </div>
@@ -1635,6 +1632,7 @@ export const MasterDataPage = () => {
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)', background: '#fafafa' }}>
                 <th style={{ padding: '14px 16px', width: 40 }}></th>
+                <th style={{ padding: '14px 16px' }}>Periode</th>
                 <th style={{ padding: '14px 16px' }}>Nama Crude</th>
                 <th style={{ padding: '14px 16px' }}>Referensi</th>
                 <th style={{ padding: '14px 16px' }}>Formula</th>
@@ -1658,6 +1656,7 @@ export const MasterDataPage = () => {
                     <td style={{ padding: '14px 16px' }}>
                       <input type="checkbox" checked={selectedId === c.id} onChange={() => setSelectedId(selectedId === c.id ? null : c.id)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
                     </td>
+                    <td style={{ padding: '14px 16px' }}><span className="badge" style={{ background: 'rgba(0,82,156,0.06)', color: 'var(--text-muted)', fontSize: '11px', fontWeight: 600 }}>{c.periode || '-'}</span></td>
                     <td style={{ padding: '14px 16px', fontWeight: 600 }}>{c.namaCrude}</td>
                     <td style={{ padding: '14px 16px' }}>
                       <span className="badge" style={{ background: 'rgba(245,158,11,0.08)', color: 'var(--warning)', fontWeight: 600, fontSize: '11px' }}>{c.baseRef}</span>
@@ -1747,65 +1746,12 @@ export const MasterDataPage = () => {
 
       <div className="flex gap-1 mb-8 p-1 rounded-xl" style={{ background: 'rgba(0,82,156,0.05)', alignSelf: 'flex-start' }}>
         <button className={`btn ${activeTab === 'icp' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('icp')} style={{ padding: '10px 24px', borderRadius: '10px' }}>ICP & Harga Referensi</button>
-        <button className={`btn ${activeTab === 'kurs' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('kurs')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Kurs BI (JISDOR)</button>
         <button className={`btn ${activeTab === 'k3s' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('k3s')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Partner K3S & Supplier</button>
         <button className={`btn ${activeTab === 'vat' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('vat')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Master Data VAT</button>
       </div>
 
       {/* ICP Tab */}
       {activeTab === 'icp' && renderIcpTab()}
-
-      {/* Kurs Tab */}
-      {activeTab === 'kurs' && (
-        <div>
-          <div className="flex-responsive justify-between items-center mb-6">
-            <div className="flex gap-2">
-              <button className="btn btn-primary flex-1" style={{ padding: '8px 16px' }}
-                onClick={() => {
-                  setEditSection('kurs');
-                  setEditingItem({ tanggal: new Date().toISOString().split('T')[0], harga: 0, sumber: 'Bank Indonesia' });
-                }}
-              ><Plus size={14} /> Add Data</button>
-            </div>
-            <div className="flex-responsive gap-3 w-full-mobile">
-              <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-surface)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                <input
-                  type="text"
-                  placeholder="Cari tanggal (YYYY-MM-DD)..."
-                  value={kursSearch}
-                  onChange={(e) => setKursSearch(e.target.value)}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }}
-                />
-                <Search size={16} color="var(--text-muted)" />
-              </div>
-            </div>
-          </div>
-          <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
-                  <th style={{ padding: '16px', width: '48px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db', background: '#fff' }} /></th>
-                  <th style={{ padding: '16px' }}>Id</th>
-                  <th style={{ padding: '16px' }}>Tanggal</th>
-                  <th style={{ padding: '16px' }}>JISDOR (IDR)</th>
-                  <th style={{ padding: '16px' }}>Sumber</th>
-                </tr>
-              </thead>
-              <tbody>
-                {kursBIList.filter(k => k.tanggal.includes(kursSearch)).map(k => (
-                  <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '16px' }}><div style={{ width: 16, height: 16, borderRadius: 4, border: '1px solid #d1d5db' }} /></td>
-                    <td style={{ padding: '16px' }}>{k.id}</td>
-                    <td style={{ padding: '16px' }}>{k.tanggal}</td>
-                    <td style={{ padding: '16px', color: 'var(--success)', fontWeight: 600 }}>Rp {k.harga.toLocaleString('id-ID', { minimumFractionDigits: 2 })}</td>
-                    <td style={{ padding: '16px' }}>{k.sumber}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* K3S Tab */}
       {activeTab === 'k3s' && (
@@ -2063,6 +2009,20 @@ export const MasterDataPage = () => {
               <div className="input-group">
                 <label className="input-label">Nama Crude</label>
                 <input type="text" className="input-control" value={editingItem.namaCrude} onChange={e => setEditingItem({ ...editingItem, namaCrude: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="input-group">
+                  <label className="input-label">Periode Bulan</label>
+                  <select className="input-control" value={editingItem.bulan} onChange={e => setEditingItem({ ...editingItem, bulan: e.target.value })}>
+                    {months.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Periode Tahun</label>
+                  <select className="input-control" value={editingItem.tahun} onChange={e => setEditingItem({ ...editingItem, tahun: parseInt(e.target.value) })}>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="input-group">
                 <label className="input-label">Referensi Minyak Mentah Utama</label>
@@ -2406,19 +2366,53 @@ export const ExceptionSignal = () => {
 };
 
 export const SettlementArchive = () => {
+  const [activeTab, setActiveTab] = useState('output');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [liftings, setLiftings] = useState([]);
+  const [allLiftings, setAllLiftings] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Only show approved liftings in Archive
-    setLiftings(getAllLiftings().filter(l => l.status === 'approved' || l.status === 'selesai' || l.status === 'Selesai'));
+    setAllLiftings(getAllLiftings());
   }, []);
 
-  const filteredData = liftings.filter(item => {
+  const approvedLiftings = allLiftings.filter(l => l.status === 'approved' || l.status === 'selesai' || l.status === 'Selesai');
+  
+  const filteredOutput = approvedLiftings.filter(item => {
     return (item.invoiceId || item.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.kkks || '').toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  const filteredRaw = allLiftings.filter(item => {
+    return (item.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.kkks || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.vesselName || '').toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const exportToExcel = () => {
+    const headers = [
+      'ID', 'Status', 'Invoice No', 'B/L Number', 'B/L Date', 'Vessel/Pipeline', 'Load Port', 'Discharge Port',
+      'Seller', 'KKKS', 'Jenis Cargo', 'Transaction', 'Nominal Volume', 'Real Volume', 'Price USD', 'ICP', 
+      'Alpha', 'Kurs BI', 'Total Amount USD', 'Created By', 'Created At'
+    ].join(',');
+
+    const rows = allLiftings.map(l => {
+      const totalUsd = (parseFloat(l.kkksVolume || 0) * parseFloat(l.kkksPrice || 0)) + (parseFloat(l.skkVolume || 0) * parseFloat(l.skkPrice || 0));
+      return [
+        l.id, l.status, l.invoiceId || '-', l.blNumber || '-', l.blDate || '-', l.vesselName || 'Pipeline', l.loadPort || '-', l.dischargePort || '-',
+        l.seller || '-', l.kkks || '-', l.jenisMm || '-', l.kindOfTransaction || '-', l.volumeNominasi || 0, l.totalVolume || 0, l.priceUsdBbl || 0,
+        l.icpPrice || 0, l.alpha || 0, l.kursBeliBi || 0, totalUsd.toFixed(2), l.createdBy || '-', l.createdAt || '-'
+      ].join(',');
+    }).join('\n');
+
+    const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `FAST_Reporting_Data_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (selectedInvoice) {
     return <SettlementSheet invoice={selectedInvoice} onBack={() => setSelectedInvoice(null)} />;
@@ -2430,72 +2424,137 @@ export const SettlementArchive = () => {
 
   return (
     <div className="animate-fade-in" style={{ width: 'calc(100% + 48px)', maxWidth: 'none', margin: '-20px -24px', padding: '24px' }}>
-      <div className="flex-responsive justify-between items-center mb-8">
+      <div className="flex-responsive justify-between items-center mb-6">
         <div>
-          <h1>Arsip Output Settlement</h1>
-          <p className="text-muted mt-2">Daftar masing-masing transaksi (per baris) yang telah menjadi *Calculation Sheet* PDF.</p>
+          <h1>Arsip & Reporting System</h1>
+          <p className="text-muted mt-2">Manajemen hasil settlement PDF dan rekapitulasi seluruh data input sistem.</p>
         </div>
-        <div className="flex w-full-mobile">
-          <div className="search-bar flex items-center gap-2 w-full-mobile" style={{ background: 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
+        <div className="flex gap-4 w-full-mobile">
+          <div className="search-bar flex items-center gap-2" style={{ background: 'var(--bg-card)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
             <Search size={16} color="var(--text-muted)" />
             <input
               type="text"
-              placeholder="Temukan Invoice atau KKKS..."
+              placeholder="Cari data..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '13px', width: '200px' }}
             />
           </div>
+          {activeTab === 'raw' && (
+            <button className="btn btn-success" onClick={exportToExcel} style={{ padding: '8px 20px', borderRadius: '20px' }}>
+              <Download size={16} /> Export to Excel (.csv)
+            </button>
+          )}
         </div>
       </div>
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Nomor Tagihan (ID Invoice)</th>
-              <th>Entitas Tertaut</th>
-              <th>Tanggal Settlement</th>
-              <th>Volume Realisasi (BBL)</th>
-              <th>Nominal Settlement Akhir (USD)</th>
-              <th>Nominal Settlement Akhir (IDR)</th>
-              <th>Detail Dokumen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.map((row) => {
-              const totalUsd = (parseFloat(row.kkksVolume || 0) * parseFloat(row.kkksPrice || 0)) + (parseFloat(row.skkVolume || 0) * parseFloat(row.skkPrice || 0));
-              const totalIdr = totalUsd * (parseFloat(row.kursBeliBi || 15450));
 
-              return (
-                <tr key={row.id}>
-                  <td className="font-medium" style={{ color: 'var(--accent-light)' }}>{row.invoiceId || row.id}</td>
-                  <td>{row.kkks}</td>
-                  <td>{row.submittedAt ? row.submittedAt.split(',')[0] : 'N/A'}</td>
-                  <td>{formatVol(row.totalVolume)}</td>
-                  <td className="font-medium" style={{ color: 'var(--accent)' }}>{formatUsd(totalUsd)}</td>
-                  <td className="font-medium" style={{ color: 'var(--success)' }}>{formatIdr(totalIdr)}</td>
-                  <td>
-                    <button
-                      onClick={() => setSelectedInvoice(row)}
-                      className="btn btn-sm btn-primary"
-                      style={{ padding: '6px 12px' }}
-                    >
-                      Buka Kalkulasi PDF
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-            {filteredData.length === 0 && (
-              <tr>
-                <td colSpan="7" className="text-center py-12 text-muted">
-                  Tidak ada data settlement yang ditemukan.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="flex gap-1 mb-8 p-1 rounded-xl" style={{ background: 'rgba(0,82,156,0.05)', alignSelf: 'flex-start', width: 'fit-content' }}>
+        <button className={`btn ${activeTab === 'output' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('output')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Arsip Output Settlement</button>
+        <button className={`btn ${activeTab === 'raw' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('raw')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Reporting Raw Data Submission</button>
       </div>
+
+      {activeTab === 'output' ? (
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Nomor Tagihan (ID Invoice)</th>
+                <th style={{ textAlign: 'center' }}>Kalkulasi</th>
+                <th>Entitas Tertaut</th>
+                <th>Tanggal Settlement</th>
+                <th>Volume Realisasi (BBL)</th>
+                <th>Nominal Settlement Akhir (USD)</th>
+                <th>Nominal Settlement Akhir (IDR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOutput.map((row) => {
+                const totalUsd = (parseFloat(row.kkksVolume || 0) * parseFloat(row.kkksPrice || 0)) + (parseFloat(row.skkVolume || 0) * parseFloat(row.skkPrice || 0));
+                const totalIdr = totalUsd * (parseFloat(row.kursBeliBi || 15450));
+                return (
+                  <tr key={row.id}>
+                    <td className="font-medium" style={{ color: 'var(--accent-light)' }}>{row.invoiceId || row.id}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button onClick={() => setSelectedInvoice(row)} className="btn btn-sm btn-primary" style={{ padding: '6px 12px', fontSize: '11px' }}>Buka Kalkulasi PDF</button>
+                    </td>
+                    <td>{row.kkks}</td>
+                    <td>{row.submittedAt ? row.submittedAt.split(',')[0] : 'N/A'}</td>
+                    <td>{formatVol(row.totalVolume)}</td>
+                    <td className="font-medium" style={{ color: 'var(--accent)' }}>{formatUsd(totalUsd)}</td>
+                    <td className="font-medium" style={{ color: 'var(--success)' }}>{formatIdr(totalIdr)}</td>
+                  </tr>
+                );
+              })}
+              {filteredOutput.length === 0 && (
+                <tr><td colSpan="7" className="text-center py-12 text-muted">Tidak ada data settlement yang ditemukan.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="table-container" style={{ overflowX: 'auto' }}>
+          <table style={{ minWidth: '2200px' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                <th style={{ position: 'sticky', left: 0, background: '#f8fafc', zIndex: 10 }}>ID Transaksi</th>
+                <th>Status</th>
+                <th>Invoice Number</th>
+                <th>B/L Date</th>
+                <th>Kapal / Pipeline</th>
+                <th>Loading Port</th>
+                <th>Discharge Port</th>
+                <th>Seller</th>
+                <th>KKKS</th>
+                <th>Jenis Cargo</th>
+                <th>Transaction</th>
+                <th>Volume Nominasi</th>
+                <th>Volume Realisasi</th>
+                <th>Price (USD/bbl)</th>
+                <th>ICP</th>
+                <th>Alpha</th>
+                <th>Kurs BI</th>
+                <th>Total USD</th>
+                <th>Created By</th>
+                <th>Created At</th>
+                <th>Updated By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRaw.map((row) => {
+                const totalUsd = (parseFloat(row.kkksVolume || 0) * parseFloat(row.kkksPrice || 0)) + (parseFloat(row.skkVolume || 0) * parseFloat(row.skkPrice || 0));
+                return (
+                  <tr key={row.id}>
+                    <td style={{ position: 'sticky', left: 0, background: 'white', zIndex: 10, fontWeight: 700, color: 'var(--accent)' }}>{row.id}</td>
+                    <td><span className="badge" style={{ 
+                      background: row.status === 'approved' ? 'rgba(0,166,81,0.1)' : row.status === 'revisi' ? 'rgba(245,158,11,0.1)' : 'rgba(100,116,139,0.1)',
+                      color: row.status === 'approved' ? 'var(--success)' : row.status === 'revisi' ? 'var(--warning)' : 'var(--text-muted)'
+                    }}>{row.status?.toUpperCase()}</span></td>
+                    <td>{row.invoiceId || '-'}</td>
+                    <td>{row.blDate || '-'}</td>
+                    <td>{row.vesselName || 'Pipeline'}</td>
+                    <td>{row.loadPort || '-'}</td>
+                    <td>{row.dischargePort || '-'}</td>
+                    <td>{row.seller || '-'}</td>
+                    <td>{row.kkks || '-'}</td>
+                    <td>{row.jenisMm || '-'}</td>
+                    <td>{row.kindOfTransaction || '-'}</td>
+                    <td style={{ textAlign: 'right' }}>{formatVol(row.volumeNominasi)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatVol(row.totalVolume)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatUsd(row.priceUsdBbl || 0)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatUsd(row.icpPrice || 0)}</td>
+                    <td style={{ textAlign: 'right' }}>{row.alpha || 0}</td>
+                    <td style={{ textAlign: 'right' }}>{formatIdr(row.kursBeliBi || 0)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>{formatUsd(totalUsd)}</td>
+                    <td>{row.createdBy || '-'}</td>
+                    <td>{row.createdAt || '-'}</td>
+                    <td>{row.updatedBy || '-'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
@@ -2870,8 +2929,7 @@ export const VerificationDetail = () => {
                   <LabelVal label="Invoice Number" val={lifting.invoiceNumber} color="#00529c" />
                 </div>
                 <div>
-                  <LabelVal label="B/L Number" val={lifting.blNumber} />
-                  <LabelVal label="Kurs BI (Jisdor)" val={formatIdr(lifting.kursBeliBi)} />
+                  <LabelVal label="Kurs BI (IDR/USD)" val={formatIdr(lifting.kursBeliBi)} />
                 </div>
                 <div>
                   <LabelVal label="Tgl Invoice / Jatuh Tempo Provisional" val={`${lifting.invoiceDate || '-'} / ${lifting.dueDateInvoice || '-'}`} />
@@ -2881,19 +2939,19 @@ export const VerificationDetail = () => {
 
               {/* Financial Comparisons */}
               {[
-                { 
-                  label: 'Entitlement KKKS', 
-                  vol: lifting.kkksVolume, 
-                  price: lifting.kkksPrice, 
+                {
+                  label: 'Entitlement KKKS',
+                  vol: lifting.kkksVolume,
+                  price: lifting.kkksPrice,
                   alpha: lifting.kkksAlpha,
-                  color: '#00529c' 
+                  color: '#00529c'
                 },
-                { 
-                  label: 'Entitlement SKK Migas (GOI)', 
-                  vol: lifting.skkVolume, 
-                  price: lifting.skkPrice, 
+                {
+                  label: 'Entitlement SKK Migas (GOI)',
+                  vol: lifting.skkVolume,
+                  price: lifting.skkPrice,
                   alpha: lifting.skkAlpha,
-                  color: '#10b981' 
+                  color: '#10b981'
                 }
               ].map((ent, i) => (
                 <div key={i} style={{ marginBottom: '40px' }}>
