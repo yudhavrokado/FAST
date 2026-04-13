@@ -9,7 +9,7 @@ import {
   getIcpPeriode, saveIcpPeriode, getDatedBrentRef, saveDatedBrentRef,
   getMopsNaphthaRef, saveMopsNaphthaRef, saveRefPrices, getPriceHistory,
   getPrimaryCrudes, savePrimaryCrude, getDerivedCrudes, saveDerivedCrude, getPrimaryCrudePrice,
-  getKursBIList, getLatestKursBI, saveKursBI, saveK3S, saveSupplier, deleteK3S, deleteSupplier,
+  getKursBIList, getLatestKursBI, saveKursBI, deleteKursBI, saveK3S, saveSupplier, deleteK3S, deleteSupplier,
   getVatList, saveVat, deleteVat,
   JENIS_MM_OPTIONS,
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, STATUS_SP3_OPTIONS,
@@ -1311,6 +1311,7 @@ export const MasterDataPage = () => {
   const [supplierList, setSupplierList] = useState([]);
   const [k3sSearch, setK3sSearch] = useState('');
   const [vatList, setVatList] = useState([]);
+  const [kursBIList, setKursBIList] = useState([]);
 
   const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   const years = [2024, 2025, 2026, 2027];
@@ -1324,6 +1325,7 @@ export const MasterDataPage = () => {
     setK3sList(getK3SList());
     setSupplierList(getSupplierList());
     setVatList(getVatList());
+    setKursBIList(getKursBIList());
   };
 
   const refreshIcpData = () => {
@@ -1394,6 +1396,9 @@ export const MasterDataPage = () => {
     } else if (editSection === 'vat') {
       saveVat(editingItem);
       showToast('Master Data VAT berhasil diperbarui');
+    } else if (editSection === 'kursBI') {
+      saveKursBI(editingItem);
+      showToast('Data Kurs BI berhasil diperbarui');
     }
     refreshOtherData();
     setEditSection(null);
@@ -1739,6 +1744,59 @@ export const MasterDataPage = () => {
     </div>
   );
 
+  const renderKursBITab = () => (
+    <div>
+      <div className="flex-responsive justify-between items-center mb-6">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2"><DollarSign size={18} color="var(--accent)" /> Kurs Bank Indonesia (JISDOR)</h2>
+          <p className="text-sm text-muted mt-1">Input harian Kurs BI (USD/IDR) sebagai dasar perhitungan invoice.</p>
+        </div>
+        <div className="flex gap-2">
+          <button className="btn btn-primary" style={{ padding: '8px 16px' }}
+            onClick={() => {
+              setEditSection('kursBI');
+              setEditingItem({ tanggal: new Date().toISOString().split('T')[0], harga: 15700, sumber: 'Bank Indonesia' });
+            }}
+          ><Plus size={14} /> Add Kurs BI</button>
+        </div>
+      </div>
+      <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
+              <th style={{ padding: '16px' }}>Tanggal</th>
+              <th style={{ padding: '16px' }}>Kurs (IDR/USD)</th>
+              <th style={{ padding: '16px' }}>Sumber</th>
+              <th style={{ padding: '16px' }}>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {kursBIList.map((k) => (
+              <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '16px', fontWeight: 600 }}>{new Date(k.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</td>
+                <td style={{ padding: '16px', fontWeight: 700, color: 'var(--accent)' }}>Rp {k.harga.toLocaleString('id-ID', { minimumFractionDigits: 2 })}</td>
+                <td style={{ padding: '16px' }}>{k.sumber}</td>
+                <td style={{ padding: '16px' }}>
+                  <div className="flex gap-2">
+                    <button className="btn btn-sm btn-outline" style={{ padding: '4px' }} onClick={() => { setEditSection('kursBI'); setEditingItem(k); }}>
+                      <Edit2 size={12} />
+                    </button>
+                    <button className="btn btn-sm btn-outline text-danger" style={{ padding: '4px' }} onClick={() => { if (window.confirm('Hapus data Kurs BI ini?')) { deleteKursBI(k.id); refreshOtherData(); showToast('Kurs BI berhasil dihapus'); } }}>
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {kursBIList.length === 0 && (
+              <tr><td colSpan={4} className="text-center py-8 text-muted">Belum ada data Kurs BI.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="animate-fade-in">
       {/* Toast */}
@@ -1746,12 +1804,16 @@ export const MasterDataPage = () => {
 
       <div className="flex gap-1 mb-8 p-1 rounded-xl" style={{ background: 'rgba(0,82,156,0.05)', alignSelf: 'flex-start' }}>
         <button className={`btn ${activeTab === 'icp' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('icp')} style={{ padding: '10px 24px', borderRadius: '10px' }}>ICP & Harga Referensi</button>
+        <button className={`btn ${activeTab === 'kursBI' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('kursBI')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Kurs BI (IDR/USD)</button>
         <button className={`btn ${activeTab === 'k3s' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('k3s')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Partner K3S & Supplier</button>
         <button className={`btn ${activeTab === 'vat' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('vat')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Master Data VAT</button>
       </div>
 
       {/* ICP Tab */}
       {activeTab === 'icp' && renderIcpTab()}
+
+      {/* Kurs BI Tab */}
+      {activeTab === 'kursBI' && renderKursBITab()}
 
       {/* K3S Tab */}
       {activeTab === 'k3s' && (
@@ -1864,6 +1926,36 @@ export const MasterDataPage = () => {
               <div className="input-group">
                 <label className="input-label">VAT Rate (%)</label>
                 <input type="number" step="0.1" className="input-control" placeholder="11.0" value={editingItem.rate} onChange={e => setEditingItem({ ...editingItem, rate: parseFloat(e.target.value) || 0 })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveOther}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Kurs BI */}
+      {editSection === 'kursBI' && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '450px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2"><DollarSign size={20} color="var(--accent)" /> {editingItem.id ? 'Edit Kurs BI' : 'Tambah Kurs BI'}</h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="input-group">
+                <label className="input-label">Tanggal</label>
+                <input type="date" className="input-control" value={editingItem.tanggal} onChange={e => setEditingItem({ ...editingItem, tanggal: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Kurs (IDR/USD)</label>
+                <input type="number" step="0.01" className="input-control" placeholder="15700.00" value={editingItem.harga} onChange={e => setEditingItem({ ...editingItem, harga: parseFloat(e.target.value) || 0 })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Sumber</label>
+                <input type="text" className="input-control" placeholder="Bank Indonesia" value={editingItem.sumber} onChange={e => setEditingItem({ ...editingItem, sumber: e.target.value })} />
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>

@@ -781,6 +781,12 @@ export const saveKursBI = (entry) => {
   saveData(data);
 };
 
+export const deleteKursBI = (id) => {
+  const data = getData();
+  data.kursBI = data.kursBI.filter(x => x.id !== id);
+  saveData(data);
+};
+
 export const getLatestKursBI = () => {
   const list = getKursBIList();
   if (list && list.length > 0) {
