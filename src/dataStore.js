@@ -545,6 +545,8 @@ export const createDraft = (formData) => {
     createdBy: formData.createdBy || 'John Doe (Pertamina)', 
     catatan: formData.catatan || '',
     verifikasiCatatan: '',
+    poMySap: formData.poMySap || '',
+    poHardcopy: formData.poHardcopy || '',
     files: {
       invoice: formData.fileInvoice || null,
       bl: formData.fileBL || null,
@@ -603,6 +605,7 @@ export const updateLifting = (id, formData) => {
     catatan: formData.catatan ?? existing.catatan,
     remarks: formData.remarks ?? existing.remarks,
     poMySap: formData.poMySap ?? existing.poMySap,
+    poHardcopy: formData.poHardcopy ?? existing.poHardcopy,
     totalAmount: formData.totalAmount ?? existing.totalAmount,
     provEntilement: formData.provEntilement ?? existing.provEntilement,
     statusSp3: formData.statusSp3 ?? existing.statusSp3,

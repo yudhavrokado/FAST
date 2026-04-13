@@ -278,6 +278,8 @@ export const DataSubmission = () => {
     apiGravity: '',
     waterContent: '',
     catatan: '',
+    poMySap: '',
+    poHardcopy: '',
   };
 
   const [form, setForm] = useState(emptyLiftingForm);
@@ -390,6 +392,14 @@ export const DataSubmission = () => {
               <div className="input-group">
                 <label className="input-label">Due Date Invoice</label>
                 <input type="date" className="input-control" value={penagihanModal.form.dueDateInvoice} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, dueDateInvoice: e.target.value } }))} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">No. PO MySAP</label>
+                <input type="text" className="input-control" placeholder="Masukkan No. PO MySAP..." value={penagihanModal.form.poMySap || ''} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, poMySap: e.target.value } }))} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">No. PO Hardcopy</label>
+                <input type="text" className="input-control" placeholder="Masukkan No. PO Hardcopy..." value={penagihanModal.form.poHardcopy || ''} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, poHardcopy: e.target.value } }))} />
               </div>
             </div>
 
@@ -521,7 +531,7 @@ export const DataSubmission = () => {
                 </datalist>
               </div>
               <div className="input-group">
-                <label className="input-label">Jenis Cargp <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">Jenis Cargo <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
                   <option value="">-- Pilih Master Data --</option>
                   <optgroup label="Primary Crudes">
@@ -592,6 +602,14 @@ export const DataSubmission = () => {
                     ? (((parseFloat(form.volumeNominasi) - parseFloat(form.totalVolume)) / parseFloat(form.volumeNominasi)) * 100).toFixed(2) + '%'
                     : '0.00%'}
                 </div>
+              </div>
+              <div className="input-group">
+                <label className="input-label">No. PO MySAP</label>
+                <input type="text" className="input-control" placeholder="Contoh: 12345678" value={form.poMySap} onChange={e => handleChange('poMySap', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">No. PO Hardcopy</label>
+                <input type="text" className="input-control" placeholder="Contoh: PO-ABC-001" value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} />
               </div>
             </div>
 
@@ -747,6 +765,7 @@ export const EditLifting = () => {
     catatan: '',
     remarks: '',
     poMySap: '',
+    poHardcopy: '',
     totalAmount: '',
     alpha: 0,
     provEntilement: '',
@@ -1017,6 +1036,15 @@ export const EditLifting = () => {
               </div>
 
               <div className="input-group">
+                <label className="input-label">No. PO MySAP</label>
+                <input type="text" className="input-control" disabled={isReadOnly} value={form.poMySap} onChange={e => handleChange('poMySap', e.target.value)} placeholder="Masukkan No. PO MySAP..." />
+              </div>
+              <div className="input-group">
+                <label className="input-label">No. PO Hardcopy</label>
+                <input type="text" className="input-control" disabled={isReadOnly} value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} placeholder="Masukkan No. PO Hardcopy..." />
+              </div>
+
+              <div className="input-group">
                 <label className="input-label">Due Date Provisional <span className="text-danger">*</span></label>
                 <input type="date" className="input-control" disabled={isReadOnly} value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
               </div>
@@ -1027,11 +1055,35 @@ export const EditLifting = () => {
               <div className="input-group">
                 <label className="input-label">Kurs BI (IDR/USD) <span className="text-danger">*</span></label>
                 <input type="number" className="input-control" disabled={isReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
+                {!isReadOnly && (
+                  <div 
+                    style={{ fontSize: '11px', marginTop: '6px', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,82,156,0.05)', transition: 'all 0.2s' }}
+                    onClick={() => handleChange('kursBeliBi', getLatestKursBI()?.harga || 15725)}
+                    title="Klik untuk menyontek Master Rate"
+                  >
+                    Master Rate: <span style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'underline' }}>
+                      Rp {(getLatestKursBI()?.harga || 15725).toLocaleString('id-ID')}
+                    </span> 
+                    <span style={{ fontSize: '10px', fontStyle: 'italic', opacity: 0.8 }}>(Klik untuk gunakan)</span>
+                  </div>
+                )}
               </div>
               <div className="input-group">
                 <label className="input-label">Total Price (USD/bbl)</label>
                 <div className="input-control" style={{ background: 'var(--bg-surface)', fontWeight: 700, color: 'var(--accent)' }}>
                   ${(parseFloat(form.priceUsdBbl) || 0).toFixed(2)}
+                </div>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Volume Check (%)</label>
+                <div className="input-control" style={{ 
+                  background: 'var(--bg-surface)', 
+                  fontWeight: 800, 
+                  color: (Math.abs(((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) - (parseFloat(form.totalVolume) || 0)) < 1) ? 'var(--success)' : 'var(--danger)' 
+                }}>
+                  {parseFloat(form.totalVolume) > 0 
+                    ? (((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) / parseFloat(form.totalVolume) * 100).toFixed(2) + '%'
+                    : '0.00%'}
                 </div>
               </div>
             </div>
@@ -2482,17 +2534,19 @@ export const SettlementArchive = () => {
 
   const exportToExcel = () => {
     const headers = [
-      'ID', 'Status', 'Invoice No', 'B/L Number', 'B/L Date', 'Vessel/Pipeline', 'Load Port', 'Discharge Port',
-      'Seller', 'KKKS', 'Jenis Cargo', 'Transaction', 'Nominal Volume', 'Real Volume', 'Price USD', 'ICP',
-      'Alpha', 'Kurs BI', 'Total Amount USD', 'Created By', 'Created At'
+      'ID', 'Status', 'Invoice No', 'No. PO MySAP', 'No. PO Hardcopy', 'B/L Number', 'B/L Date', 'Vessel/Pipeline', 'Load Port', 'Discharge Port',
+      'Seller', 'KKKS', 'Jenis Cargo', 'Transaction', 'Nominal Volume', 'Real Volume', 'Volume KKKS', 'Volume SKK', 'Vol Check (%)', 'Price USD', 'ICP',
+      'Alpha', 'Kurs BI', 'Total Amount USD', 'VAT (11%) USD', 'Total Amount IDR', 'Created By', 'Created At'
     ].join(',');
 
     const rows = allLiftings.map(l => {
       const totalUsd = (parseFloat(l.kkksVolume || 0) * parseFloat(l.kkksPrice || 0)) + (parseFloat(l.skkVolume || 0) * parseFloat(l.skkPrice || 0));
+      const vatUsd = totalUsd * 0.11;
+      const volCheck = l.totalVolume > 0 ? (((parseFloat(l.kkksVolume || 0) + parseFloat(l.skkVolume || 0)) / parseFloat(l.totalVolume)) * 100).toFixed(2) + '%' : '0.00%';
       return [
-        l.id, l.status, l.invoiceId || '-', l.blNumber || '-', l.blDate || '-', l.vesselName || 'Pipeline', l.loadPort || '-', l.dischargePort || '-',
-        l.seller || '-', l.kkks || '-', l.jenisMm || '-', l.kindOfTransaction || '-', l.volumeNominasi || 0, l.totalVolume || 0, l.priceUsdBbl || 0,
-        l.icpPrice || 0, l.alpha || 0, l.kursBeliBi || 0, totalUsd.toFixed(2), l.createdBy || '-', l.createdAt || '-'
+        l.id, l.status, l.invoiceId || '-', l.poMySap || '-', l.poHardcopy || '-', l.blNumber || '-', l.blDate || '-', l.vesselName || 'Pipeline', l.loadPort || '-', l.dischargePort || '-',
+        l.seller || '-', l.kkks || '-', l.jenisMm || '-', l.kindOfTransaction || '-', l.volumeNominasi || 0, l.totalVolume || 0, l.kkksVolume || 0, l.skkVolume || 0, volCheck, l.priceUsdBbl || 0,
+        l.icpPrice || 0, l.alpha || 0, l.kursBeliBi || 0, totalUsd.toFixed(2), vatUsd.toFixed(2), (totalUsd * (l.kursBeliBi || 15700)).toFixed(2), l.createdBy || '-', l.createdAt || '-'
       ].join(',');
     }).join('\n');
 
@@ -2561,8 +2615,9 @@ export const SettlementArchive = () => {
             </thead>
             <tbody>
               {filteredOutput.map((row) => {
+                const latestKurs = getLatestKursBI();
                 const totalUsd = (parseFloat(row.kkksVolume || 0) * parseFloat(row.kkksPrice || 0)) + (parseFloat(row.skkVolume || 0) * parseFloat(row.skkPrice || 0));
-                const totalIdr = totalUsd * (parseFloat(row.kursBeliBi || 15450));
+                const totalIdr = totalUsd * (parseFloat(row.kursBeliBi || (latestKurs ? latestKurs.harga : 15700)));
                 return (
                   <tr key={row.id}>
                     <td className="font-medium" style={{ color: 'var(--accent-light)' }}>{row.invoiceId || row.id}</td>
@@ -2591,6 +2646,8 @@ export const SettlementArchive = () => {
                 <th style={{ position: 'sticky', left: 0, background: '#f8fafc', zIndex: 10 }}>ID Transaksi</th>
                 <th>Status</th>
                 <th>Invoice Number</th>
+                <th>No. PO MySAP</th>
+                <th>No. PO Hardcopy</th>
                 <th>B/L Date</th>
                 <th>Kapal / Pipeline</th>
                 <th>Loading Port</th>
@@ -2601,11 +2658,17 @@ export const SettlementArchive = () => {
                 <th>Transaction</th>
                 <th>Volume Nominasi</th>
                 <th>Volume Realisasi</th>
+                <th>Volume KKKS</th>
+                <th>Volume SKK</th>
+                <th>Vol Check (%)</th>
                 <th>Price (USD/bbl)</th>
                 <th>ICP</th>
                 <th>Alpha</th>
                 <th>Kurs BI</th>
-                <th>Total USD</th>
+                <th>Total Price (USD)</th>
+                <th>VAT (11%)</th>
+                <th>Total Final (USD)</th>
+                <th>Total Final (IDR)</th>
                 <th>Created By</th>
                 <th>Created At</th>
                 <th>Updated By</th>
@@ -2622,6 +2685,8 @@ export const SettlementArchive = () => {
                       color: row.status === 'approved' ? 'var(--success)' : row.status === 'revisi' ? 'var(--warning)' : 'var(--text-muted)'
                     }}>{row.status?.toUpperCase()}</span></td>
                     <td>{row.invoiceId || '-'}</td>
+                    <td><span className="badge-outline" style={{ border: '1px solid var(--border)', fontSize: '11px', fontWeight: 600 }}>{row.poMySap || '-'}</span></td>
+                    <td><span className="badge-outline" style={{ border: '1px solid var(--border)', fontSize: '11px', fontWeight: 600 }}>{row.poHardcopy || '-'}</span></td>
                     <td>{row.blDate || '-'}</td>
                     <td>{row.vesselName || 'Pipeline'}</td>
                     <td>{row.loadPort || '-'}</td>
@@ -2632,11 +2697,21 @@ export const SettlementArchive = () => {
                     <td>{row.kindOfTransaction || '-'}</td>
                     <td style={{ textAlign: 'right' }}>{formatVol(row.volumeNominasi)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatVol(row.totalVolume)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatVol(row.kkksVolume)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatVol(row.skkVolume)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 800, color: (Math.abs(((parseFloat(row.kkksVolume) || 0) + (parseFloat(row.skkVolume) || 0)) - (parseFloat(row.totalVolume) || 0)) < 1) ? 'var(--success)' : 'var(--danger)' }}>
+                      {parseFloat(row.totalVolume) > 0 ? (((parseFloat(row.kkksVolume || 0) + parseFloat(row.skkVolume || 0)) / parseFloat(row.totalVolume)) * 100).toFixed(2) + '%' : '0.00%'}
+                    </td>
                     <td style={{ textAlign: 'right' }}>{formatUsd(row.priceUsdBbl || 0)}</td>
                     <td style={{ textAlign: 'right' }}>{formatUsd(row.icpPrice || 0)}</td>
                     <td style={{ textAlign: 'right' }}>{row.alpha || 0}</td>
                     <td style={{ textAlign: 'right' }}>{formatIdr(row.kursBeliBi || 0)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>{formatUsd(totalUsd)}</td>
+                    <td style={{ textAlign: 'right' }}>{formatUsd(totalUsd * 0.11)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700 }}>{formatUsd(totalUsd * 1.11)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--success)' }}>
+                      {formatIdr(totalUsd * 1.11 * parseFloat(row.kursBeliBi || (getLatestKursBI()?.harga || 15700)))}
+                    </td>
                     <td>{row.createdBy || '-'}</td>
                     <td>{row.createdAt || '-'}</td>
                     <td>{row.updatedBy || '-'}</td>
@@ -2653,9 +2728,6 @@ export const SettlementArchive = () => {
 
 
 export const SettlementSheet = ({ invoice, onBack }) => {
-  const [poMySap, setPoMySap] = useState(invoice.poMySap || '');
-  const [poHardcopy, setPoHardcopy] = useState(invoice.poHardcopy || '');
-
   const formatVol = (v) => Number(v || 0).toLocaleString();
   const formatCur = (v) => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const formatIdr = (v) => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
@@ -2672,7 +2744,8 @@ export const SettlementSheet = ({ invoice, onBack }) => {
   const vatAmountUsd = subTotalUsd * 0.11; // VAT 11%
   const totalUsdWithVat = subTotalUsd + vatAmountUsd;
 
-  const kurs = parseFloat(invoice.kursBeliBi || 15450);
+  const latestKurs = getLatestKursBI();
+  const kurs = parseFloat(invoice.kursBeliBi || (latestKurs ? latestKurs.harga : 15700));
   const alpha = 2.50; // Mock Alpha if not found, usually Price - ICP
 
   return (
@@ -2680,31 +2753,24 @@ export const SettlementSheet = ({ invoice, onBack }) => {
       <div className="flex justify-between items-center mb-6">
         <button onClick={onBack} className="btn btn-outline" style={{ border: 'none', padding: 0 }}><ChevronLeft size={20} /> Kembali ke Daftar Arsip</button>
         <div className="flex gap-3">
-          <button className="btn btn-outline" onClick={() => alert('Data PO Tersimpan (Simulasi)')}><Save size={16} /> Simpan Data PO</button>
           <button className="btn btn-primary"><Download size={16} /> Unduh Format Cetak (PDF)</button>
         </div>
       </div>
 
       <div className="card calculation-sheet-card" style={{ background: 'white', color: '#111827', width: '100%', maxWidth: 'none', padding: '64px', boxShadow: 'none', border: 'none', borderRadius: 0 }}>
-        {/* PO Inputs - Floating inputs for metadata */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '48px', padding: '24px', background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+        {/* PO Display Info - Moved from inputs */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '48px', padding: '24px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
           <div>
-            <label style={{ fontSize: '10px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>No. PO MySAP</label>
-            <input
-              value={poMySap}
-              onChange={e => setPoMySap(e.target.value)}
-              placeholder="Masukkan No. PO MySAP..."
-              style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700 }}
-            />
+            <label style={{ fontSize: '10px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>No. PO MySAP</label>
+            <div style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>
+              {invoice.poMySap || '-'}
+            </div>
           </div>
           <div>
-            <label style={{ fontSize: '10px', fontWeight: 900, color: '#475569', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>No. PO Hardcopy</label>
-            <input
-              value={poHardcopy}
-              onChange={e => setPoHardcopy(e.target.value)}
-              placeholder="Masukkan No. PO Hardcopy..."
-              style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 700 }}
-            />
+            <label style={{ fontSize: '10px', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.05em' }}>No. PO Hardcopy</label>
+            <div style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>
+              {invoice.poHardcopy || '-'}
+            </div>
           </div>
         </div>
 
@@ -2754,7 +2820,7 @@ export const SettlementSheet = ({ invoice, onBack }) => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
               <span style={{ color: '#64748b', fontWeight: 600 }}>PO MySAP:</span>
-              <span style={{ fontWeight: 800 }}>{poMySap || '-'}</span>
+              <span style={{ fontWeight: 800 }}>{invoice.poMySap || '-'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '6px' }}>
               <span style={{ color: '#64748b', fontWeight: 600 }}>Acuan Harga:</span>
@@ -2765,7 +2831,7 @@ export const SettlementSheet = ({ invoice, onBack }) => {
 
         {/* Supporting PO Info */}
         <div style={{ marginBottom: '32px', fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>
-          Perhitungan didasarkan pada PO nomor: <strong style={{ color: '#111827' }}>{poHardcopy || '-'}</strong>
+          Perhitungan didasarkan pada PO nomor: <strong style={{ color: '#111827' }}>{invoice.poHardcopy || '-'}</strong>
         </div>
 
         {/* Calculation Table */}
@@ -3021,7 +3087,11 @@ export const VerificationDetail = () => {
                   <LabelVal label="Invoice Number" val={lifting.invoiceNumber} color="#00529c" />
                 </div>
                 <div>
-                  <LabelVal label="Kurs BI (IDR/USD)" val={formatIdr(lifting.kursBeliBi)} />
+                  <LabelVal
+                    label="Kurs BI (IDR/USD)"
+                    val={formatIdr(lifting.kursBeliBi)}
+                    subVal={lifting.kursBeliBi !== getLatestKursBI()?.harga ? { text: `Master: ${formatIdr(getLatestKursBI()?.harga)}`, style: { background: 'rgba(245,158,11,0.1)', color: '#f59e0b' } } : null}
+                  />
                 </div>
                 <div>
                   <LabelVal label="Tgl Invoice / Jatuh Tempo Provisional" val={`${lifting.invoiceDate || '-'} / ${lifting.dueDateInvoice || '-'}`} />
