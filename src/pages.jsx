@@ -280,6 +280,7 @@ export const DataSubmission = () => {
     catatan: '',
     poMySap: '',
     poHardcopy: '',
+    skemaKomersialisasi: 'Entitle SKK Migas',
   };
 
   const [form, setForm] = useState(emptyLiftingForm);
@@ -322,7 +323,9 @@ export const DataSubmission = () => {
   };
 
   const handleSaveDataLifting = () => {
-    if (!form.volumeNominasi) { showToast('Masukkan Volume Nominasi terlebih dahulu', 'error'); return; }
+    if (!form.periodeLiftingBulan || !form.periodeLiftingTahun || !form.seller || !form.jenisMm || !form.blDate || !form.volumeNominasi) { 
+      showToast('Lengkapi data mandatory (*): Periode, Seller, Jenis Cargo, BL Date, dan Volume Nominasi', 'error'); return; 
+    }
     createDraft(form);
     showToast('Data Lifting berhasil disimpan sebagai Draft.');
     setForm(emptyLiftingForm);
@@ -496,24 +499,16 @@ export const DataSubmission = () => {
         {tab === 'manual' ? (
           <>
             <h3 className="mb-4 font-semibold text-main">Rincian Data Lifting Minyak</h3>
-            <div className="grid-cols-3" style={{ gap: '20px' }}>
-              {/* Section 1: Periode & Seller */}
+            <div className="grid-cols-2 mb-8" style={{ gap: '20px' }}>
+              {/* Section 1: Basic Info */}
               <div className="input-group">
                 <label className="input-label">Periode Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <div className="flex gap-2">
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '8px' }}>
                   <select className="input-control" value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
-                    <option value="01">Januari</option>
-                    <option value="02">Februari</option>
-                    <option value="03">Maret</option>
-                    <option value="04">April</option>
-                    <option value="05">Mei</option>
-                    <option value="06">Juni</option>
-                    <option value="07">Juli</option>
-                    <option value="08">Agustus</option>
-                    <option value="09">September</option>
-                    <option value="10">Oktober</option>
-                    <option value="11">November</option>
-                    <option value="12">Desember</option>
+                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                    <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                    <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+                    <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
                   </select>
                   <select className="input-control" value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
                     <option value="2025">2025</option>
@@ -522,6 +517,7 @@ export const DataSubmission = () => {
                   </select>
                 </div>
               </div>
+
               <div className="input-group">
                 <label className="input-label">Seller <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="text" list="seller-options" className="input-control" placeholder="Pilih / Ketik Seller..." value={form.seller} onChange={e => handleChange('seller', e.target.value)} />
@@ -530,24 +526,25 @@ export const DataSubmission = () => {
                   {getSupplierList().map((s) => <option key={s.id} value={s.nama} />)}
                 </datalist>
               </div>
+
               <div className="input-group">
-                <label className="input-label">Jenis Cargo <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">Jenis Cargo (Master ICP) <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-                  <option value="">-- Pilih Master Data --</option>
+                  <option value="">-- Pilih Master ICP --</option>
                   <optgroup label="Primary Crudes">
-                    {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude}>{c.namaCrude}</option>)}
+                    {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
                   </optgroup>
                   <optgroup label="Derived Crudes">
-                    {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude}>{c.namaCrude}</option>)}
+                    {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
                   </optgroup>
                 </select>
               </div>
 
-              {/* Section 2: Bill of Lading & Lifting Type */}
               <div className="input-group">
-                <label className="input-label">B/L Dated</label>
+                <label className="input-label">B/L Dated <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
               </div>
+
               <div className="input-group">
                 <label className="input-label">Tipe Lifting</label>
                 <select className="input-control" value={form.tipeLifting} onChange={e => handleChange('tipeLifting', e.target.value)}>
@@ -555,66 +552,64 @@ export const DataSubmission = () => {
                   <option value="pipeline">Pipeline</option>
                 </select>
               </div>
-              {form.tipeLifting === 'vessel' ? (
-                <div className="input-group">
-                  <label className="input-label">Name Vessel</label>
-                  <input type="text" className="input-control" placeholder="Contoh: MT Pertamina Prime" value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
-                </div>
-              ) : (
-                <div className="input-group" style={{ visibility: 'hidden' }}>
-                  <label className="input-label">&nbsp;</label><input className="input-control" disabled />
-                </div>
-              )}
 
-              {/* Section 3: Ports & Ref Number */}
               <div className="input-group">
-                <label className="input-label">Terminal Loading</label>
+                <label className="input-label">Name Vessel</label>
+                <input type="text" className="input-control" disabled={form.tipeLifting !== 'vessel'} placeholder={form.tipeLifting === 'vessel' ? "Contoh: MT Pertamina Prime" : "N/A (Pipeline)"} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Loading Port (Dummy)</label>
                 <select className="input-control" value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
-                  <option value="">-- Pilih (Dummy) --</option>
+                  <option value="">-- Pilih Loading Port --</option>
                   {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
                 </select>
               </div>
+
               <div className="input-group">
-                <label className="input-label">Discharge Port</label>
+                <label className="input-label">Discharge Port (Dummy)</label>
                 <select className="input-control" value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
-                  <option value="">-- Pilih (Dummy) --</option>
+                  <option value="">-- Pilih Discharge Port --</option>
                   {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
                 </select>
               </div>
+
               <div className="input-group">
                 <label className="input-label">B/L Number</label>
                 <input type="text" className="input-control" placeholder="Contoh: BL-88204" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
               </div>
 
-              {/* Section 4: Volumes */}
               <div className="input-group">
-                <label className="input-label">Total Volume Realisasi(dalam bbls)</label>
+                <label className="input-label">Volume Realisasi (bbls)</label>
                 <input type="number" className="input-control" placeholder="0" value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
+
               <div className="input-group">
-                <label className="input-label">Volume Nominasi (dalam bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">Skema Komersialisasi</label>
+                <select className="input-control" value={form.skemaKomersialisasi} onChange={e => handleChange('skemaKomersialisasi', e.target.value)}>
+                  <option value="Inkind SKK Migas">Inkind SKK Migas</option>
+                  <option value="In Kind KKKS">In Kind KKKS</option>
+                  <option value="Entitle SKK Migas">Entitle SKK Migas</option>
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Volume Nominasi (bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="number" className="input-control" placeholder="0" value={form.volumeNominasi} onChange={e => handleChange('volumeNominasi', e.target.value)} />
               </div>
-              <div className="input-group">
+
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
                 <label className="input-label">Operation Tolerance (%)</label>
-                <div className="input-control" style={{ background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', fontWeight: 600, color: 'var(--accent)' }}>
+                <div className="input-control" style={{ background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', fontWeight: 600, color: 'var(--accent)', height: '42px' }}>
                   {(parseFloat(form.volumeNominasi) && parseFloat(form.totalVolume))
                     ? (((parseFloat(form.volumeNominasi) - parseFloat(form.totalVolume)) / parseFloat(form.volumeNominasi)) * 100).toFixed(2) + '%'
                     : '0.00%'}
                 </div>
               </div>
-              <div className="input-group">
-                <label className="input-label">No. PO MySAP</label>
-                <input type="text" className="input-control" placeholder="Contoh: 12345678" value={form.poMySap} onChange={e => handleChange('poMySap', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">No. PO Hardcopy</label>
-                <input type="text" className="input-control" placeholder="Contoh: PO-ABC-001" value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} />
-              </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-              <button className="btn btn-primary" onClick={handleSaveDataLifting}><Save size={16} /> Simpan Data Lifting (Draft)</button>
+              <button className="btn btn-primary" onClick={handleSaveDataLifting} style={{ padding: '12px 24px' }}><Save size={18} /> Simpan Data Lifting (Draft)</button>
             </div>
           </>
         ) : (
