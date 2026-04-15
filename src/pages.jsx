@@ -625,13 +625,12 @@ export const DataSubmission = () => {
       <div className="card">
         <div className="flex justify-between items-center mb-4" style={{ padding: '0 8px' }}>
           <h2 className="text-base font-semibold" style={{ margin: 0 }}>Detail Invoice & Penagihan</h2>
-          <div className="relative" style={{ width: '300px' }}>
-            <Search size={16} className="absolute text-muted" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <div className="flex items-center gap-2" style={{ width: '300px', background: 'var(--bg-surface)', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <Search size={16} color="var(--text-muted)" />
             <input 
               type="text" 
-              className="input-control" 
               placeholder="Cari KKKS, Cargo, atau No B/L..." 
-              style={{ paddingLeft: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--border)' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px', width: '100%', height: '24px' }}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
