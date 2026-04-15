@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare, X, Eye, Bell, MapPin, Zap, Info } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import {
-  getAllLiftings, getLiftingById, createDraft, updateLifting, submitLifting, createAndSubmit,
+  getAllLiftings, getLiftingById, createDraft, updateLifting, submitLifting, lockLifting, createAndSubmit,
   approveLifting, rejectLifting, deleteLifting, getKKKSList, getStats, getK3SList,
   getSupplierList, getDatedBrentPrices, getPriceFormulas,
   getIcpPeriode, saveIcpPeriode, getDatedBrentRef, saveDatedBrentRef,
@@ -11,7 +11,7 @@ import {
   getPrimaryCrudes, savePrimaryCrude, getDerivedCrudes, saveDerivedCrude, getPrimaryCrudePrice,
   getKursBIList, getLatestKursBI, saveKursBI, deleteKursBI, saveK3S, saveSupplier, deleteK3S, deleteSupplier,
   getVatList, saveVat, deleteVat,
-  JENIS_MM_OPTIONS,
+  STATUS, JENIS_MM_OPTIONS,
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, STATUS_SP3_OPTIONS,
   PEMBELIAN_OPTIONS, generateAndAssignInvoiceId
 } from './dataStore';
@@ -280,12 +280,13 @@ export const DataSubmission = () => {
     catatan: '',
     poMySap: '',
     poHardcopy: '',
-    skemaKomersialisasi: 'Entitle SKK Migas',
+    skemaKomersialisasi: 'Entik SKK Migas',
   };
 
   const [form, setForm] = useState(emptyLiftingForm);
   const [toast, setToast] = useState(null);
   const [liftings, setLiftings] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Modal State for Detail Penagihan
   const [penagihanModal, setPenagihanModal] = useState({ isOpen: false, liftingId: null, form: {} });
@@ -323,8 +324,8 @@ export const DataSubmission = () => {
   };
 
   const handleSaveDataLifting = () => {
-    if (!form.periodeLiftingBulan || !form.periodeLiftingTahun || !form.seller || !form.jenisMm || !form.blDate || !form.volumeNominasi) { 
-      showToast('Lengkapi data mandatory (*): Periode, Seller, Jenis Cargo, BL Date, dan Volume Nominasi', 'error'); return; 
+    if (!form.periodeLiftingBulan || !form.periodeLiftingTahun || !form.seller || !form.jenisMm || !form.blDate) {
+      showToast('Lengkapi data mandatory (*): Periode, Seller, Jenis Cargo, dan BL Date', 'error'); return;
     }
     createDraft(form);
     showToast('Data Lifting berhasil disimpan sebagai Draft.');
@@ -520,11 +521,15 @@ export const DataSubmission = () => {
 
               <div className="input-group">
                 <label className="input-label">Seller <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="text" list="seller-options" className="input-control" placeholder="Pilih / Ketik Seller..." value={form.seller} onChange={e => handleChange('seller', e.target.value)} />
-                <datalist id="seller-options">
-                  {getK3SList().map((k) => <option key={k.id} value={k.nama} />)}
-                  {getSupplierList().map((s) => <option key={s.id} value={s.nama} />)}
-                </datalist>
+                <select className="input-control" value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
+                  <option value="">-- Pilih Seller --</option>
+                  <optgroup label="KKKS (K3S)">
+                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
+                  </optgroup>
+                  <optgroup label="Suppliers">
+                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
+                  </optgroup>
+                </select>
               </div>
 
               <div className="input-group">
@@ -587,25 +592,12 @@ export const DataSubmission = () => {
               <div className="input-group">
                 <label className="input-label">Skema Komersialisasi</label>
                 <select className="input-control" value={form.skemaKomersialisasi} onChange={e => handleChange('skemaKomersialisasi', e.target.value)}>
-                  <option value="Inkind SKK Migas">Inkind SKK Migas</option>
+                  <option value="In Kind SKK Migas">In Kind SKK Migas</option>
                   <option value="In Kind KKKS">In Kind KKKS</option>
-                  <option value="Entitle SKK Migas">Entitle SKK Migas</option>
+                  <option value="Entik SKK Migas">Entik SKK Migas</option>
                 </select>
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Volume Nominasi (bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="number" className="input-control" placeholder="0" value={form.volumeNominasi} onChange={e => handleChange('volumeNominasi', e.target.value)} />
-              </div>
-
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">Operation Tolerance (%)</label>
-                <div className="input-control" style={{ background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', fontWeight: 600, color: 'var(--accent)', height: '42px' }}>
-                  {(parseFloat(form.volumeNominasi) && parseFloat(form.totalVolume))
-                    ? (((parseFloat(form.volumeNominasi) - parseFloat(form.totalVolume)) / parseFloat(form.volumeNominasi)) * 100).toFixed(2) + '%'
-                    : '0.00%'}
-                </div>
-              </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
@@ -631,7 +623,20 @@ export const DataSubmission = () => {
 
       {/* ── Draft Data Table ── */}
       <div className="card">
-        <h2 className="mb-4 text-base font-semibold" style={{ paddingLeft: '8px' }}>Detail Invoice & Penagihan</h2>
+        <div className="flex justify-between items-center mb-4" style={{ padding: '0 8px' }}>
+          <h2 className="text-base font-semibold" style={{ margin: 0 }}>Detail Invoice & Penagihan</h2>
+          <div className="relative" style={{ width: '300px' }}>
+            <Search size={16} className="absolute text-muted" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input 
+              type="text" 
+              className="input-control" 
+              placeholder="Cari KKKS, Cargo, atau No B/L..." 
+              style={{ paddingLeft: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--border)' }}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
         <div className="table-container">
           <table style={{ minWidth: '1000px' }}>
             <thead>
@@ -649,72 +654,93 @@ export const DataSubmission = () => {
               </tr>
             </thead>
             <tbody>
-              {liftings.map(l => {
-                // Status mapping and styling
-                const statusStyles = {
-                  draft: { label: 'Drafted', bg: '#f1f5f9', color: '#64748b' },
-                  submitted: { label: 'Submitted', bg: 'rgba(0,131,255,0.1)', color: '#0083ff' },
-                  revisi: { label: 'Need Revision', bg: 'rgba(245,158,11,0.1)', color: '#f59e0b' },
-                  approved: { label: 'Approved', bg: 'rgba(0,166,81,0.1)', color: '#00a651' },
-                  rejected: { label: 'Rejected', bg: 'rgba(239,68,68,0.1)', color: '#ef4444' }
-                };
-                const st = statusStyles[l.status] || statusStyles.draft;
+              {(() => {
+                const filtered = (liftings || []).filter(l => {
+                  const s = searchTerm.toLowerCase();
+                  return (
+                    (l.seller && l.seller.toLowerCase().includes(s)) ||
+                    (l.kkks && l.kkks.toLowerCase().includes(s)) ||
+                    (l.jenisMm && l.jenisMm.toLowerCase().includes(s)) ||
+                    (l.blNumber && l.blNumber.toLowerCase().includes(s))
+                  );
+                });
 
-                return (
-                  <tr key={l.id}>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{l.blNumber || 'No B/L'}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.blDate || '-'}</div>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <div className="flex justify-center gap-2">
-                        {l.status === 'draft' || l.status === 'revisi' ? (
-                          <button className="btn btn-primary btn-sm" style={{ padding: '6px 14px', borderRadius: '4px' }} onClick={() => handleOpenPenagihan(l)}>
-                            {l.status === 'revisi' ? <Edit2 size={13} /> : <Plus size={13} />} {l.status === 'revisi' ? 'Revisi Data' : 'Isi Penagihan'}
-                          </button>
-                        ) : (
-                          <button className="btn btn-outline btn-sm" style={{ padding: '6px 14px', borderRadius: '4px' }} onClick={() => navigate(`/operasional/submission/edit/${l.id}`)}>
-                            <Eye size={13} /> Detail
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: '13px', fontWeight: 500 }}>{l.createdBy || 'John Doe (Pertamina)'}</div>
-                    </td>
-                    <td>
-                      <div>{l.isPipeline ? <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>Pipeline</span> : (l.vesselName || 'MT Unassigned')}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadPort || 'Unknown'} → {l.dischargePort || 'Unknown'}</div>
-                    </td>
-                    <td>
-                      <div>{l.kindOfTransaction || 'Regular'}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Crude Oil'}</div>
-                    </td>
-                    <td style={{ fontWeight: 500 }}>
-                      {l.loadPort || '-'}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 500 }}>
-                      {l.volumeNominasi ? parseFloat(l.volumeNominasi).toLocaleString() : '-'}
-                    </td>
-                    <td style={{ textAlign: 'center', fontSize: '13px' }}>
-                      {l.blDate || '-'}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, fontWeight: 700, minWidth: '100px', textAlign: 'center' }}>
-                        {st.label}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>{l.updatedBy || '-'}</div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {liftings.length === 0 && (
-                <tr>
-                  <td colSpan="10" className="text-center py-6 text-muted">Belum ada data lifting yang tersimpan.</td>
-                </tr>
-              )}
+                if (filtered.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan="10" className="text-center py-12">
+                        <div className="text-muted mb-2">Tidak ada data yang cocok dengan pencarian "{searchTerm}"</div>
+                        <button className="btn btn-outline btn-sm" onClick={() => setSearchTerm('')}>Reset Pencarian</button>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return filtered.map(l => {
+                  const statusStyles = {
+                    draft: { label: 'Drafted', bg: '#f1f5f9', color: '#64748b' },
+                    lifting_locked: { label: 'Lifting Locked', bg: 'rgba(139,92,246,0.1)', color: '#8b5cf6' },
+                    submitted: { label: 'Submitted', bg: 'rgba(0,131,255,0.1)', color: '#0083ff' },
+                    revisi: { label: 'Need Revision', bg: 'rgba(245,158,11,0.1)', color: '#f59e0b' },
+                    approved: { label: 'Approved', bg: 'rgba(0,166,81,0.1)', color: '#00a651' },
+                    rejected: { label: 'Rejected', bg: 'rgba(239,68,68,0.1)', color: '#ef4444' }
+                  };
+                  const st = statusStyles[l.status] || statusStyles.draft;
+
+                  return (
+                    <tr key={l.id}>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{l.blNumber || 'No B/L'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.blDate || '-'}</div>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button 
+                          className={`btn btn-sm ${l.status === 'draft' || l.status === 'revisi' || l.status === 'lifting_locked' ? 'btn-primary' : 'btn-outline'}`}
+                          style={{ padding: '6px 14px', borderRadius: '4px' }} 
+                          onClick={() => navigate(`/operasional/submission/edit/${l.id}`)}
+                        >
+                          {l.status === 'draft' || l.status === 'revisi' ? (
+                            <><Edit2 size={13} style={{ marginRight: '4px' }}/> Proses</>
+                          ) : l.status === 'lifting_locked' ? (
+                            <><Plus size={13} style={{ marginRight: '4px' }}/> Penagihan</>
+                          ) : (
+                            <><Eye size={13} style={{ marginRight: '4px' }}/> Detail</>
+                          )}
+                        </button>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '13px', fontWeight: 500 }}>{l.createdBy || 'John Doe (Pertamina)'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 600 }}>{l.seller || l.kkks || '-'}</div>
+                      </td>
+                      <td>
+                        <div>{l.isPipeline ? <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>Pipeline</span> : (l.vesselName || 'MT Unassigned')}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadPort || 'Unknown'} → {l.dischargePort || 'Unknown'}</div>
+                      </td>
+                      <td>
+                        <div>{l.kindOfTransaction || 'Regular'}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Crude Oil'}</div>
+                      </td>
+                      <td style={{ fontWeight: 500 }}>
+                        {l.loadPort || '-'}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 500 }}>
+                        {l.volumeNominasi ? parseFloat(l.volumeNominasi).toLocaleString() : '-'}
+                      </td>
+                      <td style={{ textAlign: 'center', fontSize: '13px' }}>
+                        {l.blDate || '-'}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, fontWeight: 700, minWidth: '100px', textAlign: 'center' }}>
+                          {st.label}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>{l.updatedBy || '-'}</div>
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
             </tbody>
           </table>
         </div>
@@ -862,7 +888,7 @@ export const EditLifting = () => {
   };
 
   const handleSubmit = () => {
-    if (!form.kindOfTransaction || !form.invoiceNumber || !form.invoiceDate || !form.dueDateInvoice || !form.volumeNominasi) {
+    if (!form.kindOfTransaction || !form.invoiceNumber || !form.invoiceDate || !form.dueDateInvoice) {
       showToast('Lengkapi field wajib yang bertanda bintang (*) sebelum submit', 'error'); return;
     }
     updateLifting(id, form);
@@ -882,11 +908,23 @@ export const EditLifting = () => {
   const statusBadge = {
     draft: { bg: '#f1f5f9', color: 'var(--text-muted)', text: 'Draft' },
     revisi: { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', text: 'Butuh Perbaikan' },
+    lifting_locked: { bg: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', text: 'Lifting Terkunci (Siap Penagihan)' },
     submitted: { bg: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)', text: 'Sedang Diverifikasi' },
     approved: { bg: 'rgba(0, 166, 81, 0.1)', color: 'var(--success)', text: 'Approved' },
   };
   const st = statusBadge[originalStatus] || { bg: '#f1f5f9', color: 'var(--text-muted)', text: originalStatus };
-  const isReadOnly = originalStatus !== 'draft' && originalStatus !== 'revisi';
+  
+  // Lifting data is read-only unless it's draft or needs revision
+  const isLiftingReadOnly = originalStatus !== 'draft' && originalStatus !== 'revisi';
+  
+  // Invoice data is EDITABLE ONLY when lifting has been locked/verified
+  const isInvoiceReadOnly = originalStatus !== 'lifting_locked';
+  
+  const isReadOnly = isLiftingReadOnly && isInvoiceReadOnly; // Global flag for buttons if needed
+
+  const showLiftingOnly = originalStatus === 'draft' || originalStatus === 'revisi';
+  const showInvoiceOnly = originalStatus === 'lifting_locked';
+  const showBothColumns = !showLiftingOnly && !showInvoiceOnly;
 
   return (
     <div className="animate-fade-in">
@@ -912,14 +950,15 @@ export const EditLifting = () => {
 
       {/* Form Card */}
       <div className="card shadow-sm" style={{ border: '1px solid var(--border)', borderRadius: '12px' }}>
-        <div style={{ display: 'flex', gap: '32px' }}>
+        <div style={{ display: showBothColumns ? 'flex' : 'block', gap: showBothColumns ? '32px' : '0' }}>
           {/* Left Column: Data Lifting Review */}
-          <div style={{ flex: 1, borderRight: '1px solid var(--border)', paddingRight: '24px' }}>
+          {(!showInvoiceOnly) && (
+          <div style={{ flex: 1, borderRight: showBothColumns ? '1px solid var(--border)' : 'none', paddingRight: showBothColumns ? '24px' : '0', maxWidth: showBothColumns ? 'none' : '900px', margin: showBothColumns ? '0' : '0 auto' }}>
             <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div className="input-group">
                 <label className="input-label">Periode Bulan</label>
-                <select className="input-control" disabled={isReadOnly} value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
                   <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
                   <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
                   <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
@@ -928,21 +967,25 @@ export const EditLifting = () => {
               </div>
               <div className="input-group">
                 <label className="input-label">Periode Tahun</label>
-                <select className="input-control" disabled={isReadOnly} value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
                   <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
                 </select>
               </div>
               <div className="input-group" style={{ gridColumn: 'span 2' }}>
                 <label className="input-label">Seller</label>
-                <input type="text" list="seller-options-edit" disabled={isReadOnly} className="input-control" value={form.seller} onChange={e => handleChange('seller', e.target.value)} placeholder="Ketik/Pilih Seller..." />
-                <datalist id="seller-options-edit">
-                  {getK3SList().map((k) => <option key={k.id} value={k.nama} />)}
-                  {getSupplierList().map((s) => <option key={s.id} value={s.nama} />)}
-                </datalist>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
+                  <option value="">-- Pilih Seller --</option>
+                  <optgroup label="KKKS (K3S)">
+                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
+                  </optgroup>
+                  <optgroup label="Suppliers">
+                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
+                  </optgroup>
+                </select>
               </div>
               <div className="input-group" style={{ gridColumn: 'span 2' }}>
                 <label className="input-label">Jenis Cargo</label>
-                <select className="input-control" disabled={isReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
                   <option value="">-- Pilih Crude --</option>
                   <optgroup label="Primary Crudes">
                     {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
@@ -954,7 +997,7 @@ export const EditLifting = () => {
               </div>
               <div className="input-group">
                 <label className="input-label">B/L Dated</label>
-                <input type="date" className="input-control" disabled={isReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
               </div>
               <div className="input-group">
                 <label className="input-label">B/L Number</label>
@@ -987,78 +1030,84 @@ export const EditLifting = () => {
               </div>
               <div className="input-group">
                 <label className="input-label">Total Volume Realisasi (bbls)</label>
-                <input type="number" className="input-control" disabled={isReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Total Volume Nominasi <span className="text-danger">*</span></label>
-                <input type="number" className="input-control" disabled={isReadOnly} value={form.volumeNominasi} onChange={e => handleChange('volumeNominasi', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Operation Tolerance (%)</label>
-                <div className="input-control" style={{ background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', fontWeight: 600, color: 'var(--accent)' }}>
-                  {(parseFloat(form.volumeNominasi) && parseFloat(form.totalVolume))
-                    ? (((parseFloat(form.volumeNominasi) - parseFloat(form.totalVolume)) / parseFloat(form.volumeNominasi)) * 100).toFixed(2) + '%'
-                    : '0.00%'}
-                </div>
+                <input type="number" className="input-control" disabled={isLiftingReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
             </div>
 
             <div className="mt-8 pt-6" style={{ borderTop: '1px dashed var(--border)' }}>
               <div className="input-group mb-4">
                 <label className="input-label">Remarks (Free Text)</label>
-                <textarea className="input-control" rows="3" disabled={isReadOnly} value={form.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="Tulis catatan tambahan..."></textarea>
+                <textarea className="input-control" rows="3" disabled={isLiftingReadOnly} value={form.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="Tulis catatan tambahan..."></textarea>
               </div>
             </div>
+            
+            {showLiftingOnly && (
+              <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+                <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Hapus Draft</button>
+                <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
+                <button className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} onClick={(e) => {
+                    e.preventDefault();
+                    // Native window.confirm removed to prevent silent block failures.
+                    updateLifting(id, form);
+                    lockLifting(id);
+                    showToast('Data Lifting berhasil dikunci. Membuka form penagihan...');
+                    setOriginalStatus('lifting_locked');
+                    setForm(prev => ({...prev, status: 'lifting_locked'}));
+                }}><CheckSquare size={16} /> Kunci Data Lifting</button>
+              </div>
+            )}
           </div>
+          )}
 
           {/* Right Column: Billing Input */}
-          <div style={{ flex: 1.5 }}>
+          {(!showLiftingOnly) && (
+          <div style={{ flex: 1.5, maxWidth: showBothColumns ? 'none' : '1000px', margin: showBothColumns ? '0' : '0 auto' }}>
             <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--success)' }}><DollarSign size={18} /> Detail Penagihan & Keuangan</h2>
             <div className="grid grid-cols-2" style={{ gap: '20px' }}>
               <div className="input-group">
                 <label className="input-label">Kind of Transaction <span className="text-danger">*</span></label>
-                <select className="input-control" disabled={isReadOnly} value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
+                <select className="input-control" disabled={isInvoiceReadOnly} value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
                   {KIND_OF_TRANSACTION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
               <div className="input-group">
                 <label className="input-label">Invoice Number <span className="text-danger">*</span></label>
-                <input type="text" className="input-control" disabled={isReadOnly} value={form.invoiceNumber} onChange={e => handleChange('invoiceNumber', e.target.value)} placeholder="INV/2026/..." />
+                <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.invoiceNumber} onChange={e => handleChange('invoiceNumber', e.target.value)} placeholder="INV/2026/..." />
               </div>
               <div className="input-group">
                 <label className="input-label">Invoice Date <span className="text-danger">*</span></label>
-                <input type="date" className="input-control" disabled={isReadOnly} value={form.invoiceDate} onChange={e => handleChange('invoiceDate', e.target.value)} />
+                <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.invoiceDate} onChange={e => handleChange('invoiceDate', e.target.value)} />
               </div>
 
               <div className="input-group">
                 <label className="input-label">No. PO MySAP</label>
-                <input type="text" className="input-control" disabled={isReadOnly} value={form.poMySap} onChange={e => handleChange('poMySap', e.target.value)} placeholder="Masukkan No. PO MySAP..." />
+                <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poMySap} onChange={e => handleChange('poMySap', e.target.value)} placeholder="Masukkan No. PO MySAP..." />
               </div>
               <div className="input-group">
                 <label className="input-label">No. PO Hardcopy</label>
-                <input type="text" className="input-control" disabled={isReadOnly} value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} placeholder="Masukkan No. PO Hardcopy..." />
+                <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} placeholder="Masukkan No. PO Hardcopy..." />
               </div>
 
               <div className="input-group">
                 <label className="input-label">Due Date Provisional <span className="text-danger">*</span></label>
-                <input type="date" className="input-control" disabled={isReadOnly} value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
+                <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
               </div>
               <div className="input-group">
                 <label className="input-label">Due Date Final</label>
-                <input type="date" className="input-control" disabled={isReadOnly} value={form.dueDateFinal} onChange={e => handleChange('dueDateFinal', e.target.value)} />
+                <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateFinal} onChange={e => handleChange('dueDateFinal', e.target.value)} />
               </div>
               <div className="input-group">
                 <label className="input-label">Kurs BI (IDR/USD) <span className="text-danger">*</span></label>
-                <input type="number" className="input-control" disabled={isReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
-                {!isReadOnly && (
-                  <div 
+                <input type="number" className="input-control" disabled={isInvoiceReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
+                {!isInvoiceReadOnly && (
+                  <div
                     style={{ fontSize: '11px', marginTop: '6px', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,82,156,0.05)', transition: 'all 0.2s' }}
                     onClick={() => handleChange('kursBeliBi', getLatestKursBI()?.harga || 15725)}
                     title="Klik untuk menyontek Master Rate"
                   >
                     Master Rate: <span style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'underline' }}>
                       Rp {(getLatestKursBI()?.harga || 15725).toLocaleString('id-ID')}
-                    </span> 
+                    </span>
                     <span style={{ fontSize: '10px', fontStyle: 'italic', opacity: 0.8 }}>(Klik untuk gunakan)</span>
                   </div>
                 )}
@@ -1071,12 +1120,12 @@ export const EditLifting = () => {
               </div>
               <div className="input-group">
                 <label className="input-label">Volume Check (%)</label>
-                <div className="input-control" style={{ 
-                  background: 'var(--bg-surface)', 
-                  fontWeight: 800, 
-                  color: (Math.abs(((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) - (parseFloat(form.totalVolume) || 0)) < 1) ? 'var(--success)' : 'var(--danger)' 
+                <div className="input-control" style={{
+                  background: 'var(--bg-surface)',
+                  fontWeight: 800,
+                  color: (Math.abs(((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) - (parseFloat(form.totalVolume) || 0)) < 1) ? 'var(--success)' : 'var(--danger)'
                 }}>
-                  {parseFloat(form.totalVolume) > 0 
+                  {parseFloat(form.totalVolume) > 0
                     ? (((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) / parseFloat(form.totalVolume) * 100).toFixed(2) + '%'
                     : '0.00%'}
                 </div>
@@ -1200,14 +1249,18 @@ export const EditLifting = () => {
               </div>
             </div>
 
-            {!isReadOnly && (
+            {showInvoiceOnly && (
               <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-                <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Delete Data</button>
-                <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
-                <button className="btn btn-primary" onClick={handleSubmit}><CheckCircle size={16} /> Submit Verifikasi</button>
+                <button className="btn btn-outline" onClick={() => {
+                  updateLifting(id, form);
+                  showToast('Draft Penagihan disimpan.');
+                  setTimeout(() => navigate('/operasional/submission'), 800);
+                }}><Save size={16} /> Simpan Draft Penagihan</button>
+                <button className="btn btn-primary" onClick={handleSubmit}><CheckCircle size={16} /> Submit Verifikasi Final</button>
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>
