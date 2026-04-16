@@ -653,7 +653,7 @@ export const DataSubmission = () => {
                 <th>Vessel / Pipeline</th>
                 <th>Transaction & Cargo</th>
                 <th>Loading Port</th>
-                <th style={{ textAlign: 'right' }}>Total Volume Nominasi (bbls)</th>
+                <th style={{ textAlign: 'center' }}>Tipe Transaksi</th>
                 <th style={{ textAlign: 'center' }}>BL Date</th>
                 <th style={{ textAlign: 'center' }}>Status</th>
                 <th>Updated By</th>
@@ -729,8 +729,14 @@ export const DataSubmission = () => {
                       <td style={{ fontWeight: 500 }}>
                         {l.loadPort || '-'}
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 500 }}>
-                        {l.volumeNominasi ? parseFloat(l.volumeNominasi).toLocaleString() : '-'}
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="badge" style={{ 
+                          background: l.pembelian === 'Import' ? 'rgba(239,68,68,0.08)' : 'rgba(0,166,81,0.08)', 
+                          color: l.pembelian === 'Import' ? '#ef4444' : '#00a651',
+                          fontWeight: 600
+                        }}>
+                          {l.pembelian || 'Domestik'}
+                        </span>
                       </td>
                       <td style={{ textAlign: 'center', fontSize: '13px' }}>
                         {l.blDate || '-'}
