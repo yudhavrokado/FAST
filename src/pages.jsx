@@ -598,6 +598,13 @@ export const DataSubmission = () => {
                 </select>
               </div>
 
+              <div className="input-group">
+                <label className="input-label">Tipe Transaksi</label>
+                <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+
             </div>
 
             <div className="flex justify-end gap-3 mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
@@ -1030,6 +1037,12 @@ export const EditLifting = () => {
               <div className="input-group">
                 <label className="input-label">Total Volume Realisasi (bbls)</label>
                 <input type="number" className="input-control" disabled={isLiftingReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Tipe Transaksi</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
               </div>
             </div>
 
