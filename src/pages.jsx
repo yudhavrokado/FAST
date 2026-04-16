@@ -1150,81 +1150,85 @@ export const EditLifting = () => {
               </div>
             </div>
 
-            {/* Section 1: Entitlement KKKS */}
-            <div className="mt-8 p-6 rounded-xl" style={{ border: '2px solid rgba(0,82,156,0.1)', background: '#fff' }}>
-              <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
-                Entitlement KKKS
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="input-group">
-                  <label className="input-label text-xs">Prov Entitlement (%)</label>
-                  <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksProvEntitlement} onChange={e => handleChange('kkksProvEntitlement', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label text-xs">Volume (bbl)</label>
-                  <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksVolume} onChange={e => handleChange('kkksVolume', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label text-xs">ICP (USD/bbl)</label>
-                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label text-xs">Alpha (USD/bbl)</label>
-                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksAlpha} onChange={e => handleChange('kkksAlpha', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label text-xs">Total Price (USD/bbl)</label>
-                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksPrice} onChange={e => handleChange('kkksPrice', e.target.value)} />
-                </div>
-              </div>
-              <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
-                <div style={{ flex: 1 }}>
-                  <div className="text-xs text-muted mb-1">Amount (USD)</div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
-                    ${Number((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {form.pembelian !== 'Import' && (
+              <>
+                {/* Section 1: Entitlement KKKS */}
+                <div className="mt-8 p-6 rounded-xl" style={{ border: '2px solid rgba(0,82,156,0.1)', background: '#fff' }}>
+                  <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                    Entitlement KKKS
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="input-group">
+                      <label className="input-label text-xs">Prov Entitlement (%)</label>
+                      <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksProvEntitlement} onChange={e => handleChange('kkksProvEntitlement', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label text-xs">Volume (bbl)</label>
+                      <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksVolume} onChange={e => handleChange('kkksVolume', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label text-xs">ICP (USD/bbl)</label>
+                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label text-xs">Alpha (USD/bbl)</label>
+                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksAlpha} onChange={e => handleChange('kkksAlpha', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label text-xs">Total Price (USD/bbl)</label>
+                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksPrice} onChange={e => handleChange('kkksPrice', e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="text-xs text-muted mb-1">Amount (USD)</div>
+                      <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
+                        ${Number((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Section 2: SKK Migas */}
-            <div className="mt-6 p-6 rounded-xl" style={{ border: '2px solid rgba(0,166,81,0.1)', background: '#fff' }}>
-              <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
-                Entitlement SKK Migas (GOI)
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="input-group">
-                  <label className="input-label text-xs">Prov Entitlement (%)</label>
-                  <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkProvEntitlement} onChange={e => handleChange('skkProvEntitlement', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label text-xs">Volume (bbl)</label>
-                  <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkVolume} onChange={e => handleChange('skkVolume', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label text-xs">ICP (USD/bbl)</label>
-                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label text-xs">Alpha (USD/bbl)</label>
-                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkAlpha || 0} onChange={e => handleChange('skkAlpha', e.target.value)} />
-                </div>
-                <div className="input-group">
-                  <label className="input-label text-xs">Total Price (USD/bbl)</label>
-                  <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkPrice} onChange={e => handleChange('skkPrice', e.target.value)} />
-                </div>
-              </div>
-              <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
-                <div style={{ flex: 1 }}>
-                  <div className="text-xs text-muted mb-1">Amount (USD)</div>
-                  <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
-                    ${Number((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                {/* Section 2: SKK Migas */}
+                <div className="mt-6 p-6 rounded-xl" style={{ border: '2px solid rgba(0,166,81,0.1)', background: '#fff' }}>
+                  <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
+                    Entitlement SKK Migas (GOI)
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="input-group">
+                      <label className="input-label text-xs">Prov Entitlement (%)</label>
+                      <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkProvEntitlement} onChange={e => handleChange('skkProvEntitlement', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label text-xs">Volume (bbl)</label>
+                      <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkVolume} onChange={e => handleChange('skkVolume', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label text-xs">ICP (USD/bbl)</label>
+                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label text-xs">Alpha (USD/bbl)</label>
+                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkAlpha || 0} onChange={e => handleChange('skkAlpha', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label text-xs">Total Price (USD/bbl)</label>
+                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkPrice} onChange={e => handleChange('skkPrice', e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="text-xs text-muted mb-1">Amount (USD)</div>
+                      <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
+                        ${Number((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
 
             {/* Documents Section */}
             <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
