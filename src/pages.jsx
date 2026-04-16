@@ -1116,22 +1116,24 @@ export const EditLifting = () => {
                 <label className="input-label">Due Date Final</label>
                 <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateFinal} onChange={e => handleChange('dueDateFinal', e.target.value)} />
               </div>
-              <div className="input-group">
-                <label className="input-label">Kurs BI (IDR/USD) <span className="text-danger">*</span></label>
-                <input type="number" className="input-control" disabled={isInvoiceReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
-                {!isInvoiceReadOnly && (
-                  <div
-                    style={{ fontSize: '11px', marginTop: '6px', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,82,156,0.05)', transition: 'all 0.2s' }}
-                    onClick={() => handleChange('kursBeliBi', getLatestKursBI()?.harga || 15725)}
-                    title="Klik untuk menyontek Master Rate"
-                  >
-                    Master Rate: <span style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'underline' }}>
-                      Rp {(getLatestKursBI()?.harga || 15725).toLocaleString('id-ID')}
-                    </span>
-                    <span style={{ fontSize: '10px', fontStyle: 'italic', opacity: 0.8 }}>(Klik untuk gunakan)</span>
-                  </div>
-                )}
-              </div>
+              {form.pembelian !== 'Import' && (
+                <div className="input-group">
+                  <label className="input-label">Kurs BI (IDR/USD) <span className="text-danger">*</span></label>
+                  <input type="number" className="input-control" disabled={isInvoiceReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
+                  {!isInvoiceReadOnly && (
+                    <div
+                      style={{ fontSize: '11px', marginTop: '6px', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,82,156,0.05)', transition: 'all 0.2s' }}
+                      onClick={() => handleChange('kursBeliBi', getLatestKursBI()?.harga || 15725)}
+                      title="Klik untuk menyontek Master Rate"
+                    >
+                      Master Rate: <span style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'underline' }}>
+                        Rp {(getLatestKursBI()?.harga || 15725).toLocaleString('id-ID')}
+                      </span>
+                      <span style={{ fontSize: '10px', fontStyle: 'italic', opacity: 0.8 }}>(Klik untuk gunakan)</span>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="input-group">
                 <label className="input-label">Total Price (USD/bbl)</label>
                 <div className="input-control" style={{ background: 'var(--bg-surface)', fontWeight: 700, color: 'var(--accent)' }}>
