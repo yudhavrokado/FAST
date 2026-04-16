@@ -13,7 +13,7 @@ import {
   getVatList, saveVat, deleteVat,
   STATUS, JENIS_MM_OPTIONS,
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, STATUS_SP3_OPTIONS,
-  PEMBELIAN_OPTIONS, SKEMA_KOMERSIALISASI_OPTIONS, generateAndAssignInvoiceId
+  PEMBELIAN_OPTIONS, SKEMA_KOMERSIALISASI_OPTIONS, COMMODITY_OPTIONS, generateAndAssignInvoiceId
 } from './dataStore';
 export const Dashboard = () => {
   const [viewMode, setViewMode] = useState('gabungan');
@@ -281,6 +281,10 @@ export const DataSubmission = () => {
     poMySap: '',
     poHardcopy: '',
     skemaKomersialisasi: SKEMA_KOMERSIALISASI_OPTIONS[0],
+    liftingCategory: 'Reguler',
+    pplNumber: '',
+    pplDate: '',
+    commodityType: 'Crude',
   };
 
   const [form, setForm] = useState(emptyLiftingForm);
@@ -549,9 +553,47 @@ export const DataSubmission = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">B/L Dated <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                <label className="input-label">Tipe Komoditas</label>
+                <select className="input-control" value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
+                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
               </div>
+
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Kategori Lifting</label>
+                <div className="flex gap-4">
+                  {['Reguler', 'PROFORMA LIFTING'].map(cat => (
+                    <label key={cat} className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border hover:bg-slate-50 transition-all" style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
+                      <input type="radio" name="liftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
+                      <span className="font-semibold text-sm" style={{ color: form.liftingCategory === cat ? 'var(--accent)' : 'inherit' }}>{cat}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {form.liftingCategory === 'Reguler' ? (
+                <>
+                  <div className="input-group">
+                    <label className="input-label">B/L Dated <span style={{ color: 'var(--danger)' }}>*</span></label>
+                    <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">B/L Number</label>
+                    <input type="text" className="input-control" placeholder="Contoh: BL-2026/01" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="input-group">
+                    <label className="input-label">Tanggal Berita Acara PPL <span style={{ color: 'var(--danger)' }}>*</span></label>
+                    <input type="date" className="input-control" value={form.pplDate} onChange={e => handleChange('pplDate', e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Nomor Berita Acara PPL <span style={{ color: 'var(--danger)' }}>*</span></label>
+                    <input type="text" className="input-control" placeholder="Contoh: BA/PPL/2026/..." value={form.pplNumber} onChange={e => handleChange('pplNumber', e.target.value)} />
+                  </div>
+                </>
+              )}
 
               <div className="input-group">
                 <label className="input-label">Tipe Lifting</label>
@@ -583,11 +625,6 @@ export const DataSubmission = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">B/L Number</label>
-                <input type="text" className="input-control" placeholder="Contoh: BL-88204" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
-              </div>
-
-              <div className="input-group">
                 <label className="input-label">Volume Realisasi (bbls)</label>
                 <input type="number" className="input-control" placeholder="0" value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
@@ -599,18 +636,7 @@ export const DataSubmission = () => {
                 </select>
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Skema Komersialisasi</label>
-                <select
-                  className="input-control"
-                  disabled={form.pembelian === 'Import'}
-                  value={form.skemaKomersialisasi}
-                  onChange={e => handleChange('skemaKomersialisasi', e.target.value)}
-                >
-                  <option value="">-- Pilih Skema --</option>
-                  {SKEMA_KOMERSIALISASI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-              </div>
+
 
             </div>
 
@@ -654,14 +680,18 @@ export const DataSubmission = () => {
           <table style={{ minWidth: '1000px' }}>
             <thead>
               <tr style={{ background: 'var(--bg-surface)' }}>
-                <th>Nomor B/L & Tgl</th>
                 <th style={{ textAlign: 'center' }}>Aksi</th>
-                <th>Created By</th>
-                <th>Vessel / Pipeline</th>
-                <th>Transaction & Cargo</th>
-                <th>Loading Port</th>
+                <th>Nomor B/L / PPL & Tgl</th>
+                <th>Periode</th>
+                <th>Seller</th>
+                <th>Jenis Cargo</th>
+                <th>Komoditas</th>
+                <th>Kategori</th>
+                <th>Lifting (Vessel/Pipe)</th>
+                <th>Port (Load/Disc)</th>
+                <th style={{ textAlign: 'right' }}>Vol Realisasi</th>
                 <th style={{ textAlign: 'center' }}>Tipe Transaksi</th>
-                <th style={{ textAlign: 'center' }}>BL Date</th>
+                <th>Skema</th>
                 <th style={{ textAlign: 'center' }}>Status</th>
                 <th>Updated By</th>
               </tr>
@@ -702,10 +732,6 @@ export const DataSubmission = () => {
 
                   return (
                     <tr key={l.id}>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{l.blNumber || 'No B/L'}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.blDate || '-'}</div>
-                      </td>
                       <td style={{ textAlign: 'center' }}>
                         <button
                           className={`btn btn-sm ${l.status === 'draft' || l.status === 'revisi' || l.status === 'lifting_locked' ? 'btn-primary' : 'btn-outline'}`}
@@ -722,20 +748,26 @@ export const DataSubmission = () => {
                         </button>
                       </td>
                       <td>
-                        <div style={{ fontSize: '13px', fontWeight: 500 }}>{l.createdBy || 'John Doe (Pertamina)'}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 600 }}>{l.seller || l.kkks || '-'}</div>
+                        <div style={{ fontWeight: 600 }}>
+                          {l.liftingCategory === 'PROFORMA LIFTING' ? (l.pplNumber || 'No PPL') : (l.blNumber || 'No B/L')}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {l.liftingCategory === 'PROFORMA LIFTING' ? (l.pplDate || '-') : (l.blDate || '-')}
+                        </div>
+                      </td>
+                      <td>{l.periodeLiftingBulan}/{l.periodeLiftingTahun}</td>
+                      <td style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>{l.seller || '-'}</td>
+                      <td>{l.jenisMm || '-'}</td>
+                      <td>{l.commodityType || '-'}</td>
+                      <td><span className="badge" style={{ background: l.liftingCategory === 'PROFORMA LIFTING' ? 'rgba(139,92,246,0.1)' : 'rgba(0,82,156,0.1)', color: l.liftingCategory === 'PROFORMA LIFTING' ? '#8b5cf6' : 'var(--accent)' }}>{l.liftingCategory}</span></td>
+                      <td>
+                        <div style={{ fontSize: '13px', fontWeight: 500 }}>{l.tipeLifting === 'vessel' ? (l.vesselName || 'Vessel') : 'Pipeline'}</div>
                       </td>
                       <td>
-                        <div>{l.isPipeline ? <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>Pipeline</span> : (l.vesselName || 'MT Unassigned')}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.loadPort || 'Unknown'} → {l.dischargePort || 'Unknown'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.loadPort || '-'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.dischargePort || '-'}</div>
                       </td>
-                      <td>
-                        <div>{l.kindOfTransaction || 'Regular'}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{l.jenisMm || 'Crude Oil'}</div>
-                      </td>
-                      <td style={{ fontWeight: 500 }}>
-                        {l.loadPort || '-'}
-                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>{l.totalVolume ? Number(l.totalVolume).toLocaleString() : '0'}</td>
                       <td style={{ textAlign: 'center' }}>
                         <span className="badge" style={{
                           background: l.pembelian === 'Import' ? 'rgba(239,68,68,0.08)' : 'rgba(0,166,81,0.08)',
@@ -745,16 +777,14 @@ export const DataSubmission = () => {
                           {l.pembelian || 'Domestik'}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'center', fontSize: '13px' }}>
-                        {l.blDate || '-'}
-                      </td>
+                      <td style={{ fontSize: '11px' }}>{l.skemaKomersialisasi || '-'}</td>
                       <td style={{ textAlign: 'center' }}>
                         <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, fontWeight: 700, minWidth: '100px', textAlign: 'center' }}>
                           {st.label}
                         </span>
                       </td>
                       <td>
-                        <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>{l.updatedBy || '-'}</div>
+                        <div style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>Admin FAST (Dummy)</div>
                       </td>
                     </tr>
                   );
@@ -821,6 +851,14 @@ export const EditLifting = () => {
   const [form, setForm] = useState(emptyForm);
   const [originalStatus, setOriginalStatus] = useState('draft');
   const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (!id) return;
+    const isSkemaEnabled = form.commodityType === 'Crude' && (form.pembelian === 'Domestik' || form.pembelian === 'Domestik Proforma Lifting');
+    if (!isSkemaEnabled && form.skemaKomersialisasi !== 'N/A') {
+      setForm(prev => ({ ...prev, skemaKomersialisasi: 'N/A' }));
+    }
+  }, [id, form.commodityType, form.pembelian, form.skemaKomersialisasi]);
 
   useEffect(() => {
     if (!id) return;
@@ -945,8 +983,9 @@ export const EditLifting = () => {
   const isReadOnly = isLiftingReadOnly && isInvoiceReadOnly; // Global flag for buttons if needed
 
   const showLiftingOnly = originalStatus === 'draft' || originalStatus === 'revisi';
-  const showInvoiceOnly = originalStatus === 'lifting_locked';
-  const showBothColumns = !showLiftingOnly && !showInvoiceOnly;
+  // If not draft/revisi, we want both columns side-by-side
+  const showBothColumns = !showLiftingOnly;
+  const showBillingButtons = originalStatus === 'lifting_locked' || originalStatus === 'billing_draft';
 
   return (
     <div className="animate-fade-in">
@@ -974,8 +1013,7 @@ export const EditLifting = () => {
       <div className="card shadow-sm" style={{ border: '1px solid var(--border)', borderRadius: '12px' }}>
         <div style={{ display: showBothColumns ? 'flex' : 'block', gap: showBothColumns ? '32px' : '0' }}>
           {/* Left Column: Data Lifting Review */}
-          {(!showInvoiceOnly) && (
-            <div style={{ flex: 1, borderRight: showBothColumns ? '1px solid var(--border)' : 'none', paddingRight: showBothColumns ? '24px' : '0', maxWidth: showBothColumns ? 'none' : '900px', margin: showBothColumns ? '0' : '0 auto' }}>
+          <div style={{ flex: 1, borderRight: showBothColumns ? '1px solid var(--border)' : 'none', paddingRight: showBothColumns ? '24px' : '0', maxWidth: showBothColumns ? 'none' : '900px', margin: showBothColumns ? '0' : '0 auto' }}>
               <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="input-group">
@@ -1018,13 +1056,47 @@ export const EditLifting = () => {
                   </select>
                 </div>
                 <div className="input-group">
-                  <label className="input-label">B/L Dated</label>
-                  <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                  <label className="input-label">Tipe Komoditas</label>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
+                    {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
                 </div>
-                <div className="input-group">
-                  <label className="input-label">B/L Number</label>
-                  <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} placeholder="Contoh: BL-2026/01" />
+
+                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="input-label">Kategori Lifting</label>
+                  <div className="flex gap-4">
+                    {['Reguler', 'PROFORMA LIFTING'].map(cat => (
+                      <label key={cat} className={`flex items-center gap-2 ${isLiftingReadOnly ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'} p-2 rounded-lg border hover:bg-slate-50 transition-all`} style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
+                        <input type="radio" disabled={isLiftingReadOnly} name="editLiftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
+                        <span className="text-sm font-semibold">{cat}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
+
+                {form.liftingCategory === 'PROFORMA LIFTING' ? (
+                  <>
+                    <div className="input-group">
+                      <label className="input-label">Tanggal Berita Acara PPL</label>
+                      <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.pplDate} onChange={e => handleChange('pplDate', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">Nomor Berita Acara PPL</label>
+                      <input type="text" className="input-control" disabled={isReadOnly} value={form.pplNumber} onChange={e => handleChange('pplNumber', e.target.value)} placeholder="Contoh: BA/PPL/..." />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="input-group">
+                      <label className="input-label">B/L Dated</label>
+                      <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label className="input-label">B/L Number</label>
+                      <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} placeholder="Contoh: BL-2026/01" />
+                    </div>
+                  </>
+                )}
                 <div className="input-group">
                   <label className="input-label">Tipe Lifting</label>
                   <select className="input-control" disabled={isReadOnly} value={form.tipeLifting} onChange={e => handleChange('tipeLifting', e.target.value)}>
@@ -1060,19 +1132,6 @@ export const EditLifting = () => {
                     {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
                 </div>
-
-                <div className="input-group" style={{ gridColumn: (originalStatus === 'draft' || originalStatus === 'revisi') ? 'span 1' : 'span 2' }}>
-                  <label className="input-label">Skema Komersialisasi</label>
-                  <select
-                    className="input-control"
-                    disabled={isLiftingReadOnly || form.pembelian === 'Import'}
-                    value={form.skemaKomersialisasi}
-                    onChange={e => handleChange('skemaKomersialisasi', e.target.value)}
-                  >
-                  <option value="">-- Pilih Skema --</option>
-                  {SKEMA_KOMERSIALISASI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
               </div>
 
               <div className="mt-8 pt-6" style={{ borderTop: '1px dashed var(--border)' }}>
@@ -1082,23 +1141,21 @@ export const EditLifting = () => {
                 </div>
               </div>
 
-              {showLiftingOnly && (
-                <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-                  <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Hapus Draft</button>
-                  <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
-                  <button className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} onClick={(e) => {
-                    e.preventDefault();
-                    // Native window.confirm removed to prevent silent block failures.
-                    updateLifting(id, form);
-                    lockLifting(id);
-                    showToast('Data Lifting berhasil dikunci. Membuka form penagihan...');
-                    setOriginalStatus('lifting_locked');
-                    setForm(prev => ({ ...prev, status: 'lifting_locked' }));
-                  }}><CheckSquare size={16} /> Kunci Data Lifting</button>
-                </div>
-              )}
+                {showLiftingOnly && (
+                  <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+                    <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Hapus Draft</button>
+                    <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
+                    <button className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} onClick={(e) => {
+                      e.preventDefault();
+                      updateLifting(id, form);
+                      lockLifting(id);
+                      showToast('Data Lifting berhasil dikunci. Membuka form penagihan...');
+                      setOriginalStatus('lifting_locked');
+                      setForm(prev => ({ ...prev, status: 'lifting_locked' }));
+                    }}><CheckSquare size={16} /> Kunci Data Lifting</button>
+                  </div>
+                )}
             </div>
-          )}
 
           {/* Right Column: Billing Input */}
           {(!showLiftingOnly) && (
@@ -1112,6 +1169,32 @@ export const EditLifting = () => {
                       .filter(opt => form.pembelian !== 'Import' || ['Provisional', 'Final'].includes(opt))
                       .map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Skema Komersialisasi</label>
+                  {(() => {
+                    const isSkemaEnabled = form.commodityType === 'Crude' && (form.pembelian === 'Domestik' || form.pembelian === 'Domestik Proforma Lifting');
+                    const value = isSkemaEnabled ? form.skemaKomersialisasi : 'N/A';
+                    
+                    return (
+                      <select
+                        className="input-control"
+                        disabled={isInvoiceReadOnly || !isSkemaEnabled}
+                        value={value}
+                        onChange={e => handleChange('skemaKomersialisasi', e.target.value)}
+                        style={{ background: !isSkemaEnabled ? '#f1f5f9' : 'white', cursor: !isSkemaEnabled ? 'not-allowed' : 'default' }}
+                      >
+                        {!isSkemaEnabled ? (
+                          <option value="N/A">N/A</option>
+                        ) : (
+                          <>
+                            <option value="">-- Pilih Skema --</option>
+                            {SKEMA_KOMERSIALISASI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </>
+                        )}
+                      </select>
+                    );
+                  })()}
                 </div>
                 <div className="input-group">
                   <label className="input-label">Invoice Number <span className="text-danger">*</span></label>
@@ -1302,7 +1385,7 @@ export const EditLifting = () => {
                 </div>
               </div>
 
-              {showInvoiceOnly && (
+              {showBillingButtons && (
                 <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
                   <button className="btn btn-outline" onClick={() => {
                     updateLifting(id, form);
