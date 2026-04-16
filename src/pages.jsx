@@ -2983,6 +2983,10 @@ export const VerificationDetail = () => {
   const [toast, setToast] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+  const handleChange = (field, val) => {
+    setLifting(prev => ({ ...prev, [field]: val }));
+  };
+
   useEffect(() => {
     const data = getLiftingById(id);
     if (data) {
@@ -3004,7 +3008,9 @@ export const VerificationDetail = () => {
     if (!decision) { showToast('Pilih keputusan: Approve, Revise, atau Reject'); return; }
 
     if (decision === 'approve') {
-      approveLifting(id, catatan, acuanHarga);
+      // Save updated volume nominasi and other fields before techically approving
+      updateLifting(id, { volumeNominasi: lifting.volumeNominasi, acuanHarga: acuanHarga });
+      approveLifting(id, catatan);
       showToast('Lifting Berhasil Disetujui (Approved)');
     } else if (decision === 'revise') {
       if (!catatan.trim()) { showToast('Catatan wajib diisi untuk permintaan revisi'); return; }
@@ -3135,8 +3141,35 @@ export const VerificationDetail = () => {
                   <LabelVal label="Loading Port" val={lifting.loadPort} />
                   <LabelVal label="Discharge Port" val={lifting.dischargePort} />
                   <LabelVal label="Total Volume Realisasi (bbls)" val={formatVol(lifting.totalVolume)} />
-                  <LabelVal label="Total Volume Nominasi" val={formatVol(lifting.volumeNominasi)} subVal={{ text: '*', style: { color: 'var(--danger)', background: 'transparent', padding: 0 } }} />
-                  <LabelVal label="Operation Tolerance (%)" val={tol.toFixed(2) + '%'} subVal={isOk ? { text: 'OKE', style: { background: '#ecfdf5', color: '#10b981' } } : null} color="#00529c" />
+                  
+                  {/* Volume Nominasi Input as requested */}
+                  <div style={{ marginBottom: '32px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Total Volume Nominasi (Input Verifikator)</div>
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type="number" 
+                        className="input-control"
+                        value={lifting.volumeNominasi || ''} 
+                        onChange={e => handleChange('volumeNominasi', e.target.value)}
+                        placeholder="0"
+                        style={{ 
+                          width: '100%', 
+                          padding: '12px 16px', 
+                          borderRadius: '12px', 
+                          border: '2px solid #e2e8f0', 
+                          fontSize: '14px', 
+                          fontWeight: 800, 
+                          color: '#00529c',
+                          background: '#f8fafc',
+                          outline: 'none',
+                          transition: 'all 0.2s'
+                        }}
+                      />
+                      <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', fontWeight: 800, color: '#94a3b8' }}>BBLS</div>
+                    </div>
+                  </div>
+
+                  <LabelVal label="Operation Tolerance (%)" val={tol.toFixed(2) + '%'} subVal={isOk ? { text: 'OKE', style: { background: '#ecfdf5', color: '#10b981' } } : { text: 'WARNING', style: { background: '#fef2f2', color: '#ef4444' } }} color={isOk ? "#10b981" : "#ef4444"} />
                 </div>
                 <div style={{ gridColumn: 'span 1' }}>
                   <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Remarks (Free Text)</div>
