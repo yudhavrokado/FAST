@@ -1085,7 +1085,9 @@ export const EditLifting = () => {
               <div className="input-group">
                 <label className="input-label">Kind of Transaction <span className="text-danger">*</span></label>
                 <select className="input-control" disabled={isInvoiceReadOnly} value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
-                  {KIND_OF_TRANSACTION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {KIND_OF_TRANSACTION_OPTIONS
+                    .filter(opt => form.pembelian !== 'Import' || ['Provisional', 'Final'].includes(opt))
+                    .map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
               <div className="input-group">
