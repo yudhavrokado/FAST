@@ -13,7 +13,7 @@ import {
   getVatList, saveVat, deleteVat,
   STATUS, JENIS_MM_OPTIONS,
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, STATUS_SP3_OPTIONS,
-  PEMBELIAN_OPTIONS, generateAndAssignInvoiceId
+  PEMBELIAN_OPTIONS, SKEMA_KOMERSIALISASI_OPTIONS, generateAndAssignInvoiceId
 } from './dataStore';
 export const Dashboard = () => {
   const [viewMode, setViewMode] = useState('gabungan');
@@ -280,7 +280,7 @@ export const DataSubmission = () => {
     catatan: '',
     poMySap: '',
     poHardcopy: '',
-    skemaKomersialisasi: 'Entik SKK Migas',
+    skemaKomersialisasi: SKEMA_KOMERSIALISASI_OPTIONS[0],
   };
 
   const [form, setForm] = useState(emptyLiftingForm);
@@ -302,6 +302,9 @@ export const DataSubmission = () => {
   const handleChange = (field, value) => {
     setForm(prev => {
       const newForm = { ...prev, [field]: value };
+      if (field === 'pembelian' && value === 'Import') {
+        newForm.skemaKomersialisasi = '';
+      }
       if (field === 'totalVolume' || field === 'volumeK3s') {
         const total = parseFloat(newForm.totalVolume) || 0;
         const k3s = parseFloat(newForm.volumeK3s) || 0;
@@ -590,18 +593,22 @@ export const DataSubmission = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Skema Komersialisasi</label>
-                <select className="input-control" value={form.skemaKomersialisasi} onChange={e => handleChange('skemaKomersialisasi', e.target.value)}>
-                  <option value="In Kind SKK Migas">In Kind SKK Migas</option>
-                  <option value="In Kind KKKS">In Kind KKKS</option>
-                  <option value="Entik SKK Migas">Entik SKK Migas</option>
+                <label className="input-label">Tipe Transaksi</label>
+                <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
 
               <div className="input-group">
-                <label className="input-label">Tipe Transaksi</label>
-                <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
-                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                <label className="input-label">Skema Komersialisasi</label>
+                <select
+                  className="input-control"
+                  disabled={form.pembelian === 'Import'}
+                  value={form.skemaKomersialisasi}
+                  onChange={e => handleChange('skemaKomersialisasi', e.target.value)}
+                >
+                  <option value="">-- Pilih Skema --</option>
+                  {SKEMA_KOMERSIALISASI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
 
@@ -634,9 +641,9 @@ export const DataSubmission = () => {
           <h2 className="text-base font-semibold" style={{ margin: 0 }}>Detail Invoice & Penagihan</h2>
           <div className="flex items-center gap-2" style={{ width: '300px', background: 'var(--bg-surface)', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--border)' }}>
             <Search size={16} color="var(--text-muted)" />
-            <input 
-              type="text" 
-              placeholder="Cari KKKS, Cargo, atau No B/L..." 
+            <input
+              type="text"
+              placeholder="Cari KKKS, Cargo, atau No B/L..."
               style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none', fontSize: '14px', width: '100%', height: '24px' }}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -700,17 +707,17 @@ export const DataSubmission = () => {
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.blDate || '-'}</div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <button 
+                        <button
                           className={`btn btn-sm ${l.status === 'draft' || l.status === 'revisi' || l.status === 'lifting_locked' ? 'btn-primary' : 'btn-outline'}`}
-                          style={{ padding: '6px 14px', borderRadius: '4px' }} 
+                          style={{ padding: '6px 14px', borderRadius: '4px' }}
                           onClick={() => navigate(`/operasional/submission/edit/${l.id}`)}
                         >
                           {l.status === 'draft' || l.status === 'revisi' ? (
-                            <><Edit2 size={13} style={{ marginRight: '4px' }}/> Proses</>
+                            <><Edit2 size={13} style={{ marginRight: '4px' }} /> Proses</>
                           ) : l.status === 'lifting_locked' ? (
-                            <><Plus size={13} style={{ marginRight: '4px' }}/> Penagihan</>
+                            <><Plus size={13} style={{ marginRight: '4px' }} /> Penagihan</>
                           ) : (
-                            <><Eye size={13} style={{ marginRight: '4px' }}/> Detail</>
+                            <><Eye size={13} style={{ marginRight: '4px' }} /> Detail</>
                           )}
                         </button>
                       </td>
@@ -730,8 +737,8 @@ export const DataSubmission = () => {
                         {l.loadPort || '-'}
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <span className="badge" style={{ 
-                          background: l.pembelian === 'Import' ? 'rgba(239,68,68,0.08)' : 'rgba(0,166,81,0.08)', 
+                        <span className="badge" style={{
+                          background: l.pembelian === 'Import' ? 'rgba(239,68,68,0.08)' : 'rgba(0,166,81,0.08)',
                           color: l.pembelian === 'Import' ? '#ef4444' : '#00a651',
                           fontWeight: 600
                         }}>
@@ -880,6 +887,9 @@ export const EditLifting = () => {
   const handleChange = (field, value) => {
     setForm(prev => {
       const newForm = { ...prev, [field]: value };
+      if (field === 'pembelian' && value === 'Import') {
+        newForm.skemaKomersialisasi = '';
+      }
       if (field === 'totalVolume' || field === 'volumeK3s') {
         const total = parseFloat(newForm.totalVolume) || 0;
         const k3s = parseFloat(newForm.volumeK3s) || 0;
@@ -925,13 +935,13 @@ export const EditLifting = () => {
     approved: { bg: 'rgba(0, 166, 81, 0.1)', color: 'var(--success)', text: 'Approved' },
   };
   const st = statusBadge[originalStatus] || { bg: '#f1f5f9', color: 'var(--text-muted)', text: originalStatus };
-  
+
   // Lifting data is read-only unless it's draft or needs revision
   const isLiftingReadOnly = originalStatus !== 'draft' && originalStatus !== 'revisi';
-  
+
   // Invoice data is EDITABLE ONLY when lifting has been locked/verified
   const isInvoiceReadOnly = originalStatus !== 'lifting_locked';
-  
+
   const isReadOnly = isLiftingReadOnly && isInvoiceReadOnly; // Global flag for buttons if needed
 
   const showLiftingOnly = originalStatus === 'draft' || originalStatus === 'revisi';
@@ -965,327 +975,344 @@ export const EditLifting = () => {
         <div style={{ display: showBothColumns ? 'flex' : 'block', gap: showBothColumns ? '32px' : '0' }}>
           {/* Left Column: Data Lifting Review */}
           {(!showInvoiceOnly) && (
-          <div style={{ flex: 1, borderRight: showBothColumns ? '1px solid var(--border)' : 'none', paddingRight: showBothColumns ? '24px' : '0', maxWidth: showBothColumns ? 'none' : '900px', margin: showBothColumns ? '0' : '0 auto' }}>
-            <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="input-group">
-                <label className="input-label">Periode Bulan</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
-                  <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
-                  <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
-                  <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
-                  <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
-                </select>
-              </div>
-              <div className="input-group">
-                <label className="input-label">Periode Tahun</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
-                  <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
-                </select>
-              </div>
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">Seller</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
-                  <option value="">-- Pilih Seller --</option>
-                  <optgroup label="KKKS (K3S)">
-                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
-                  </optgroup>
-                  <optgroup label="Suppliers">
-                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
-                  </optgroup>
-                </select>
-              </div>
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">Jenis Cargo</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-                  <option value="">-- Pilih Crude --</option>
-                  <optgroup label="Primary Crudes">
-                    {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                  </optgroup>
-                  <optgroup label="Derived Crudes">
-                    {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                  </optgroup>
-                </select>
-              </div>
-              <div className="input-group">
-                <label className="input-label">B/L Dated</label>
-                <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">B/L Number</label>
-                <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} placeholder="Contoh: BL-2026/01" />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Tipe Lifting</label>
-                <select className="input-control" disabled={isReadOnly} value={form.tipeLifting} onChange={e => handleChange('tipeLifting', e.target.value)}>
-                  <option value="vessel">Vessel</option>
-                  <option value="pipeline">Pipeline</option>
-                </select>
-              </div>
-              {form.tipeLifting === 'vessel' && (
-                <div className="input-group" style={{ gridColumn: 'span 1' }}>
-                  <label className="input-label">Vessel Name</label>
-                  <input type="text" className="input-control" disabled={isReadOnly} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
+            <div style={{ flex: 1, borderRight: showBothColumns ? '1px solid var(--border)' : 'none', paddingRight: showBothColumns ? '24px' : '0', maxWidth: showBothColumns ? 'none' : '900px', margin: showBothColumns ? '0' : '0 auto' }}>
+              <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="input-group">
+                  <label className="input-label">Periode Bulan</label>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
+                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                    <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                    <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+                    <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                  </select>
                 </div>
-              )}
-              <div className="input-group">
-                <label className="input-label">Loading Port</label>
-                <select className="input-control" disabled={isReadOnly} value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
-                  {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
-                </select>
-              </div>
-              <div className="input-group">
-                <label className="input-label">Discharge Port</label>
-                <select className="input-control" disabled={isReadOnly} value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
-                  {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
-                </select>
-              </div>
-              <div className="input-group">
-                <label className="input-label">Total Volume Realisasi (bbls)</label>
-                <input type="number" className="input-control" disabled={isLiftingReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Tipe Transaksi</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
-                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-              </div>
-            </div>
+                <div className="input-group">
+                  <label className="input-label">Periode Tahun</label>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
+                    <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+                  </select>
+                </div>
+                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="input-label">Seller</label>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
+                    <option value="">-- Pilih Seller --</option>
+                    <optgroup label="KKKS (K3S)">
+                      {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
+                    </optgroup>
+                    <optgroup label="Suppliers">
+                      {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
+                    </optgroup>
+                  </select>
+                </div>
+                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="input-label">Jenis Cargo</label>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
+                    <option value="">-- Pilih Crude --</option>
+                    <optgroup label="Primary Crudes">
+                      {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                    </optgroup>
+                    <optgroup label="Derived Crudes">
+                      {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                    </optgroup>
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">B/L Dated</label>
+                  <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">B/L Number</label>
+                  <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} placeholder="Contoh: BL-2026/01" />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Tipe Lifting</label>
+                  <select className="input-control" disabled={isReadOnly} value={form.tipeLifting} onChange={e => handleChange('tipeLifting', e.target.value)}>
+                    <option value="vessel">Vessel</option>
+                    <option value="pipeline">Pipeline</option>
+                  </select>
+                </div>
+                {form.tipeLifting === 'vessel' && (
+                  <div className="input-group" style={{ gridColumn: 'span 1' }}>
+                    <label className="input-label">Vessel Name</label>
+                    <input type="text" className="input-control" disabled={isReadOnly} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
+                  </div>
+                )}
+                <div className="input-group">
+                  <label className="input-label">Loading Port</label>
+                  <select className="input-control" disabled={isReadOnly} value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
+                    {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Discharge Port</label>
+                  <select className="input-control" disabled={isReadOnly} value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
+                    {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Total Volume Realisasi (bbls)</label>
+                  <input type="number" className="input-control" disabled={isLiftingReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
+                </div>
+                <div className="input-group" style={{ gridColumn: (originalStatus === 'draft' || originalStatus === 'revisi') ? 'span 1' : 'span 2' }}>
+                  <label className="input-label">Tipe Transaksi</label>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                    {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
 
-            <div className="mt-8 pt-6" style={{ borderTop: '1px dashed var(--border)' }}>
-              <div className="input-group mb-4">
-                <label className="input-label">Remarks (Free Text)</label>
-                <textarea className="input-control" rows="3" disabled={isLiftingReadOnly} value={form.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="Tulis catatan tambahan..."></textarea>
+                <div className="input-group" style={{ gridColumn: (originalStatus === 'draft' || originalStatus === 'revisi') ? 'span 1' : 'span 2' }}>
+                  <label className="input-label">Skema Komersialisasi</label>
+                  <select
+                    className="input-control"
+                    disabled={isLiftingReadOnly || form.pembelian === 'Import'}
+                    value={form.skemaKomersialisasi}
+                    onChange={e => handleChange('skemaKomersialisasi', e.target.value)}
+                  >
+                  <option value="">-- Pilih Skema --</option>
+                  {SKEMA_KOMERSIALISASI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
               </div>
-            </div>
-            
-            {showLiftingOnly && (
-              <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-                <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Hapus Draft</button>
-                <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
-                <button className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} onClick={(e) => {
+
+              <div className="mt-8 pt-6" style={{ borderTop: '1px dashed var(--border)' }}>
+                <div className="input-group mb-4">
+                  <label className="input-label">Remarks (Free Text)</label>
+                  <textarea className="input-control" rows="3" disabled={isLiftingReadOnly} value={form.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="Tulis catatan tambahan..."></textarea>
+                </div>
+              </div>
+
+              {showLiftingOnly && (
+                <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+                  <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Hapus Draft</button>
+                  <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
+                  <button className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} onClick={(e) => {
                     e.preventDefault();
                     // Native window.confirm removed to prevent silent block failures.
                     updateLifting(id, form);
                     lockLifting(id);
                     showToast('Data Lifting berhasil dikunci. Membuka form penagihan...');
                     setOriginalStatus('lifting_locked');
-                    setForm(prev => ({...prev, status: 'lifting_locked'}));
-                }}><CheckSquare size={16} /> Kunci Data Lifting</button>
-              </div>
-            )}
-          </div>
+                    setForm(prev => ({ ...prev, status: 'lifting_locked' }));
+                  }}><CheckSquare size={16} /> Kunci Data Lifting</button>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Right Column: Billing Input */}
           {(!showLiftingOnly) && (
-          <div style={{ flex: 1.5, maxWidth: showBothColumns ? 'none' : '1000px', margin: showBothColumns ? '0' : '0 auto' }}>
-            <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--success)' }}><DollarSign size={18} /> Detail Penagihan & Keuangan</h2>
-            <div className="grid grid-cols-2" style={{ gap: '20px' }}>
-              <div className="input-group">
-                <label className="input-label">Kind of Transaction <span className="text-danger">*</span></label>
-                <select className="input-control" disabled={isInvoiceReadOnly} value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
-                  {KIND_OF_TRANSACTION_OPTIONS
-                    .filter(opt => form.pembelian !== 'Import' || ['Provisional', 'Final'].includes(opt))
-                    .map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-              </div>
-              <div className="input-group">
-                <label className="input-label">Invoice Number <span className="text-danger">*</span></label>
-                <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.invoiceNumber} onChange={e => handleChange('invoiceNumber', e.target.value)} placeholder="INV/2026/..." />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Invoice Date <span className="text-danger">*</span></label>
-                <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.invoiceDate} onChange={e => handleChange('invoiceDate', e.target.value)} />
-              </div>
-
-              <div className="input-group">
-                <label className="input-label">No. PO MySAP</label>
-                <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poMySap} onChange={e => handleChange('poMySap', e.target.value)} placeholder="Masukkan No. PO MySAP..." />
-              </div>
-              <div className="input-group">
-                <label className="input-label">No. PO Hardcopy</label>
-                <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} placeholder="Masukkan No. PO Hardcopy..." />
-              </div>
-
-              <div className="input-group">
-                <label className="input-label">Due Date Provisional <span className="text-danger">*</span></label>
-                <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Due Date Final</label>
-                <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateFinal} onChange={e => handleChange('dueDateFinal', e.target.value)} />
-              </div>
-              {form.pembelian !== 'Import' && (
+            <div style={{ flex: 1.5, maxWidth: showBothColumns ? 'none' : '1000px', margin: showBothColumns ? '0' : '0 auto' }}>
+              <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--success)' }}><DollarSign size={18} /> Detail Penagihan & Keuangan</h2>
+              <div className="grid grid-cols-2" style={{ gap: '20px' }}>
                 <div className="input-group">
-                  <label className="input-label">Kurs BI (IDR/USD) <span className="text-danger">*</span></label>
-                  <input type="number" className="input-control" disabled={isInvoiceReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
-                  {!isInvoiceReadOnly && (
-                    <div
-                      style={{ fontSize: '11px', marginTop: '6px', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,82,156,0.05)', transition: 'all 0.2s' }}
-                      onClick={() => handleChange('kursBeliBi', getLatestKursBI()?.harga || 15725)}
-                      title="Klik untuk menyontek Master Rate"
-                    >
-                      Master Rate: <span style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'underline' }}>
-                        Rp {(getLatestKursBI()?.harga || 15725).toLocaleString('id-ID')}
-                      </span>
-                      <span style={{ fontSize: '10px', fontStyle: 'italic', opacity: 0.8 }}>(Klik untuk gunakan)</span>
+                  <label className="input-label">Kind of Transaction <span className="text-danger">*</span></label>
+                  <select className="input-control" disabled={isInvoiceReadOnly} value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
+                    {KIND_OF_TRANSACTION_OPTIONS
+                      .filter(opt => form.pembelian !== 'Import' || ['Provisional', 'Final'].includes(opt))
+                      .map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Invoice Number <span className="text-danger">*</span></label>
+                  <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.invoiceNumber} onChange={e => handleChange('invoiceNumber', e.target.value)} placeholder="INV/2026/..." />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Invoice Date <span className="text-danger">*</span></label>
+                  <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.invoiceDate} onChange={e => handleChange('invoiceDate', e.target.value)} />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">No. PO MySAP</label>
+                  <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poMySap} onChange={e => handleChange('poMySap', e.target.value)} placeholder="Masukkan No. PO MySAP..." />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">No. PO Hardcopy</label>
+                  <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} placeholder="Masukkan No. PO Hardcopy..." />
+                </div>
+
+                <div className="input-group">
+                  <label className="input-label">Due Date Provisional <span className="text-danger">*</span></label>
+                  <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Due Date Final</label>
+                  <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateFinal} onChange={e => handleChange('dueDateFinal', e.target.value)} />
+                </div>
+                {form.pembelian !== 'Import' && (
+                  <div className="input-group">
+                    <label className="input-label">Kurs BI (IDR/USD) <span className="text-danger">*</span></label>
+                    <input type="number" className="input-control" disabled={isInvoiceReadOnly} value={form.kursBeliBi} onChange={e => handleChange('kursBeliBi', e.target.value)} placeholder="15xxx" />
+                    {!isInvoiceReadOnly && (
+                      <div
+                        style={{ fontSize: '11px', marginTop: '6px', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0,82,156,0.05)', transition: 'all 0.2s' }}
+                        onClick={() => handleChange('kursBeliBi', getLatestKursBI()?.harga || 15725)}
+                        title="Klik untuk menyontek Master Rate"
+                      >
+                        Master Rate: <span style={{ color: 'var(--accent)', fontWeight: 800, textDecoration: 'underline' }}>
+                          Rp {(getLatestKursBI()?.harga || 15725).toLocaleString('id-ID')}
+                        </span>
+                        <span style={{ fontSize: '10px', fontStyle: 'italic', opacity: 0.8 }}>(Klik untuk gunakan)</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="input-group">
+                  <label className="input-label">Total Price (USD/bbl)</label>
+                  <div className="input-control" style={{ background: 'var(--bg-surface)', fontWeight: 700, color: 'var(--accent)' }}>
+                    ${(parseFloat(form.priceUsdBbl) || 0).toFixed(2)}
+                  </div>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Volume Check (%)</label>
+                  <div className="input-control" style={{
+                    background: 'var(--bg-surface)',
+                    fontWeight: 800,
+                    color: (Math.abs(((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) - (parseFloat(form.totalVolume) || 0)) < 1) ? 'var(--success)' : 'var(--danger)'
+                  }}>
+                    {parseFloat(form.totalVolume) > 0
+                      ? (((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) / parseFloat(form.totalVolume) * 100).toFixed(2) + '%'
+                      : '0.00%'}
+                  </div>
+                </div>
+              </div>
+
+              {form.pembelian !== 'Import' && (
+                <>
+                  {/* Section 1: Entitlement KKKS */}
+                  {(form.skemaKomersialisasi === 'Election In Kind (KKKS or SHU)' || form.skemaKomersialisasi === 'Election Not to Take In Kind (SKK Migas)') && (
+                    <div className="mt-8 p-6 rounded-xl" style={{ border: '2px solid rgba(0,82,156,0.1)', background: '#fff' }}>
+                    <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                      Entitlement KKKS
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="input-group">
+                        <label className="input-label text-xs">Prov Entitlement (%)</label>
+                        <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksProvEntitlement} onChange={e => handleChange('kkksProvEntitlement', e.target.value)} />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label text-xs">Volume (bbl)</label>
+                        <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksVolume} onChange={e => handleChange('kkksVolume', e.target.value)} />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label text-xs">ICP (USD/bbl)</label>
+                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label text-xs">Alpha (USD/bbl)</label>
+                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksAlpha} onChange={e => handleChange('kkksAlpha', e.target.value)} />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label text-xs">Total Price (USD/bbl)</label>
+                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksPrice} onChange={e => handleChange('kkksPrice', e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
+                      <div style={{ flex: 1 }}>
+                        <div className="text-xs text-muted mb-1">Amount (USD)</div>
+                        <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
+                          ${Number((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    </div>
                     </div>
                   )}
+
+                  {/* Section 2: SKK Migas */}
+                  {form.skemaKomersialisasi === 'Election In Kind (SKK Migas)' && (
+                    <div className="mt-6 p-6 rounded-xl" style={{ border: '2px solid rgba(0,166,81,0.1)', background: '#fff' }}>
+                    <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
+                      Entitlement SKK Migas (GOI)
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="input-group">
+                        <label className="input-label text-xs">Prov Entitlement (%)</label>
+                        <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkProvEntitlement} onChange={e => handleChange('skkProvEntitlement', e.target.value)} />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label text-xs">Volume (bbl)</label>
+                        <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkVolume} onChange={e => handleChange('skkVolume', e.target.value)} />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label text-xs">ICP (USD/bbl)</label>
+                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label text-xs">Alpha (USD/bbl)</label>
+                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkAlpha || 0} onChange={e => handleChange('skkAlpha', e.target.value)} />
+                      </div>
+                      <div className="input-group">
+                        <label className="input-label text-xs">Total Price (USD/bbl)</label>
+                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkPrice} onChange={e => handleChange('skkPrice', e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
+                      <div style={{ flex: 1 }}>
+                        <div className="text-xs text-muted mb-1">Amount (USD)</div>
+                        <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
+                          ${Number((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                    </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Documents Section */}
+              <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+                <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--accent)' }}>
+                  <Upload size={16} /> Dokumen Penagihan & Pendukung
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+                  <div className={`card-upload ${form.fileInvoice ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-invoice').click()}>
+                    <input type="file" id="file-invoice" hidden onChange={e => handleFileChange('fileInvoice', e.target.files[0])} />
+                    <div className="card-upload-icon">{form.fileInvoice ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Invoice</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {form.fileInvoice || (isReadOnly ? 'Tidak ada file' : 'Drop file invoice')}
+                    </span>
+                  </div>
+                  <div className={`card-upload ${form.fileBL ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-bl').click()}>
+                    <input type="file" id="file-bl" hidden onChange={e => handleFileChange('fileBL', e.target.files[0])} />
+                    <div className="card-upload-icon">{form.fileBL ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>B/L</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {form.fileBL || (isReadOnly ? 'Tidak ada file' : 'Drop file B/L')}
+                    </span>
+                  </div>
+                  <div className={`card-upload ${form.fileFakturPajak ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-faktur-pajak').click()}>
+                    <input type="file" id="file-faktur-pajak" hidden onChange={e => handleFileChange('fileFakturPajak', e.target.files[0])} />
+                    <div className="card-upload-icon">{form.fileFakturPajak ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Faktur Pajak</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {form.fileFakturPajak || (isReadOnly ? 'Tidak ada file' : 'Drop file faktur')}
+                    </span>
+                  </div>
+                  <div className={`card-upload ${form.fileDocLain ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-other').click()}>
+                    <input type="file" id="file-other" hidden onChange={e => handleFileChange('fileDocLain', e.target.files[0])} />
+                    <div className="card-upload-icon">{form.fileDocLain ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Dokumen Lain</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {form.fileDocLain || (isReadOnly ? 'Tidak ada file' : 'Dokumen pendukung')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {showInvoiceOnly && (
+                <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+                  <button className="btn btn-outline" onClick={() => {
+                    updateLifting(id, form);
+                    showToast('Draft Penagihan disimpan.');
+                    setTimeout(() => navigate('/operasional/submission'), 800);
+                  }}><Save size={16} /> Simpan Draft Penagihan</button>
+                  <button className="btn btn-primary" onClick={handleSubmit}><CheckCircle size={16} /> Submit Verifikasi Final</button>
                 </div>
               )}
-              <div className="input-group">
-                <label className="input-label">Total Price (USD/bbl)</label>
-                <div className="input-control" style={{ background: 'var(--bg-surface)', fontWeight: 700, color: 'var(--accent)' }}>
-                  ${(parseFloat(form.priceUsdBbl) || 0).toFixed(2)}
-                </div>
-              </div>
-              <div className="input-group">
-                <label className="input-label">Volume Check (%)</label>
-                <div className="input-control" style={{
-                  background: 'var(--bg-surface)',
-                  fontWeight: 800,
-                  color: (Math.abs(((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) - (parseFloat(form.totalVolume) || 0)) < 1) ? 'var(--success)' : 'var(--danger)'
-                }}>
-                  {parseFloat(form.totalVolume) > 0
-                    ? (((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) / parseFloat(form.totalVolume) * 100).toFixed(2) + '%'
-                    : '0.00%'}
-                </div>
-              </div>
             </div>
-
-            {form.pembelian !== 'Import' && (
-              <>
-                {/* Section 1: Entitlement KKKS */}
-                <div className="mt-8 p-6 rounded-xl" style={{ border: '2px solid rgba(0,82,156,0.1)', background: '#fff' }}>
-                  <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
-                    Entitlement KKKS
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="input-group">
-                      <label className="input-label text-xs">Prov Entitlement (%)</label>
-                      <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksProvEntitlement} onChange={e => handleChange('kkksProvEntitlement', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label text-xs">Volume (bbl)</label>
-                      <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksVolume} onChange={e => handleChange('kkksVolume', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label text-xs">ICP (USD/bbl)</label>
-                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label text-xs">Alpha (USD/bbl)</label>
-                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksAlpha} onChange={e => handleChange('kkksAlpha', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label text-xs">Total Price (USD/bbl)</label>
-                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksPrice} onChange={e => handleChange('kkksPrice', e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
-                    <div style={{ flex: 1 }}>
-                      <div className="text-xs text-muted mb-1">Amount (USD)</div>
-                      <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
-                        ${Number((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section 2: SKK Migas */}
-                <div className="mt-6 p-6 rounded-xl" style={{ border: '2px solid rgba(0,166,81,0.1)', background: '#fff' }}>
-                  <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
-                    Entitlement SKK Migas (GOI)
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="input-group">
-                      <label className="input-label text-xs">Prov Entitlement (%)</label>
-                      <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkProvEntitlement} onChange={e => handleChange('skkProvEntitlement', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label text-xs">Volume (bbl)</label>
-                      <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkVolume} onChange={e => handleChange('skkVolume', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label text-xs">ICP (USD/bbl)</label>
-                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label text-xs">Alpha (USD/bbl)</label>
-                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkAlpha || 0} onChange={e => handleChange('skkAlpha', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label text-xs">Total Price (USD/bbl)</label>
-                      <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkPrice} onChange={e => handleChange('skkPrice', e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
-                    <div style={{ flex: 1 }}>
-                      <div className="text-xs text-muted mb-1">Amount (USD)</div>
-                      <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
-                        ${Number((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Documents Section */}
-            <div className="mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
-              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--accent)' }}>
-                <Upload size={16} /> Dokumen Penagihan & Pendukung
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
-                <div className={`card-upload ${form.fileInvoice ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-invoice').click()}>
-                  <input type="file" id="file-invoice" hidden onChange={e => handleFileChange('fileInvoice', e.target.files[0])} />
-                  <div className="card-upload-icon">{form.fileInvoice ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
-                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Invoice</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {form.fileInvoice || (isReadOnly ? 'Tidak ada file' : 'Drop file invoice')}
-                  </span>
-                </div>
-                <div className={`card-upload ${form.fileBL ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-bl').click()}>
-                  <input type="file" id="file-bl" hidden onChange={e => handleFileChange('fileBL', e.target.files[0])} />
-                  <div className="card-upload-icon">{form.fileBL ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
-                  <span style={{ fontSize: '13px', fontWeight: 600 }}>B/L</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {form.fileBL || (isReadOnly ? 'Tidak ada file' : 'Drop file B/L')}
-                  </span>
-                </div>
-                <div className={`card-upload ${form.fileFakturPajak ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-faktur-pajak').click()}>
-                  <input type="file" id="file-faktur-pajak" hidden onChange={e => handleFileChange('fileFakturPajak', e.target.files[0])} />
-                  <div className="card-upload-icon">{form.fileFakturPajak ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
-                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Faktur Pajak</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {form.fileFakturPajak || (isReadOnly ? 'Tidak ada file' : 'Drop file faktur')}
-                  </span>
-                </div>
-                <div className={`card-upload ${form.fileDocLain ? 'has-file' : ''}`} style={{ pointerEvents: isReadOnly ? 'none' : 'auto' }} onClick={() => !isReadOnly && document.getElementById('file-other').click()}>
-                  <input type="file" id="file-other" hidden onChange={e => handleFileChange('fileDocLain', e.target.files[0])} />
-                  <div className="card-upload-icon">{form.fileDocLain ? <CheckCircle size={22} /> : <FileText size={22} />}</div>
-                  <span style={{ fontSize: '13px', fontWeight: 600 }}>Dokumen Lain</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {form.fileDocLain || (isReadOnly ? 'Tidak ada file' : 'Dokumen pendukung')}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {showInvoiceOnly && (
-              <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-                <button className="btn btn-outline" onClick={() => {
-                  updateLifting(id, form);
-                  showToast('Draft Penagihan disimpan.');
-                  setTimeout(() => navigate('/operasional/submission'), 800);
-                }}><Save size={16} /> Simpan Draft Penagihan</button>
-                <button className="btn btn-primary" onClick={handleSubmit}><CheckCircle size={16} /> Submit Verifikasi Final</button>
-              </div>
-            )}
-          </div>
           )}
         </div>
       </div>
@@ -3143,24 +3170,24 @@ export const VerificationDetail = () => {
                   <LabelVal label="Loading Port" val={lifting.loadPort} />
                   <LabelVal label="Discharge Port" val={lifting.dischargePort} />
                   <LabelVal label="Total Volume Realisasi (bbls)" val={formatVol(lifting.totalVolume)} />
-                  
+
                   {/* Volume Nominasi Input as requested */}
                   <div style={{ marginBottom: '32px' }}>
                     <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>Total Volume Nominasi (Input Verifikator)</div>
                     <div style={{ position: 'relative' }}>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         className="input-control"
-                        value={lifting.volumeNominasi || ''} 
+                        value={lifting.volumeNominasi || ''}
                         onChange={e => handleChange('volumeNominasi', e.target.value)}
                         placeholder="0"
-                        style={{ 
-                          width: '100%', 
-                          padding: '12px 16px', 
-                          borderRadius: '12px', 
-                          border: '2px solid #e2e8f0', 
-                          fontSize: '14px', 
-                          fontWeight: 800, 
+                        style={{
+                          width: '100%',
+                          padding: '12px 16px',
+                          borderRadius: '12px',
+                          border: '2px solid #e2e8f0',
+                          fontSize: '14px',
+                          fontWeight: 800,
                           color: '#00529c',
                           background: '#f8fafc',
                           outline: 'none',

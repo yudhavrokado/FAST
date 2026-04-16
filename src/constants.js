@@ -45,3 +45,8 @@ export const STATUS_SP3_OPTIONS = [
 export const PEMBELIAN_OPTIONS = [
   'Import', 'Domestik',
 ];
+export const SKEMA_KOMERSIALISASI_OPTIONS = [
+  'Election In Kind (SKK Migas)',
+  'Election In Kind (KKKS or SHU)',
+  'Election Not to Take In Kind (SKK Migas)',
+];
