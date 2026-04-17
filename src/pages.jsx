@@ -11,6 +11,7 @@ import {
   getPrimaryCrudes, savePrimaryCrude, getDerivedCrudes, saveDerivedCrude, getPrimaryCrudePrice, getCrudePriceByPeriod,
   getKursBIList, getLatestKursBI, saveKursBI, deleteKursBI, saveK3S, saveSupplier, deleteK3S, deleteSupplier,
   getVatList, saveVat, deleteVat,
+  getNonCrudeList, saveNonCrude, deleteNonCrude,
   STATUS, JENIS_MM_OPTIONS,
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, STATUS_SP3_OPTIONS,
   PEMBELIAN_OPTIONS, SKEMA_KOMERSIALISASI_OPTIONS, COMMODITY_OPTIONS, generateAndAssignInvoiceId
@@ -541,15 +542,22 @@ export const DataSubmission = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Crude<span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">{form.commodityType === 'Non Crude' ? 'Product' : 'Crude'}<span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-                  <option value="">-- Pilih Crude --</option>
-                  <optgroup label="Primary Crudes">
-                    {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                  </optgroup>
-                  <optgroup label="Derived Crudes">
-                    {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                  </optgroup>
+                  <option value="">-- Pilih {form.commodityType === 'Non Crude' ? 'Product' : 'Crude'} --</option>
+                  {form.commodityType === 'Non Crude' ? (
+                    getNonCrudeList().map(p => <option key={p.id} value={p.name}>{p.name}</option>)
+                  ) : (
+                    <>
+                      <optgroup label="Primary Crudes">
+                        {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                      </optgroup>
+                      <optgroup label="Derived Crudes">
+                        {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>
+                        )}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -1180,15 +1188,21 @@ export const EditLifting = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Crude</label>
+                <label className="input-label">{form.commodityType === 'Non Crude' ? 'Product' : 'Crude'}</label>
                 <select className="input-control" disabled={isLiftingReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-                  <option value="">-- Pilih Crude --</option>
-                  <optgroup label="Primary Crudes">
-                    {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                  </optgroup>
-                  <optgroup label="Derived Crudes">
-                    {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                  </optgroup>
+                  <option value="">-- Pilih {form.commodityType === 'Non Crude' ? 'Product' : 'Crude'} --</option>
+                  {form.commodityType === 'Non Crude' ? (
+                    getNonCrudeList().map(p => <option key={p.id} value={p.name}>{p.name}</option>)
+                  ) : (
+                    <>
+                      <optgroup label="Primary Crudes">
+                        {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                      </optgroup>
+                      <optgroup label="Derived Crudes">
+                        {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -1745,6 +1759,7 @@ export const MasterDataPage = () => {
   const [k3sSearch, setK3sSearch] = useState('');
   const [vatList, setVatList] = useState([]);
   const [kursBIList, setKursBIList] = useState([]);
+  const [nonCrudeList, setNonCrudeList] = useState([]);
 
   const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   const years = [2024, 2025, 2026, 2027];
@@ -1759,6 +1774,7 @@ export const MasterDataPage = () => {
     setSupplierList(getSupplierList());
     setVatList(getVatList());
     setKursBIList(getKursBIList());
+    setNonCrudeList(getNonCrudeList());
   };
 
   const refreshIcpData = () => {
@@ -1832,6 +1848,9 @@ export const MasterDataPage = () => {
     } else if (editSection === 'kursBI') {
       saveKursBI(editingItem);
       showToast('Data Kurs BI berhasil diperbarui');
+    } else if (editSection === 'nonCrude') {
+      saveNonCrude(editingItem);
+      showToast('Data Produk Non-Crude berhasil disimpan');
     }
     refreshOtherData();
     setEditSection(null);
@@ -2126,6 +2145,82 @@ export const MasterDataPage = () => {
     </div>
   );
 
+  const renderNonCrudeTab = () => (
+    <div className="animate-fade-in">
+      <div className="flex-responsive justify-between items-center mb-6">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2"><Zap size={18} color="var(--accent)" /> Maintenance Data Non-Crude</h2>
+          <p className="text-sm text-muted mt-1">Kelola data produk selain Crude (Homc, Fame, Naphtha, dll).</p>
+        </div>
+        <div className="flex gap-2">
+          <button className="btn btn-primary" style={{ padding: '8px 16px' }}
+            onClick={() => {
+              setEditSection('nonCrude');
+              setEditingItem({ name: '', formula: '', reference: '', alpha: 0, type: 'variable' });
+            }}
+          ><Plus size={14} /> Tambah Produk</button>
+        </div>
+      </div>
+      <div style={{ background: 'var(--bg-surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa' }}>
+              <th style={{ padding: '16px' }}>Nama Produk</th>
+              <th style={{ padding: '16px' }}>Formula / Basis Harga</th>
+              <th style={{ padding: '16px' }}>Referensi</th>
+              <th style={{ padding: '16px' }}>Alpha / Fixed Value</th>
+              <th style={{ padding: '16px' }}>Price (USD/bbl)</th>
+              <th style={{ padding: '16px' }}>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {nonCrudeList.map((p) => (
+              <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '16px', fontWeight: 600 }}>{p.name}</td>
+                <td style={{ padding: '16px' }}>
+                  <span className="badge" style={{ background: 'rgba(0,82,156,0.08)', color: 'var(--accent)', fontWeight: 600 }}>
+                    {p.formula}
+                  </span>
+                </td>
+                <td style={{ padding: '16px' }}>{p.reference || '-'}</td>
+                <td style={{ padding: '16px', fontWeight: 700 }}>
+                  {p.type === 'fixed' ? (
+                    <span className="text-muted font-normal italic">Fixed Price</span>
+                  ) : (
+                    <span style={{ color: p.alpha >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                      {p.alpha >= 0 ? '+' : ''}{p.alpha}
+                    </span>
+                  )}
+                  {p.transportationFee > 0 && (
+                    <div style={{ fontSize: '11px', color: 'var(--warning)', fontWeight: 600 }}>
+                      + Fee: ${p.transportationFee}
+                    </div>
+                  )}
+                </td>
+                <td style={{ padding: '16px', fontWeight: 700, color: 'var(--accent)', fontSize: '15px' }}>${(p.price || 0).toFixed(2)}</td>
+                <td style={{ padding: '16px' }}>
+                  <div className="flex gap-2">
+                    <button className="btn btn-sm btn-outline" style={{ padding: '4px' }} onClick={() => { setEditSection('nonCrude'); setEditingItem(p); }}>
+                      <Edit2 size={12} />
+                    </button>
+                    {!['NC-001', 'NC-002', 'NC-003', 'NC-004', 'NC-005', 'NC-006'].includes(p.id) && (
+                      <button className="btn btn-sm btn-outline text-danger" style={{ padding: '4px' }} onClick={() => { if (window.confirm('Hapus produk ini?')) { deleteNonCrude(p.id); refreshOtherData(); showToast('Produk berhasil dihapus'); } }}>
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {nonCrudeList.length === 0 && (
+              <tr><td colSpan={5} className="text-center py-8 text-muted">Belum ada data produk non-crude.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   const renderVatTab = () => (
     <div>
       <div className="flex-responsive justify-between items-center mb-6">
@@ -2237,6 +2332,7 @@ export const MasterDataPage = () => {
 
       <div className="flex gap-1 mb-8 p-1 rounded-xl" style={{ background: 'rgba(0,82,156,0.05)', alignSelf: 'flex-start' }}>
         <button className={`btn ${activeTab === 'icp' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('icp')} style={{ padding: '10px 24px', borderRadius: '10px' }}>ICP & Harga Referensi</button>
+        <button className={`btn ${activeTab === 'non-crude' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('non-crude')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Non-Crude</button>
         <button className={`btn ${activeTab === 'kursBI' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('kursBI')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Kurs BI (IDR/USD)</button>
         <button className={`btn ${activeTab === 'k3s' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('k3s')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Partner K3S & Supplier</button>
         <button className={`btn ${activeTab === 'vat' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('vat')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Master Data VAT</button>
@@ -2244,6 +2340,9 @@ export const MasterDataPage = () => {
 
       {/* ICP Tab */}
       {activeTab === 'icp' && renderIcpTab()}
+
+      {/* Non-Crude Tab */}
+      {activeTab === 'non-crude' && renderNonCrudeTab()}
 
       {/* Kurs BI Tab */}
       {activeTab === 'kursBI' && renderKursBITab()}
@@ -2443,6 +2542,68 @@ export const MasterDataPage = () => {
         </div>
       )}
 
+      {/* Modal: Non-Crude */}
+      {editSection === 'nonCrude' && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '500px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2"><Zap size={20} color="var(--accent)" /> {editingItem.id ? 'Edit Produk Non-Crude' : 'Tambah Produk Non-Crude'}</h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6" style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '8px' }}>
+              <div className="input-group">
+                <label className="input-label">Nama Produk</label>
+                <input type="text" className="input-control" value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Tipe Produk / Perhitungan</label>
+                <select className="input-control" value={editingItem.type} onChange={e => setEditingItem({ ...editingItem, type: e.target.value })}>
+                  <option value="variable">Variable (Berdasarkan Formula)</option>
+                  <option value="fixed">Fixed (Tetap / Tidak di-maintain)</option>
+                </select>
+              </div>
+              
+              {editingItem.type !== 'fixed' && (
+                <>
+                  <div className="input-group">
+                    <label className="input-label">Formula / Deskripsi Perhitungan</label>
+                    <input type="text" className="input-control" placeholder="Contoh: MOPJ + Alpha" value={editingItem.formula} onChange={e => setEditingItem({ ...editingItem, formula: e.target.value })} />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Referensi Harga</label>
+                    <input type="text" className="input-control" placeholder="Contoh: Mogas 92 / MOPJ" value={editingItem.reference} onChange={e => setEditingItem({ ...editingItem, reference: e.target.value })} />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Alpha Value ($)</label>
+                    <input type="number" step="0.0001" className="input-control" value={editingItem.alpha} onChange={e => setEditingItem({ ...editingItem, alpha: parseFloat(e.target.value) || 0 })} />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Price (USD/bbl)</label>
+                    <input type="number" step="0.01" className="input-control" value={editingItem.price || 0} onChange={e => setEditingItem({ ...editingItem, price: parseFloat(e.target.value) || 0 })} />
+                  </div>
+                  {editingItem.name.toLowerCase().includes('fame') && (
+                    <div className="input-group">
+                      <label className="input-label">Ongkos Angkut ($)</label>
+                      <input type="number" step="0.01" className="input-control" value={editingItem.transportationFee || 0} onChange={e => setEditingItem({ ...editingItem, transportationFee: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                  )}
+                </>
+              )}
+
+              {editingItem.type === 'fixed' && (
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-600 flex items-start gap-3">
+                  <Info size={16} className="mt-0.5 text-slate-400" />
+                  <div>Produk dengan tipe <strong>Fixed</strong> biasanya tidak memerlukan perubahan alpha atau referensi harga secara periodik.</div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveOther}><Save size={16} /> Simpan Produk</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: Edit / Add Primary Crude */}
       {(editSection === 'primary' || editSection === 'addPrimary') && editingItem && (

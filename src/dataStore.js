@@ -73,7 +73,15 @@ const SEED_DATA = {
   ],
   priceHistory: [],
   price_formulas: [],
-  vatList: []
+  vatList: [],
+  nonCrude: [
+    { id: 'NC-001', name: 'Homc 92', formula: 'Mogas 92 + Alpha', reference: 'Mogas 92', alpha: 0, type: 'variable', price: 85.50 },
+    { id: 'NC-002', name: 'Homc 105', formula: 'Mogas 92 / 92 + Alpha', reference: 'Mogas 92', alpha: 0, type: 'variable', price: 92.15 },
+    { id: 'NC-003', name: 'Fame', formula: 'HIP Solar PSO / HIP BBN Biodiesel + Ongkos Angkut', reference: 'HIP Solar PSO', alpha: 0, type: 'variable', transportationFee: 0, price: 78.40 },
+    { id: 'NC-004', name: 'Naphtha', formula: 'MOPJ + Alpha', reference: 'MOPJ', alpha: 0, type: 'variable', price: 70.20 },
+    { id: 'NC-005', name: 'UCO', formula: 'Fixed', reference: 'N/A', alpha: 0, type: 'fixed', price: 65.00 },
+    { id: 'NC-006', name: 'RBDPO / KO', formula: 'Fixed', reference: 'N/A', alpha: 0, type: 'fixed', price: 62.50 },
+  ]
 };
 
 // ─── CORE DATABASE ENGINE (WITH SCHEMA MIGRATION) ───────────────────────────
@@ -99,6 +107,8 @@ export const initStore = () => {
       primary: [...SEED_DATA.crudes.primary, ...userPrimary],
       derived: [...SEED_DATA.crudes.derived, ...userDerived]
     };
+
+    if (!migrated.nonCrude) migrated.nonCrude = SEED_DATA.nonCrude;
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
   }
@@ -396,6 +406,29 @@ export const saveVat = (vat) => {
 export const deleteVat = (id) => {
   const db = _db();
   db.vatList = db.vatList.filter(v => v.id !== id);
+  _save(db);
+};
+
+// ─── MASTER DATA: NON-CRUDE ────────────────────────────────────────────────
+
+export const getNonCrudeList = () => _db().nonCrude || [];
+
+export const saveNonCrude = (product) => {
+  const db = _db();
+  if (!db.nonCrude) db.nonCrude = [];
+  if (product.id) {
+    const idx = db.nonCrude.findIndex(p => p.id === product.id);
+    if (idx !== -1) db.nonCrude[idx] = product;
+  } else {
+    product.id = `NC-${Date.now()}`;
+    db.nonCrude.push(product);
+  }
+  _save(db);
+};
+
+export const deleteNonCrude = (id) => {
+  const db = _db();
+  db.nonCrude = db.nonCrude.filter(p => p.id !== id);
   _save(db);
 };
 
