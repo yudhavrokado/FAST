@@ -306,6 +306,13 @@ export const DataSubmission = () => {
   const handleChange = (field, value) => {
     setForm(prev => {
       const newForm = { ...prev, [field]: value };
+      if (field === 'liftingCategory') {
+        if (value === 'PROFORMA LIFTING') {
+          newForm.pembelian = 'Domestik Proforma Lifting';
+        } else if (newForm.pembelian === 'Domestik Proforma Lifting') {
+          newForm.pembelian = 'Domestik';
+        }
+      }
       if (field === 'pembelian' && value === 'Import') {
         newForm.skemaKomersialisasi = '';
       }
@@ -527,19 +534,13 @@ export const DataSubmission = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Seller <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <select className="input-control" value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
-                  <option value="">-- Pilih Seller --</option>
-                  <optgroup label="KKKS (K3S)">
-                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
-                  </optgroup>
-                  <optgroup label="Suppliers">
-                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
-                  </optgroup>
+                <label className="input-label">Tipe Komoditas</label>
+                <select className="input-control" value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
+                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
 
-              <div className="input-group">
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
                 <label className="input-label">Crude<span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
                   <option value="">-- Pilih Crude --</option>
@@ -553,9 +554,15 @@ export const DataSubmission = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Tipe Komoditas</label>
-                <select className="input-control" value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
-                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                <label className="input-label">Seller <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <select className="input-control" value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
+                  <option value="">-- Pilih Seller --</option>
+                  <optgroup label="KKKS (K3S)">
+                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
+                  </optgroup>
+                  <optgroup label="Suppliers">
+                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
+                  </optgroup>
                 </select>
               </div>
 
@@ -632,7 +639,13 @@ export const DataSubmission = () => {
               <div className="input-group">
                 <label className="input-label">Tipe Transaksi</label>
                 <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
-                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {PEMBELIAN_OPTIONS.filter(opt => {
+                    if (form.liftingCategory === 'PROFORMA LIFTING') {
+                      return opt === 'Domestik Proforma Lifting';
+                    } else {
+                      return opt === 'Import' || opt === 'Domestik';
+                    }
+                  }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
 
@@ -1043,6 +1056,13 @@ export const EditLifting = () => {
   const handleChange = (field, value) => {
     setForm(prev => {
       const newForm = { ...prev, [field]: value };
+      if (field === 'liftingCategory') {
+        if (value === 'PROFORMA LIFTING') {
+          newForm.pembelian = 'Domestik Proforma Lifting';
+        } else if (newForm.pembelian === 'Domestik Proforma Lifting') {
+          newForm.pembelian = 'Domestik';
+        }
+      }
       if (field === 'pembelian' && value === 'Import') {
         newForm.skemaKomersialisasi = '';
       }
@@ -1152,16 +1172,10 @@ export const EditLifting = () => {
                   <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
                 </select>
               </div>
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">Seller</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
-                  <option value="">-- Pilih Seller --</option>
-                  <optgroup label="KKKS (K3S)">
-                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
-                  </optgroup>
-                  <optgroup label="Suppliers">
-                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
-                  </optgroup>
+              <div className="input-group">
+                <label className="input-label">Tipe Komoditas</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
+                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
               <div className="input-group" style={{ gridColumn: 'span 2' }}>
@@ -1176,10 +1190,16 @@ export const EditLifting = () => {
                   </optgroup>
                 </select>
               </div>
-              <div className="input-group">
-                <label className="input-label">Tipe Komoditas</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
-                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Seller</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
+                  <option value="">-- Pilih Seller --</option>
+                  <optgroup label="KKKS (K3S)">
+                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
+                  </optgroup>
+                  <optgroup label="Suppliers">
+                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
+                  </optgroup>
                 </select>
               </div>
 
@@ -1250,7 +1270,13 @@ export const EditLifting = () => {
               <div className="input-group" style={{ gridColumn: (originalStatus === 'draft' || originalStatus === 'revisi') ? 'span 1' : 'span 2' }}>
                 <label className="input-label">Tipe Transaksi</label>
                 <select className="input-control" disabled={isLiftingReadOnly} value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
-                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {PEMBELIAN_OPTIONS.filter(opt => {
+                    if (form.liftingCategory === 'PROFORMA LIFTING') {
+                      return opt === 'Domestik Proforma Lifting';
+                    } else {
+                      return opt === 'Import' || opt === 'Domestik';
+                    }
+                  }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
             </div>
