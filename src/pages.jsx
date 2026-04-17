@@ -540,9 +540,9 @@ export const DataSubmission = () => {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Jenis Cargo (Master ICP) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">Crude<span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-                  <option value="">-- Pilih Master ICP --</option>
+                  <option value="">-- Pilih Crude --</option>
                   <optgroup label="Primary Crudes">
                     {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
                   </optgroup>
@@ -684,7 +684,7 @@ export const DataSubmission = () => {
                 <th>Nomor B/L / PPL & Tgl</th>
                 <th>Periode</th>
                 <th>Seller</th>
-                <th>Jenis Cargo</th>
+                <th>Crude</th>
                 <th>Komoditas</th>
                 <th>Kategori</th>
                 <th>Kind of Transaction</th>
@@ -790,30 +790,30 @@ export const DataSubmission = () => {
                       </td>
                       <td style={{ fontSize: '11px' }}>{l.skemaKomersialisasi || '-'}</td>
                       <td>
-                         <div style={{ fontWeight: 600, fontSize: '12px' }}>{l.invoiceNumber || '-'}</div>
-                         <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{l.invoiceDate || '-'}</div>
+                        <div style={{ fontWeight: 600, fontSize: '12px' }}>{l.invoiceNumber || '-'}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{l.invoiceDate || '-'}</div>
                       </td>
                       <td>
-                         <div style={{ fontWeight: 600, fontSize: '12px' }}>{l.fakturPajakNumber || '-'}</div>
-                         <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{l.fakturPajakDate || '-'}</div>
+                        <div style={{ fontWeight: 600, fontSize: '12px' }}>{l.fakturPajakNumber || '-'}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{l.fakturPajakDate || '-'}</div>
                       </td>
                       <td>
-                         <div style={{ fontSize: '11px' }}>{l.dueDateInvoice || '-'}</div>
-                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.dueDateFinal || '-'}</div>
+                        <div style={{ fontSize: '11px' }}>{l.dueDateInvoice || '-'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.dueDateFinal || '-'}</div>
                       </td>
                       <td>
-                         <div style={{ fontSize: '11px' }}>{l.poMySap || '-'}</div>
-                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.poHardcopy || '-'}</div>
+                        <div style={{ fontSize: '11px' }}>{l.poMySap || '-'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.poHardcopy || '-'}</div>
                       </td>
                       <td>
-                         <div style={{ fontSize: '11px' }}>{l.kursBeliBi || '-'}</div>
-                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.kursInvoice || '-'}</div>
+                        <div style={{ fontSize: '11px' }}>{l.kursBeliBi || '-'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.kursInvoice || '-'}</div>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 500 }}>
-                         ${l.skemaKomersialisasi === 'Election In Kind (SKK Migas)' ? (l.skkPrice || '-') : (l.kkksPrice || l.priceUsdBbl || '-')}
+                        ${l.skemaKomersialisasi === 'Election In Kind (SKK Migas)' ? (l.skkPrice || '-') : (l.kkksPrice || l.priceUsdBbl || '-')}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>
-                         ${l.totalValue || '0'}
+                        ${l.totalValue || '0'}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, fontWeight: 700, minWidth: '100px', textAlign: 'center' }}>
@@ -969,11 +969,11 @@ export const EditLifting = () => {
       };
 
       const isEntitlementActive = form.pembelian !== 'Import' && form.kindOfTransaction !== 'Final';
-      
+
       if (isEntitlementActive) {
         const prev = getPrevMonth(form.periodeLiftingBulan, form.periodeLiftingTahun);
         const autoIcp = getCrudePriceByPeriod(form.jenisMm, prev.bulan, prev.tahun);
-        
+
         if (autoIcp > 0 && form.icpPrice !== autoIcp) {
           setForm(prevForm => ({ ...prevForm, icpPrice: autoIcp }));
         }
@@ -984,7 +984,7 @@ export const EditLifting = () => {
   // Handle auto-calculations for Entitlements
   useEffect(() => {
     const icp = parseFloat(form.icpPrice) || 0;
-    
+
     // KKKS Side
     const kAlpha = parseFloat(form.kkksAlpha) || 0;
     const kVol = parseFloat(form.kkksVolume) || 0;
@@ -1004,7 +1004,7 @@ export const EditLifting = () => {
       if (prev.kkksAmount !== kAmount) updates.kkksAmount = kAmount;
       if (prev.skkPrice !== sPrice) updates.skkPrice = sPrice;
       if (prev.skkAmount !== sAmount) updates.skkAmount = sAmount;
-      
+
       if (Object.keys(updates).length > 0) {
         return { ...prev, ...updates };
       }
@@ -1135,148 +1135,148 @@ export const EditLifting = () => {
         <div style={{ display: showBothColumns ? 'flex' : 'block', gap: showBothColumns ? '32px' : '0' }}>
           {/* Left Column: Data Lifting Review */}
           <div style={{ flex: 1, borderRight: showBothColumns ? '1px solid var(--border)' : 'none', paddingRight: showBothColumns ? '24px' : '0', maxWidth: showBothColumns ? 'none' : '900px', margin: showBothColumns ? '0' : '0 auto' }}>
-              <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="input-group">
-                  <label className="input-label">Periode Bulan</label>
-                  <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
-                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
-                    <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
-                    <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
-                    <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Periode Tahun</label>
-                  <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
-                    <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
-                  </select>
-                </div>
-                <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="input-label">Seller</label>
-                  <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
-                    <option value="">-- Pilih Seller --</option>
-                    <optgroup label="KKKS (K3S)">
-                      {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
-                    </optgroup>
-                    <optgroup label="Suppliers">
-                      {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
-                    </optgroup>
-                  </select>
-                </div>
-                <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="input-label">Jenis Cargo</label>
-                  <select className="input-control" disabled={isLiftingReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-                    <option value="">-- Pilih Crude --</option>
-                    <optgroup label="Primary Crudes">
-                      {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                    </optgroup>
-                    <optgroup label="Derived Crudes">
-                      {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                    </optgroup>
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Tipe Komoditas</label>
-                  <select className="input-control" disabled={isLiftingReadOnly} value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
-                    {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
+            <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="input-group">
+                <label className="input-label">Periode Bulan</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
+                  <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                  <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                  <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+                  <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Periode Tahun</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
+                  <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+                </select>
+              </div>
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Seller</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
+                  <option value="">-- Pilih Seller --</option>
+                  <optgroup label="KKKS (K3S)">
+                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
+                  </optgroup>
+                  <optgroup label="Suppliers">
+                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
+                  </optgroup>
+                </select>
+              </div>
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Crude</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
+                  <option value="">-- Pilih Crude --</option>
+                  <optgroup label="Primary Crudes">
+                    {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                  </optgroup>
+                  <optgroup label="Derived Crudes">
+                    {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                  </optgroup>
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Tipe Komoditas</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
+                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
 
-                <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="input-label">Kategori Lifting</label>
-                  <div className="flex gap-4">
-                    {['Reguler', 'PROFORMA LIFTING'].map(cat => (
-                      <label key={cat} className={`flex items-center gap-2 ${isLiftingReadOnly ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'} p-2 rounded-lg border hover:bg-slate-50 transition-all`} style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
-                        <input type="radio" disabled={isLiftingReadOnly} name="editLiftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
-                        <span className="text-sm font-semibold">{cat}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {form.liftingCategory === 'PROFORMA LIFTING' ? (
-                  <>
-                    <div className="input-group">
-                      <label className="input-label">Tanggal Berita Acara PPL</label>
-                      <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.pplDate} onChange={e => handleChange('pplDate', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label">Nomor Berita Acara PPL</label>
-                      <input type="text" className="input-control" disabled={isReadOnly} value={form.pplNumber} onChange={e => handleChange('pplNumber', e.target.value)} placeholder="Contoh: BA/PPL/..." />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="input-group">
-                      <label className="input-label">B/L Dated</label>
-                      <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
-                    </div>
-                    <div className="input-group">
-                      <label className="input-label">B/L Number</label>
-                      <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} placeholder="Contoh: BL-2026/01" />
-                    </div>
-                  </>
-                )}
-                <div className="input-group">
-                  <label className="input-label">Tipe Lifting</label>
-                  <select className="input-control" disabled={isReadOnly} value={form.tipeLifting} onChange={e => handleChange('tipeLifting', e.target.value)}>
-                    <option value="vessel">Vessel</option>
-                    <option value="pipeline">Pipeline</option>
-                  </select>
-                </div>
-                {form.tipeLifting === 'vessel' && (
-                  <div className="input-group" style={{ gridColumn: 'span 1' }}>
-                    <label className="input-label">Vessel Name</label>
-                    <input type="text" className="input-control" disabled={isReadOnly} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
-                  </div>
-                )}
-                <div className="input-group">
-                  <label className="input-label">Loading Port</label>
-                  <select className="input-control" disabled={isReadOnly} value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
-                    {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Discharge Port</label>
-                  <select className="input-control" disabled={isReadOnly} value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
-                    {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Total Volume Realisasi (bbls)</label>
-                  <input type="number" className="input-control" disabled={isLiftingReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
-                </div>
-                <div className="input-group" style={{ gridColumn: (originalStatus === 'draft' || originalStatus === 'revisi') ? 'span 1' : 'span 2' }}>
-                  <label className="input-label">Tipe Transaksi</label>
-                  <select className="input-control" disabled={isLiftingReadOnly} value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
-                    {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Kategori Lifting</label>
+                <div className="flex gap-4">
+                  {['Reguler', 'PROFORMA LIFTING'].map(cat => (
+                    <label key={cat} className={`flex items-center gap-2 ${isLiftingReadOnly ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'} p-2 rounded-lg border hover:bg-slate-50 transition-all`} style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
+                      <input type="radio" disabled={isLiftingReadOnly} name="editLiftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
+                      <span className="text-sm font-semibold">{cat}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
-              <div className="mt-8 pt-6" style={{ borderTop: '1px dashed var(--border)' }}>
-                <div className="input-group mb-4">
-                  <label className="input-label">Remarks (Free Text)</label>
-                  <textarea className="input-control" rows="3" disabled={isLiftingReadOnly} value={form.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="Tulis catatan tambahan..."></textarea>
-                </div>
-              </div>
-
-                {showLiftingOnly && (
-                  <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-                    <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Hapus Draft</button>
-                    <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
-                    <button className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} onClick={(e) => {
-                      e.preventDefault();
-                      updateLifting(id, form);
-                      lockLifting(id);
-                      showToast('Data Lifting berhasil dikunci. Membuka form penagihan...');
-                      setOriginalStatus('lifting_locked');
-                      setForm(prev => ({ ...prev, status: 'lifting_locked' }));
-                    }}><CheckSquare size={16} /> Kunci Data Lifting</button>
+              {form.liftingCategory === 'PROFORMA LIFTING' ? (
+                <>
+                  <div className="input-group">
+                    <label className="input-label">Tanggal Berita Acara PPL</label>
+                    <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.pplDate} onChange={e => handleChange('pplDate', e.target.value)} />
                   </div>
-                )}
+                  <div className="input-group">
+                    <label className="input-label">Nomor Berita Acara PPL</label>
+                    <input type="text" className="input-control" disabled={isReadOnly} value={form.pplNumber} onChange={e => handleChange('pplNumber', e.target.value)} placeholder="Contoh: BA/PPL/..." />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="input-group">
+                    <label className="input-label">B/L Dated</label>
+                    <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">B/L Number</label>
+                    <input type="text" className="input-control" disabled={isReadOnly} value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} placeholder="Contoh: BL-2026/01" />
+                  </div>
+                </>
+              )}
+              <div className="input-group">
+                <label className="input-label">Tipe Lifting</label>
+                <select className="input-control" disabled={isReadOnly} value={form.tipeLifting} onChange={e => handleChange('tipeLifting', e.target.value)}>
+                  <option value="vessel">Vessel</option>
+                  <option value="pipeline">Pipeline</option>
+                </select>
+              </div>
+              {form.tipeLifting === 'vessel' && (
+                <div className="input-group" style={{ gridColumn: 'span 1' }}>
+                  <label className="input-label">Vessel Name</label>
+                  <input type="text" className="input-control" disabled={isReadOnly} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
+                </div>
+              )}
+              <div className="input-group">
+                <label className="input-label">Loading Port</label>
+                <select className="input-control" disabled={isReadOnly} value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
+                  {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Discharge Port</label>
+                <select className="input-control" disabled={isReadOnly} value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
+                  {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Total Volume Realisasi (bbls)</label>
+                <input type="number" className="input-control" disabled={isLiftingReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
+              </div>
+              <div className="input-group" style={{ gridColumn: (originalStatus === 'draft' || originalStatus === 'revisi') ? 'span 1' : 'span 2' }}>
+                <label className="input-label">Tipe Transaksi</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
             </div>
+
+            <div className="mt-8 pt-6" style={{ borderTop: '1px dashed var(--border)' }}>
+              <div className="input-group mb-4">
+                <label className="input-label">Remarks (Free Text)</label>
+                <textarea className="input-control" rows="3" disabled={isLiftingReadOnly} value={form.remarks} onChange={e => handleChange('remarks', e.target.value)} placeholder="Tulis catatan tambahan..."></textarea>
+              </div>
+            </div>
+
+            {showLiftingOnly && (
+              <div className="mt-8 pt-6 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+                <button className="btn btn-ghost text-danger" onClick={handleDelete} style={{ marginRight: 'auto' }}><Trash2 size={16} /> Hapus Draft</button>
+                <button className="btn btn-outline" onClick={handleSaveDraft}><Save size={16} /> Simpan Draft</button>
+                <button className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} onClick={(e) => {
+                  e.preventDefault();
+                  updateLifting(id, form);
+                  lockLifting(id);
+                  showToast('Data Lifting berhasil dikunci. Membuka form penagihan...');
+                  setOriginalStatus('lifting_locked');
+                  setForm(prev => ({ ...prev, status: 'lifting_locked' }));
+                }}><CheckSquare size={16} /> Kunci Data Lifting</button>
+              </div>
+            )}
+          </div>
 
           {/* Right Column: Billing Input */}
           {(!showLiftingOnly) && (
@@ -1301,11 +1301,11 @@ export const EditLifting = () => {
                 <div className="input-group">
                   <label className="input-label">Skema Komersialisasi {!isInvoiceReadOnly && form.kindOfTransaction !== 'Final' && <span className="text-danger">*</span>}</label>
                   {(() => {
-                    const isSkemaEnabled = form.commodityType === 'Crude' && 
-                                          (form.pembelian === 'Domestik' || form.pembelian === 'Domestik Proforma Lifting') && 
-                                          form.kindOfTransaction !== 'Final';
+                    const isSkemaEnabled = form.commodityType === 'Crude' &&
+                      (form.pembelian === 'Domestik' || form.pembelian === 'Domestik Proforma Lifting') &&
+                      form.kindOfTransaction !== 'Final';
                     const value = isSkemaEnabled ? form.skemaKomersialisasi : 'N/A';
-                    
+
                     return (
                       <select
                         className="input-control"
@@ -1355,23 +1355,23 @@ export const EditLifting = () => {
 
                 <div className="input-group">
                   <label className="input-label">Due Date Provisional <span className="text-danger">*</span></label>
-                  <input 
-                    type="date" 
-                    className="input-control" 
-                    disabled={isInvoiceReadOnly || form.kindOfTransaction === 'Final'} 
-                    value={form.dueDateInvoice} 
-                    onChange={e => handleChange('dueDateInvoice', e.target.value)} 
+                  <input
+                    type="date"
+                    className="input-control"
+                    disabled={isInvoiceReadOnly || form.kindOfTransaction === 'Final'}
+                    value={form.dueDateInvoice}
+                    onChange={e => handleChange('dueDateInvoice', e.target.value)}
                     style={{ background: form.kindOfTransaction === 'Final' ? '#f1f5f9' : 'white' }}
                   />
                 </div>
                 <div className="input-group">
                   <label className="input-label">Due Date Final</label>
-                  <input 
-                    type="date" 
-                    className="input-control" 
-                    disabled={isInvoiceReadOnly || form.kindOfTransaction.includes('Provisional')} 
-                    value={form.dueDateFinal} 
-                    onChange={e => handleChange('dueDateFinal', e.target.value)} 
+                  <input
+                    type="date"
+                    className="input-control"
+                    disabled={isInvoiceReadOnly || form.kindOfTransaction.includes('Provisional')}
+                    value={form.dueDateFinal}
+                    onChange={e => handleChange('dueDateFinal', e.target.value)}
                     style={{ background: form.kindOfTransaction.includes('Provisional') ? '#f1f5f9' : 'white' }}
                   />
                 </div>
@@ -1418,96 +1418,96 @@ export const EditLifting = () => {
                   {/* Section 1: Entitlement KKKS */}
                   {(form.skemaKomersialisasi === 'Election In Kind (KKKS or SHU)' || form.skemaKomersialisasi === 'Election Not to Take In Kind (SKK Migas)') && (
                     <div className="mt-8 p-6 rounded-xl" style={{ border: '2px solid rgba(0,82,156,0.1)', background: '#fff' }}>
-                    <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
-                      Entitlement KKKS
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="input-group">
-                        <label className="input-label text-xs">Prov Entitlement (%)</label>
-                        <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksProvEntitlement} onChange={e => handleChange('kkksProvEntitlement', e.target.value)} />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label text-xs">Volume (bbl)</label>
-                        <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksVolume} onChange={e => handleChange('kkksVolume', e.target.value)} />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label text-xs">ICP (USD/bbl)</label>
-                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label text-xs">Alpha (USD/bbl)</label>
-                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksAlpha} onChange={e => handleChange('kkksAlpha', e.target.value)} />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label text-xs">Total Price (USD/bbl)</label>
-                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksPrice} onChange={e => handleChange('kkksPrice', e.target.value)} />
-                      </div>
-                    </div>
-                    <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
-                      <div style={{ flex: 1 }}>
-                        <label className="text-xs text-muted mb-1 block">Amount (USD)</label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold" style={{ color: 'var(--accent)' }}>$</span>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="input-control text-lg font-bold" 
-                            style={{ color: 'var(--accent)', border: 'none', background: 'transparent', padding: 0, width: '100%' }}
-                            value={form.kkksAmount} 
-                            onChange={e => handleChange('kkksAmount', e.target.value)} 
-                          />
+                      <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
+                        Entitlement KKKS
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="input-group">
+                          <label className="input-label text-xs">Prov Entitlement (%)</label>
+                          <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksProvEntitlement} onChange={e => handleChange('kkksProvEntitlement', e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                          <label className="input-label text-xs">Volume (bbl)</label>
+                          <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.kkksVolume} onChange={e => handleChange('kkksVolume', e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                          <label className="input-label text-xs">ICP (USD/bbl)</label>
+                          <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                          <label className="input-label text-xs">Alpha (USD/bbl)</label>
+                          <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksAlpha} onChange={e => handleChange('kkksAlpha', e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                          <label className="input-label text-xs">Total Price (USD/bbl)</label>
+                          <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.kkksPrice} onChange={e => handleChange('kkksPrice', e.target.value)} />
                         </div>
                       </div>
-                    </div>
+                      <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
+                        <div style={{ flex: 1 }}>
+                          <label className="text-xs text-muted mb-1 block">Amount (USD)</label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold" style={{ color: 'var(--accent)' }}>$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="input-control text-lg font-bold"
+                              style={{ color: 'var(--accent)', border: 'none', background: 'transparent', padding: 0, width: '100%' }}
+                              value={form.kkksAmount}
+                              onChange={e => handleChange('kkksAmount', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
                   {/* Section 2: SKK Migas */}
                   {(form.skemaKomersialisasi === 'Election In Kind (SKK Migas)' || form.skemaKomersialisasi === 'Election Not to Take In Kind (SKK Migas)') && (
                     <div className="mt-6 p-6 rounded-xl" style={{ border: '2px solid rgba(0,166,81,0.1)', background: '#fff' }}>
-                    <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
-                      Entitlement SKK Migas (GOI)
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="input-group">
-                        <label className="input-label text-xs">Prov Entitlement (%)</label>
-                        <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkProvEntitlement} onChange={e => handleChange('skkProvEntitlement', e.target.value)} />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label text-xs">Volume (bbl)</label>
-                        <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkVolume} onChange={e => handleChange('skkVolume', e.target.value)} />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label text-xs">ICP (USD/bbl)</label>
-                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label text-xs">Alpha (USD/bbl)</label>
-                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkAlpha || 0} onChange={e => handleChange('skkAlpha', e.target.value)} />
-                      </div>
-                      <div className="input-group">
-                        <label className="input-label text-xs">Total Price (USD/bbl)</label>
-                        <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkPrice} onChange={e => handleChange('skkPrice', e.target.value)} />
-                      </div>
-                    </div>
-                    <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
-                      <div style={{ flex: 1 }}>
-                        <label className="text-xs text-muted mb-1 block">Amount (USD)</label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold" style={{ color: 'var(--success)' }}>$</span>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="input-control text-lg font-bold" 
-                            style={{ color: 'var(--success)', border: 'none', background: 'transparent', padding: 0, width: '100%' }}
-                            value={form.skkAmount} 
-                            onChange={e => handleChange('skkAmount', e.target.value)} 
-                          />
+                      <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
+                        Entitlement SKK Migas (GOI)
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="input-group">
+                          <label className="input-label text-xs">Prov Entitlement (%)</label>
+                          <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkProvEntitlement} onChange={e => handleChange('skkProvEntitlement', e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                          <label className="input-label text-xs">Volume (bbl)</label>
+                          <input type="number" className="input-control text-sm" disabled={isReadOnly} value={form.skkVolume} onChange={e => handleChange('skkVolume', e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                          <label className="input-label text-xs">ICP (USD/bbl)</label>
+                          <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.icpPrice} onChange={e => handleChange('icpPrice', e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                          <label className="input-label text-xs">Alpha (USD/bbl)</label>
+                          <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkAlpha || 0} onChange={e => handleChange('skkAlpha', e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                          <label className="input-label text-xs">Total Price (USD/bbl)</label>
+                          <input type="number" step="0.01" className="input-control text-sm" disabled={isReadOnly} value={form.skkPrice} onChange={e => handleChange('skkPrice', e.target.value)} />
                         </div>
                       </div>
-                    </div>
+                      <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
+                        <div style={{ flex: 1 }}>
+                          <label className="text-xs text-muted mb-1 block">Amount (USD)</label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold" style={{ color: 'var(--success)' }}>$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="input-control text-lg font-bold"
+                              style={{ color: 'var(--success)', border: 'none', background: 'transparent', padding: 0, width: '100%' }}
+                              value={form.skkAmount}
+                              onChange={e => handleChange('skkAmount', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </>
@@ -2888,7 +2888,7 @@ export const SettlementArchive = () => {
   const exportToExcel = () => {
     const headers = [
       'ID', 'Status', 'Invoice No', 'No. PO MySAP', 'No. PO Hardcopy', 'B/L Number', 'B/L Date', 'Vessel/Pipeline', 'Load Port', 'Discharge Port',
-      'Seller', 'KKKS', 'Jenis Cargo', 'Transaction', 'Nominal Volume', 'Real Volume', 'Volume KKKS', 'Volume SKK', 'Vol Check (%)', 'Price USD', 'ICP',
+      'Seller', 'KKKS', 'Crude', 'Transaction', 'Nominal Volume', 'Real Volume', 'Volume KKKS', 'Volume SKK', 'Vol Check (%)', 'Price USD', 'ICP',
       'Alpha', 'Kurs BI', 'Total Amount USD', 'VAT (11%) USD', 'Total Amount IDR', 'Created By', 'Created At'
     ].join(',');
 
@@ -3007,7 +3007,7 @@ export const SettlementArchive = () => {
                 <th>Discharge Port</th>
                 <th>Seller</th>
                 <th>KKKS</th>
-                <th>Jenis Cargo</th>
+                <th>Crude</th>
                 <th>Transaction</th>
                 <th>Volume Nominasi</th>
                 <th>Volume Realisasi</th>
@@ -3412,7 +3412,7 @@ export const VerificationDetail = () => {
                 <div>
                   <LabelVal label="Periode Bulan / Tahun" val={lifting.periodeLiftingBulan ? (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][parseInt(lifting.periodeLiftingBulan) - 1] + ' ' + lifting.periodeLiftingTahun) : '-'} />
                   <LabelVal label="Seller" val={lifting.seller || lifting.kkks} />
-                  <LabelVal label="Jenis Cargo" val={lifting.jenisMm} />
+                  <LabelVal label="Crude" val={lifting.jenisMm} />
                   <LabelVal label="B/L Dated" val={lifting.blDate} />
                   <LabelVal label="B/L Number" val={lifting.blNumber} />
                   <LabelVal label="Tipe Lifting" val={lifting.tipeLifting === 'pipeline' ? 'Pipeline' : 'Vessel'} />
