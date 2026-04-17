@@ -882,9 +882,12 @@ export const EditLifting = () => {
     statusSp3: 'Create SP3',
     nomorSp3: '',
     fileInvoice: null,
-    fileBL: null,
     fileDocLain: null,
     icpPrice: 0,
+    kkksPrice: 0,
+    skkPrice: 0,
+    kkksAmount: 0,
+    skkAmount: 0,
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -978,6 +981,37 @@ export const EditLifting = () => {
     }
   }, [form.jenisMm, form.periodeLiftingBulan, form.periodeLiftingTahun, form.pembelian, form.kindOfTransaction]);
 
+  // Handle auto-calculations for Entitlements
+  useEffect(() => {
+    const icp = parseFloat(form.icpPrice) || 0;
+    
+    // KKKS Side
+    const kAlpha = parseFloat(form.kkksAlpha) || 0;
+    const kVol = parseFloat(form.kkksVolume) || 0;
+    const kPrice = parseFloat((icp + kAlpha).toFixed(2));
+    const kAmount = parseFloat((kVol * kPrice).toFixed(2));
+
+    // SKK Side
+    const sAlpha = parseFloat(form.skkAlpha) || 0;
+    const sVol = parseFloat(form.skkVolume) || 0;
+    const sPrice = parseFloat((icp + sAlpha).toFixed(2));
+    const sAmount = parseFloat((sVol * sPrice).toFixed(2));
+
+    setForm(prev => {
+      // Only update if changed to avoid infinite loops
+      const updates = {};
+      if (prev.kkksPrice !== kPrice) updates.kkksPrice = kPrice;
+      if (prev.kkksAmount !== kAmount) updates.kkksAmount = kAmount;
+      if (prev.skkPrice !== sPrice) updates.skkPrice = sPrice;
+      if (prev.skkAmount !== sAmount) updates.skkAmount = sAmount;
+      
+      if (Object.keys(updates).length > 0) {
+        return { ...prev, ...updates };
+      }
+      return prev;
+    });
+  }, [form.icpPrice, form.kkksAlpha, form.kkksVolume, form.skkAlpha, form.skkVolume]);
+
   useEffect(() => {
     const vol = parseFloat(form.totalVolume) || 0;
     const prc = parseFloat(form.priceUsdBbl) || 0;
@@ -990,12 +1024,11 @@ export const EditLifting = () => {
   useEffect(() => {
     let tv = 0;
     if (form.skemaKomersialisasi === 'Election Not to Take In Kind (SKK Migas)') {
-      tv = ((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)) + 
-           ((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0));
+      tv = (parseFloat(form.kkksAmount) || 0) + (parseFloat(form.skkAmount) || 0);
     } else if (form.skemaKomersialisasi === 'Election In Kind (KKKS or SHU)') {
-      tv = (parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0);
+      tv = parseFloat(form.kkksAmount) || 0;
     } else if (form.skemaKomersialisasi === 'Election In Kind (SKK Migas)') {
-      tv = (parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0);
+      tv = parseFloat(form.skkAmount) || 0;
     } else {
       tv = (parseFloat(form.totalVolume) || 0) * (parseFloat(form.priceUsdBbl) || 0);
     }
@@ -1413,9 +1446,17 @@ export const EditLifting = () => {
                     </div>
                     <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
                       <div style={{ flex: 1 }}>
-                        <div className="text-xs text-muted mb-1">Amount (USD)</div>
-                        <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>
-                          ${Number((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <label className="text-xs text-muted mb-1 block">Amount (USD)</label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold" style={{ color: 'var(--accent)' }}>$</span>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="input-control text-lg font-bold" 
+                            style={{ color: 'var(--accent)', border: 'none', background: 'transparent', padding: 0, width: '100%' }}
+                            value={form.kkksAmount} 
+                            onChange={e => handleChange('kkksAmount', e.target.value)} 
+                          />
                         </div>
                       </div>
                     </div>
@@ -1453,9 +1494,17 @@ export const EditLifting = () => {
                     </div>
                     <div className="mt-4 flex gap-6 pt-4" style={{ borderTop: '1px dashed var(--border)' }}>
                       <div style={{ flex: 1 }}>
-                        <div className="text-xs text-muted mb-1">Amount (USD)</div>
-                        <div className="text-lg font-bold" style={{ color: 'var(--success)' }}>
-                          ${Number((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <label className="text-xs text-muted mb-1 block">Amount (USD)</label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold" style={{ color: 'var(--success)' }}>$</span>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="input-control text-lg font-bold" 
+                            style={{ color: 'var(--success)', border: 'none', background: 'transparent', padding: 0, width: '100%' }}
+                            value={form.skkAmount} 
+                            onChange={e => handleChange('skkAmount', e.target.value)} 
+                          />
                         </div>
                       </div>
                     </div>
