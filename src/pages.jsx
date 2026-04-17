@@ -514,7 +514,7 @@ export const DataSubmission = () => {
         {tab === 'manual' ? (
           <>
             <h3 className="mb-4 font-semibold text-main">Rincian Data Lifting Minyak</h3>
-            <div className="grid-cols-2 mb-8" style={{ gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '2rem' }}>
               {/* Section 1: Basic Info */}
               <div className="input-group">
                 <label className="input-label">Periode Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -540,7 +540,7 @@ export const DataSubmission = () => {
                 </select>
               </div>
 
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+              <div className="input-group">
                 <label className="input-label">Crude<span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
                   <option value="">-- Pilih Crude --</option>
@@ -1158,27 +1158,28 @@ export const EditLifting = () => {
             <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div className="input-group">
-                <label className="input-label">Periode Bulan</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
-                  <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
-                  <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
-                  <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
-                  <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
-                </select>
+                <label className="input-label">Periode Lifting</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '8px' }}>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingBulan} onChange={e => handleChange('periodeLiftingBulan', e.target.value)}>
+                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                    <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                    <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+                    <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                  </select>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
+                    <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+                  </select>
+                </div>
               </div>
-              <div className="input-group">
-                <label className="input-label">Periode Tahun</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.periodeLiftingTahun} onChange={e => handleChange('periodeLiftingTahun', e.target.value)}>
-                  <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
-                </select>
-              </div>
+
               <div className="input-group">
                 <label className="input-label">Tipe Komoditas</label>
                 <select className="input-control" disabled={isLiftingReadOnly} value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
                   {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+
+              <div className="input-group">
                 <label className="input-label">Crude</label>
                 <select className="input-control" disabled={isLiftingReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
                   <option value="">-- Pilih Crude --</option>
@@ -1190,7 +1191,8 @@ export const EditLifting = () => {
                   </optgroup>
                 </select>
               </div>
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+
+              <div className="input-group">
                 <label className="input-label">Seller</label>
                 <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
                   <option value="">-- Pilih Seller --</option>
