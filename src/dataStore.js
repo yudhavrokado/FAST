@@ -321,6 +321,37 @@ export const getPrimaryCrudePrice = (code) => {
   return parseFloat((ref + crude.alpha).toFixed(2));
 };
 
+export const getCrudePriceByPeriod = (crudeName, month, year) => {
+  const db = _db();
+  const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const targetPeriode = `${month} ${year}`;
+  
+  // Find crude definition
+  let crude = db.crudes.primary.find(c => c.namaCrude === crudeName);
+  let baseCrude = null;
+  let derivedAlpha = 0;
+
+  if (!crude) {
+    const derived = db.crudes.derived.find(c => c.namaCrude === crudeName);
+    if (derived) {
+      crude = derived;
+      derivedAlpha = derived.alpha || 0;
+      baseCrude = db.crudes.primary.find(c => c.kode === derived.baseRef);
+    }
+  } else {
+    baseCrude = crude;
+  }
+
+  if (!baseCrude) return 0;
+
+  // Find history entry
+  const history = db.priceHistory.find(h => h.periode === targetPeriode);
+  if (!history) return 0;
+
+  const refPrice = baseCrude.refType === 'mops' ? history.mopsNaphtha : history.datedBrent;
+  return parseFloat((refPrice + baseCrude.alpha + derivedAlpha).toFixed(2));
+};
+
 // ─── FINANCE: EXCHANGE RATES & VAT ─────────────────────────────────────────
 
 export const getExchangeRates = () => _db().exchangeRates || [];

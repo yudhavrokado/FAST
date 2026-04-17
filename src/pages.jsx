@@ -8,7 +8,7 @@ import {
   getSupplierList, getDatedBrentPrices, getPriceFormulas,
   getIcpPeriode, saveIcpPeriode, getDatedBrentRef, saveDatedBrentRef,
   getMopsNaphthaRef, saveMopsNaphthaRef, saveRefPrices, getPriceHistory,
-  getPrimaryCrudes, savePrimaryCrude, getDerivedCrudes, saveDerivedCrude, getPrimaryCrudePrice,
+  getPrimaryCrudes, savePrimaryCrude, getDerivedCrudes, saveDerivedCrude, getPrimaryCrudePrice, getCrudePriceByPeriod,
   getKursBIList, getLatestKursBI, saveKursBI, deleteKursBI, saveK3S, saveSupplier, deleteK3S, deleteSupplier,
   getVatList, saveVat, deleteVat,
   STATUS, JENIS_MM_OPTIONS,
@@ -687,11 +687,19 @@ export const DataSubmission = () => {
                 <th>Jenis Cargo</th>
                 <th>Komoditas</th>
                 <th>Kategori</th>
+                <th>Kind of Transaction</th>
                 <th>Lifting (Vessel/Pipe)</th>
                 <th>Port (Load/Disc)</th>
                 <th style={{ textAlign: 'right' }}>Vol Realisasi</th>
                 <th style={{ textAlign: 'center' }}>Tipe Transaksi</th>
                 <th>Skema</th>
+                <th>No. Invoice & Tgl</th>
+                <th>Faktur Pajak & Tgl</th>
+                <th>Due Date (Prov/Final)</th>
+                <th>No. PO (SAP/HC)</th>
+                <th>Kurs (BI/Inv)</th>
+                <th style={{ textAlign: 'right' }}>Harga (USD/Bbl)</th>
+                <th style={{ textAlign: 'right' }}>Total Amount (USD)</th>
                 <th style={{ textAlign: 'center' }}>Status</th>
                 <th>Updated By</th>
               </tr>
@@ -760,6 +768,9 @@ export const DataSubmission = () => {
                       <td>{l.jenisMm || '-'}</td>
                       <td>{l.commodityType || '-'}</td>
                       <td><span className="badge" style={{ background: l.liftingCategory === 'PROFORMA LIFTING' ? 'rgba(139,92,246,0.1)' : 'rgba(0,82,156,0.1)', color: l.liftingCategory === 'PROFORMA LIFTING' ? '#8b5cf6' : 'var(--accent)' }}>{l.liftingCategory}</span></td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="badge" style={{ background: 'rgba(0,166,81,0.1)', color: '#00a651' }}>{l.kindOfTransaction || '-'}</span>
+                      </td>
                       <td>
                         <div style={{ fontSize: '13px', fontWeight: 500 }}>{l.tipeLifting === 'vessel' ? (l.vesselName || 'Vessel') : 'Pipeline'}</div>
                       </td>
@@ -778,6 +789,32 @@ export const DataSubmission = () => {
                         </span>
                       </td>
                       <td style={{ fontSize: '11px' }}>{l.skemaKomersialisasi || '-'}</td>
+                      <td>
+                         <div style={{ fontWeight: 600, fontSize: '12px' }}>{l.invoiceNumber || '-'}</div>
+                         <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{l.invoiceDate || '-'}</div>
+                      </td>
+                      <td>
+                         <div style={{ fontWeight: 600, fontSize: '12px' }}>{l.fakturPajakNumber || '-'}</div>
+                         <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{l.fakturPajakDate || '-'}</div>
+                      </td>
+                      <td>
+                         <div style={{ fontSize: '11px' }}>{l.dueDateInvoice || '-'}</div>
+                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.dueDateFinal || '-'}</div>
+                      </td>
+                      <td>
+                         <div style={{ fontSize: '11px' }}>{l.poMySap || '-'}</div>
+                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.poHardcopy || '-'}</div>
+                      </td>
+                      <td>
+                         <div style={{ fontSize: '11px' }}>{l.kursBeliBi || '-'}</div>
+                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{l.kursInvoice || '-'}</div>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 500 }}>
+                         ${l.skemaKomersialisasi === 'Election In Kind (SKK Migas)' ? (l.skkPrice || '-') : (l.kkksPrice || l.priceUsdBbl || '-')}
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--success)' }}>
+                         ${l.totalValue || '0'}
+                      </td>
                       <td style={{ textAlign: 'center' }}>
                         <span className="badge" style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}22`, fontWeight: 700, minWidth: '100px', textAlign: 'center' }}>
                           {st.label}
@@ -810,6 +847,8 @@ export const EditLifting = () => {
     invoiceDate: '',
     dueDateInvoice: '', // Provisional
     dueDateFinal: '',
+    fakturPajakNumber: '',
+    fakturPajakDate: '',
     blNumber: '',
     blDate: '',
     kkks: '',
@@ -912,6 +951,34 @@ export const EditLifting = () => {
   }, [form.jenisMm]);
 
   useEffect(() => {
+    if (form.jenisMm && form.periodeLiftingBulan && form.periodeLiftingTahun) {
+      const getPrevMonth = (bulan, tahun) => {
+        const monthsInIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        let idx = monthsInIndo.indexOf(bulan);
+        let y = parseInt(tahun);
+        if (idx === 0) {
+          idx = 11;
+          y -= 1;
+        } else {
+          idx -= 1;
+        }
+        return { bulan: monthsInIndo[idx], tahun: y };
+      };
+
+      const isEntitlementActive = form.pembelian !== 'Import' && form.kindOfTransaction !== 'Final';
+      
+      if (isEntitlementActive) {
+        const prev = getPrevMonth(form.periodeLiftingBulan, form.periodeLiftingTahun);
+        const autoIcp = getCrudePriceByPeriod(form.jenisMm, prev.bulan, prev.tahun);
+        
+        if (autoIcp > 0 && form.icpPrice !== autoIcp) {
+          setForm(prevForm => ({ ...prevForm, icpPrice: autoIcp }));
+        }
+      }
+    }
+  }, [form.jenisMm, form.periodeLiftingBulan, form.periodeLiftingTahun, form.pembelian, form.kindOfTransaction]);
+
+  useEffect(() => {
     const vol = parseFloat(form.totalVolume) || 0;
     const prc = parseFloat(form.priceUsdBbl) || 0;
     const newTotal = (vol * prc).toFixed(2);
@@ -920,6 +987,24 @@ export const EditLifting = () => {
     }
   }, [form.totalVolume, form.priceUsdBbl]);
 
+  useEffect(() => {
+    let tv = 0;
+    if (form.skemaKomersialisasi === 'Election Not to Take In Kind (SKK Migas)') {
+      tv = ((parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0)) + 
+           ((parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0));
+    } else if (form.skemaKomersialisasi === 'Election In Kind (KKKS or SHU)') {
+      tv = (parseFloat(form.kkksVolume) || 0) * (parseFloat(form.kkksPrice) || 0);
+    } else if (form.skemaKomersialisasi === 'Election In Kind (SKK Migas)') {
+      tv = (parseFloat(form.skkVolume) || 0) * (parseFloat(form.skkPrice) || 0);
+    } else {
+      tv = (parseFloat(form.totalVolume) || 0) * (parseFloat(form.priceUsdBbl) || 0);
+    }
+    const fixedTv = tv.toFixed(2);
+    if (form.totalValue !== fixedTv) {
+      setForm(prev => ({ ...prev, totalValue: fixedTv }));
+    }
+  }, [form.skemaKomersialisasi, form.kkksVolume, form.kkksPrice, form.skkVolume, form.skkPrice, form.totalVolume, form.priceUsdBbl]);
+
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
 
   const handleChange = (field, value) => {
@@ -927,6 +1012,9 @@ export const EditLifting = () => {
       const newForm = { ...prev, [field]: value };
       if (field === 'pembelian' && value === 'Import') {
         newForm.skemaKomersialisasi = '';
+      }
+      if (field === 'kindOfTransaction' && value === 'Final') {
+        newForm.skemaKomersialisasi = 'N/A';
       }
       if (field === 'totalVolume' || field === 'volumeK3s') {
         const total = parseFloat(newForm.totalVolume) || 0;
@@ -1166,14 +1254,23 @@ export const EditLifting = () => {
                   <label className="input-label">Kind of Transaction <span className="text-danger">*</span></label>
                   <select className="input-control" disabled={isInvoiceReadOnly} value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
                     {KIND_OF_TRANSACTION_OPTIONS
-                      .filter(opt => form.pembelian !== 'Import' || ['Provisional', 'Final'].includes(opt))
+                      .filter(opt => {
+                        if (form.liftingCategory === 'Reguler') {
+                          return ['Provisional', 'Final'].includes(opt);
+                        } else if (form.liftingCategory === 'PROFORMA LIFTING') {
+                          return ['PPL Provisional', 'PPL Realisasi', 'PPL Realisasi (Provisional)'].includes(opt);
+                        }
+                        return true;
+                      })
                       .map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
                 </div>
                 <div className="input-group">
-                  <label className="input-label">Skema Komersialisasi</label>
+                  <label className="input-label">Skema Komersialisasi {!isInvoiceReadOnly && form.kindOfTransaction !== 'Final' && <span className="text-danger">*</span>}</label>
                   {(() => {
-                    const isSkemaEnabled = form.commodityType === 'Crude' && (form.pembelian === 'Domestik' || form.pembelian === 'Domestik Proforma Lifting');
+                    const isSkemaEnabled = form.commodityType === 'Crude' && 
+                                          (form.pembelian === 'Domestik' || form.pembelian === 'Domestik Proforma Lifting') && 
+                                          form.kindOfTransaction !== 'Final';
                     const value = isSkemaEnabled ? form.skemaKomersialisasi : 'N/A';
                     
                     return (
@@ -1215,12 +1312,35 @@ export const EditLifting = () => {
                 </div>
 
                 <div className="input-group">
+                  <label className="input-label">No. Faktur Pajak</label>
+                  <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.fakturPajakNumber} onChange={e => handleChange('fakturPajakNumber', e.target.value)} placeholder="001.xxx-xx..." />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Tanggal Faktur Pajak</label>
+                  <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.fakturPajakDate} onChange={e => handleChange('fakturPajakDate', e.target.value)} />
+                </div>
+
+                <div className="input-group">
                   <label className="input-label">Due Date Provisional <span className="text-danger">*</span></label>
-                  <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateInvoice} onChange={e => handleChange('dueDateInvoice', e.target.value)} />
+                  <input 
+                    type="date" 
+                    className="input-control" 
+                    disabled={isInvoiceReadOnly || form.kindOfTransaction === 'Final'} 
+                    value={form.dueDateInvoice} 
+                    onChange={e => handleChange('dueDateInvoice', e.target.value)} 
+                    style={{ background: form.kindOfTransaction === 'Final' ? '#f1f5f9' : 'white' }}
+                  />
                 </div>
                 <div className="input-group">
                   <label className="input-label">Due Date Final</label>
-                  <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.dueDateFinal} onChange={e => handleChange('dueDateFinal', e.target.value)} />
+                  <input 
+                    type="date" 
+                    className="input-control" 
+                    disabled={isInvoiceReadOnly || form.kindOfTransaction.includes('Provisional')} 
+                    value={form.dueDateFinal} 
+                    onChange={e => handleChange('dueDateFinal', e.target.value)} 
+                    style={{ background: form.kindOfTransaction.includes('Provisional') ? '#f1f5f9' : 'white' }}
+                  />
                 </div>
                 {form.pembelian !== 'Import' && (
                   <div className="input-group">
@@ -1260,7 +1380,7 @@ export const EditLifting = () => {
                 </div>
               </div>
 
-              {form.pembelian !== 'Import' && (
+              {form.pembelian !== 'Import' && form.kindOfTransaction !== 'Final' && (
                 <>
                   {/* Section 1: Entitlement KKKS */}
                   {(form.skemaKomersialisasi === 'Election In Kind (KKKS or SHU)' || form.skemaKomersialisasi === 'Election Not to Take In Kind (SKK Migas)') && (
@@ -1303,7 +1423,7 @@ export const EditLifting = () => {
                   )}
 
                   {/* Section 2: SKK Migas */}
-                  {form.skemaKomersialisasi === 'Election In Kind (SKK Migas)' && (
+                  {(form.skemaKomersialisasi === 'Election In Kind (SKK Migas)' || form.skemaKomersialisasi === 'Election Not to Take In Kind (SKK Migas)') && (
                     <div className="mt-6 p-6 rounded-xl" style={{ border: '2px solid rgba(0,166,81,0.1)', background: '#fff' }}>
                     <h3 className="text-sm font-bold text-muted uppercase mb-4 flex items-center gap-2">
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
