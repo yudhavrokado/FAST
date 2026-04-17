@@ -108,7 +108,26 @@ export const initStore = () => {
       derived: [...SEED_DATA.crudes.derived, ...userDerived]
     };
 
-    if (!migrated.nonCrude) migrated.nonCrude = SEED_DATA.nonCrude;
+    // Aggressive migration for nonCrude to ensure dummy prices are loaded
+    if (!current.nonCrude) {
+      migrated.nonCrude = SEED_DATA.nonCrude;
+    } else {
+      // Update existing nonCrude items with seed prices if they are 0
+      migrated.nonCrude = current.nonCrude.map(item => {
+        const seedItem = SEED_DATA.nonCrude.find(s => s.id === item.id);
+        if (seedItem && (!item.price || item.price === 0)) {
+          return { ...item, price: seedItem.price };
+        }
+        return item;
+      });
+      
+      // Add any new seed items that might be missing
+      SEED_DATA.nonCrude.forEach(seedItem => {
+        if (!migrated.nonCrude.find(m => m.id === seedItem.id)) {
+          migrated.nonCrude.push(seedItem);
+        }
+      });
+    }
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
   }
