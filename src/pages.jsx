@@ -516,7 +516,43 @@ export const DataSubmission = () => {
           <>
             <h3 className="mb-4 font-semibold text-main">Rincian Data Lifting Minyak</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '2rem' }}>
-              {/* Section 1: Basic Info */}
+              {/* 1. Tipe Transaksi */}
+              <div className="input-group">
+                <label className="input-label">Tipe Transaksi <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                  <option value="">-- Pilih Tipe Transaksi --</option>
+                  {PEMBELIAN_OPTIONS.filter(opt => {
+                    if (form.liftingCategory === 'PROFORMA LIFTING') {
+                      return opt === 'Domestik Proforma Lifting';
+                    } else {
+                      return opt === 'Import' || opt === 'Domestik';
+                    }
+                  }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+
+              {/* 2. Tipe Komuditas */}
+              <div className="input-group">
+                <label className="input-label">Tipe Komuditas <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <select className="input-control" value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
+                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+
+              {/* 3. Kategori Lifting */}
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Kategori Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <div className="flex gap-4">
+                  {['Reguler', 'PROFORMA LIFTING'].map(cat => (
+                    <label key={cat} className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border hover:bg-slate-50 transition-all" style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
+                      <input type="radio" name="liftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
+                      <span className="font-semibold text-sm" style={{ color: form.liftingCategory === cat ? 'var(--accent)' : 'inherit' }}>{cat}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. Periode Lifting */}
               <div className="input-group">
                 <label className="input-label">Periode Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '8px' }}>
@@ -534,33 +570,7 @@ export const DataSubmission = () => {
                 </div>
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Tipe Komoditas</label>
-                <select className="input-control" value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
-                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-              </div>
-
-              <div className="input-group">
-                <label className="input-label">{form.commodityType === 'Non Crude' ? 'Product' : 'Crude'}<span style={{ color: 'var(--danger)' }}>*</span></label>
-                <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-                  <option value="">-- Pilih {form.commodityType === 'Non Crude' ? 'Product' : 'Crude'} --</option>
-                  {form.commodityType === 'Non Crude' ? (
-                    getNonCrudeList().map(p => <option key={p.id} value={p.name}>{p.name}</option>)
-                  ) : (
-                    <>
-                      <optgroup label="Primary Crudes">
-                        {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
-                      </optgroup>
-                      <optgroup label="Derived Crudes">
-                        {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>
-                        )}
-                      </optgroup>
-                    </>
-                  )}
-                </select>
-              </div>
-
+              {/* 5. Seller */}
               <div className="input-group">
                 <label className="input-label">Seller <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
@@ -574,18 +584,27 @@ export const DataSubmission = () => {
                 </select>
               </div>
 
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">Kategori Lifting</label>
-                <div className="flex gap-4">
-                  {['Reguler', 'PROFORMA LIFTING'].map(cat => (
-                    <label key={cat} className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border hover:bg-slate-50 transition-all" style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
-                      <input type="radio" name="liftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
-                      <span className="font-semibold text-sm" style={{ color: form.liftingCategory === cat ? 'var(--accent)' : 'inherit' }}>{cat}</span>
-                    </label>
-                  ))}
-                </div>
+              {/* 6. Cargo/Produk */}
+              <div className="input-group">
+                <label className="input-label">Cargo/Produk <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <select className="input-control" value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
+                  <option value="">-- Pilih Cargo/Produk --</option>
+                  {form.commodityType === 'Non Crude' ? (
+                    getNonCrudeList().map(p => <option key={p.id} value={p.name}>{p.name}</option>)
+                  ) : (
+                    <>
+                      <optgroup label="Primary Crudes">
+                        {getPrimaryCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                      </optgroup>
+                      <optgroup label="Derived Crudes">
+                        {getDerivedCrudes().map(c => <option key={c.id} value={c.namaCrude || c.nama}>{c.namaCrude || c.nama}</option>)}
+                      </optgroup>
+                    </>
+                  )}
+                </select>
               </div>
 
+              {/* 7 & 8. B/L or PPL Dated & Number */}
               {form.liftingCategory === 'Reguler' ? (
                 <>
                   <div className="input-group">
@@ -593,7 +612,7 @@ export const DataSubmission = () => {
                     <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
                   </div>
                   <div className="input-group">
-                    <label className="input-label">B/L Number</label>
+                    <label className="input-label">B/L Number <span style={{ color: 'var(--danger)' }}>*</span></label>
                     <input type="text" className="input-control" placeholder="Contoh: BL-2026/01" value={form.blNumber} onChange={e => handleChange('blNumber', e.target.value)} />
                   </div>
                 </>
@@ -610,55 +629,44 @@ export const DataSubmission = () => {
                 </>
               )}
 
+              {/* 9. Tipe Lifting */}
               <div className="input-group">
-                <label className="input-label">Tipe Lifting</label>
+                <label className="input-label">Tipe Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.tipeLifting} onChange={e => handleChange('tipeLifting', e.target.value)}>
                   <option value="vessel">Vessel</option>
                   <option value="pipeline">Pipeline</option>
                 </select>
               </div>
 
+              {/* 10. Nama Vessel */}
               <div className="input-group">
-                <label className="input-label">Name Vessel</label>
+                <label className="input-label">Nama Vessel</label>
                 <input type="text" className="input-control" disabled={form.tipeLifting !== 'vessel'} placeholder={form.tipeLifting === 'vessel' ? "Contoh: MT Pertamina Prime" : "N/A (Pipeline)"} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
               </div>
 
+              {/* 11. Loading Port */}
               <div className="input-group">
-                <label className="input-label">Loading Port (Dummy)</label>
+                <label className="input-label">Loading Port</label>
                 <select className="input-control" value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
                   <option value="">-- Pilih Loading Port --</option>
                   {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
                 </select>
               </div>
 
+              {/* 12. Discharge Port */}
               <div className="input-group">
-                <label className="input-label">Discharge Port (Dummy)</label>
+                <label className="input-label">Discharge Port</label>
                 <select className="input-control" value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
                   <option value="">-- Pilih Discharge Port --</option>
                   {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
                 </select>
               </div>
 
+              {/* 13. Volume Realisasi */}
               <div className="input-group">
-                <label className="input-label">Volume Realisasi (bbls)</label>
+                <label className="input-label">Volume Realisasi (bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="number" className="input-control" placeholder="0" value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
-
-              <div className="input-group">
-                <label className="input-label">Tipe Transaksi</label>
-                <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
-                  {PEMBELIAN_OPTIONS.filter(opt => {
-                    if (form.liftingCategory === 'PROFORMA LIFTING') {
-                      return opt === 'Domestik Proforma Lifting';
-                    } else {
-                      return opt === 'Import' || opt === 'Domestik';
-                    }
-                  }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-              </div>
-
-
-
             </div>
 
             <div className="flex justify-end gap-3 mt-8 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
@@ -1165,6 +1173,42 @@ export const EditLifting = () => {
           <div style={{ flex: 1, borderRight: showBothColumns ? '1px solid var(--border)' : 'none', paddingRight: showBothColumns ? '24px' : '0', maxWidth: showBothColumns ? 'none' : '900px', margin: showBothColumns ? '0' : '0 auto' }}>
             <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{ color: 'var(--accent)' }}><Activity size={18} /> Rincian Data Lifting Minyak</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {/* 1. Tipe Transaksi */}
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Tipe Transaksi</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
+                  {PEMBELIAN_OPTIONS.filter(opt => {
+                    if (form.liftingCategory === 'PROFORMA LIFTING') {
+                      return opt === 'Domestik Proforma Lifting';
+                    } else {
+                      return opt === 'Import' || opt === 'Domestik';
+                    }
+                  }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+
+              {/* 2. Tipe Komuditas */}
+              <div className="input-group">
+                <label className="input-label">Tipe Komuditas</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
+                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+
+              {/* 3. Kategori Lifting */}
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Kategori Lifting</label>
+                <div className="flex gap-4">
+                  {['Reguler', 'PROFORMA LIFTING'].map(cat => (
+                    <label key={cat} className={`flex items-center gap-2 ${isLiftingReadOnly ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'} p-2 rounded-lg border hover:bg-slate-50 transition-all`} style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
+                      <input type="radio" disabled={isLiftingReadOnly} name="editLiftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
+                      <span className="text-sm font-semibold">{cat}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. Periode Lifting */}
               <div className="input-group">
                 <label className="input-label">Periode Lifting</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '8px' }}>
@@ -1180,17 +1224,25 @@ export const EditLifting = () => {
                 </div>
               </div>
 
+              {/* 5. Seller */}
               <div className="input-group">
-                <label className="input-label">Tipe Komoditas</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
-                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                <label className="input-label">Seller</label>
+                <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
+                  <option value="">-- Pilih Seller --</option>
+                  <optgroup label="KKKS (K3S)">
+                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
+                  </optgroup>
+                  <optgroup label="Suppliers">
+                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
+                  </optgroup>
                 </select>
               </div>
 
+              {/* 6. Cargo/Produk */}
               <div className="input-group">
-                <label className="input-label">{form.commodityType === 'Non Crude' ? 'Product' : 'Crude'}</label>
+                <label className="input-label">Cargo/Produk</label>
                 <select className="input-control" disabled={isLiftingReadOnly} value={form.jenisMm} onChange={e => handleChange('jenisMm', e.target.value)}>
-                  <option value="">-- Pilih {form.commodityType === 'Non Crude' ? 'Product' : 'Crude'} --</option>
+                  <option value="">-- Pilih Cargo/Produk --</option>
                   {form.commodityType === 'Non Crude' ? (
                     getNonCrudeList().map(p => <option key={p.id} value={p.name}>{p.name}</option>)
                   ) : (
@@ -1206,31 +1258,7 @@ export const EditLifting = () => {
                 </select>
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Seller</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.seller} onChange={e => handleChange('seller', e.target.value)}>
-                  <option value="">-- Pilih Seller --</option>
-                  <optgroup label="KKKS (K3S)">
-                    {getK3SList().map((k) => <option key={k.id} value={k.nama}>{k.nama}</option>)}
-                  </optgroup>
-                  <optgroup label="Suppliers">
-                    {getSupplierList().map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
-                  </optgroup>
-                </select>
-              </div>
-
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">Kategori Lifting</label>
-                <div className="flex gap-4">
-                  {['Reguler', 'PROFORMA LIFTING'].map(cat => (
-                    <label key={cat} className={`flex items-center gap-2 ${isLiftingReadOnly ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'} p-2 rounded-lg border hover:bg-slate-50 transition-all`} style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
-                      <input type="radio" disabled={isLiftingReadOnly} name="editLiftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
-                      <span className="text-sm font-semibold">{cat}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
+              {/* 7 & 8. B/L or PPL Dated & Number */}
               {form.liftingCategory === 'PROFORMA LIFTING' ? (
                 <>
                   <div className="input-group">
@@ -1254,6 +1282,8 @@ export const EditLifting = () => {
                   </div>
                 </>
               )}
+
+              {/* 9. Tipe Lifting */}
               <div className="input-group">
                 <label className="input-label">Tipe Lifting</label>
                 <select className="input-control" disabled={isReadOnly} value={form.tipeLifting} onChange={e => handleChange('tipeLifting', e.target.value)}>
@@ -1261,39 +1291,35 @@ export const EditLifting = () => {
                   <option value="pipeline">Pipeline</option>
                 </select>
               </div>
-              {form.tipeLifting === 'vessel' && (
-                <div className="input-group" style={{ gridColumn: 'span 1' }}>
-                  <label className="input-label">Vessel Name</label>
-                  <input type="text" className="input-control" disabled={isReadOnly} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} />
-                </div>
-              )}
+
+              {/* 10. Nama Vessel */}
+              <div className="input-group">
+                <label className="input-label">Nama Vessel</label>
+                <input type="text" className="input-control" disabled={isReadOnly} value={form.vesselName} onChange={e => handleChange('vesselName', e.target.value)} placeholder={form.tipeLifting === 'vessel' ? "Contoh: MT Pertamina Prime" : "N/A (Pipeline)"} />
+              </div>
+
+              {/* 11. Loading Port */}
               <div className="input-group">
                 <label className="input-label">Loading Port</label>
                 <select className="input-control" disabled={isReadOnly} value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
+                  <option value="">-- Pilih Loading Port --</option>
                   {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
                 </select>
               </div>
+
+              {/* 12. Discharge Port */}
               <div className="input-group">
                 <label className="input-label">Discharge Port</label>
                 <select className="input-control" disabled={isReadOnly} value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
+                  <option value="">-- Pilih Discharge Port --</option>
                   {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
                 </select>
               </div>
+
+              {/* 13. Volume Realisasi */}
               <div className="input-group">
-                <label className="input-label">Total Volume Realisasi (bbls)</label>
+                <label className="input-label">Volume Realisasi (bbls)</label>
                 <input type="number" className="input-control" disabled={isLiftingReadOnly} value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
-              </div>
-              <div className="input-group" style={{ gridColumn: (originalStatus === 'draft' || originalStatus === 'revisi') ? 'span 1' : 'span 2' }}>
-                <label className="input-label">Tipe Transaksi</label>
-                <select className="input-control" disabled={isLiftingReadOnly} value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
-                  {PEMBELIAN_OPTIONS.filter(opt => {
-                    if (form.liftingCategory === 'PROFORMA LIFTING') {
-                      return opt === 'Domestik Proforma Lifting';
-                    } else {
-                      return opt === 'Import' || opt === 'Domestik';
-                    }
-                  }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
               </div>
             </div>
 
