@@ -272,7 +272,7 @@ export const DataSubmission = () => {
     kkks: '',
     isPipeline: false,
     kindOfTransaction: 'Provisional',
-    pembelian: 'Domestik',
+    pembelian: 'Domestik Reguler',
     bagianPembelian: '',
     volumeK3s: '',
     volumeGoi: 0,
@@ -311,11 +311,14 @@ export const DataSubmission = () => {
         if (value === 'PROFORMA LIFTING') {
           newForm.pembelian = 'Domestik Proforma Lifting';
         } else if (newForm.pembelian === 'Domestik Proforma Lifting') {
-          newForm.pembelian = 'Domestik';
+          newForm.pembelian = 'Domestik Reguler';
         }
       }
       if (field === 'pembelian' && value === 'Import') {
         newForm.skemaKomersialisasi = '';
+      }
+      if (field === 'pembelian' && value === 'Domestik Proforma Lifting') {
+        newForm.commodityType = 'Crude';
       }
       if (field === 'totalVolume' || field === 'volumeK3s') {
         const total = parseFloat(newForm.totalVolume) || 0;
@@ -397,28 +400,73 @@ export const DataSubmission = () => {
 
             <div className="grid-cols-2" style={{ gap: '16px' }}>
               <div className="input-group">
+                <label className="input-label">Kind of Transaction <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <select className="input-control" value={penagihanModal.form.kindOfTransaction} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, kindOfTransaction: e.target.value } }))}>
+                  {(() => {
+                    if (penagihanModal.form.pembelian === 'Import') {
+                      return ['Provisional', 'Final'].map(opt => <option key={opt} value={opt}>{opt}</option>);
+                    }
+                    return KIND_OF_TRANSACTION_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>);
+                  })()}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Skema Transaksi</label>
+                <div className="input-control" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}>
+                  {penagihanModal.form.pembelian === 'Import' ? 'N/A' : (penagihanModal.form.skemaKomersialisasi || 'Reguler')}
+                </div>
+              </div>
+              <div className="input-group">
                 <label className="input-label">Nomor Invoice <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="text" className="input-control" placeholder="Contoh: INV/2026/001" value={penagihanModal.form.invoiceNumber} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, invoiceNumber: e.target.value } }))} />
               </div>
               <div className="input-group">
-                <label className="input-label">Price (USD/bbl) <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <input type="number" step="0.01" className="input-control" placeholder="0.00" value={penagihanModal.form.priceUsdBbl} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, priceUsdBbl: e.target.value } }))} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Invoice Date</label>
+                <label className="input-label">Invoice Date <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <input type="date" className="input-control" value={penagihanModal.form.invoiceDate} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, invoiceDate: e.target.value } }))} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">Due Date Invoice</label>
-                <input type="date" className="input-control" value={penagihanModal.form.dueDateInvoice} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, dueDateInvoice: e.target.value } }))} />
               </div>
               <div className="input-group">
                 <label className="input-label">No. PO MySAP</label>
                 <input type="text" className="input-control" placeholder="Masukkan No. PO MySAP..." value={penagihanModal.form.poMySap || ''} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, poMySap: e.target.value } }))} />
               </div>
               <div className="input-group">
-                <label className="input-label">No. PO Hardcopy</label>
-                <input type="text" className="input-control" placeholder="Masukkan No. PO Hardcopy..." value={penagihanModal.form.poHardcopy || ''} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, poHardcopy: e.target.value } }))} />
+                <label className="input-label">No. PO Document</label>
+                <input type="text" className="input-control" placeholder="Masukkan No. PO Document..." value={penagihanModal.form.poHardcopy || ''} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, poHardcopy: e.target.value } }))} />
+              </div>
+              {penagihanModal.form.pembelian !== 'Import' && (
+                <div className="input-group">
+                  <label className="input-label">No. Faktur Pajak</label>
+                  <input type="text" className="input-control" placeholder="001.xxx-xx..." value={penagihanModal.form.fakturPajakNumber || ''} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, fakturPajakNumber: e.target.value } }))} />
+                </div>
+              )}
+              <div className="input-group">
+                <label className="input-label">{penagihanModal.form.pembelian === 'Import' ? 'NORt Dated' : 'Tanggal Faktur Pajak'}</label>
+                <input type="date" className="input-control" value={penagihanModal.form.fakturPajakDate || ''} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, fakturPajakDate: e.target.value } }))} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Due Date Provisional <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input 
+                  type="date" 
+                  className="input-control" 
+                  disabled={penagihanModal.form.kindOfTransaction === 'Final'}
+                  style={{ background: penagihanModal.form.kindOfTransaction === 'Final' ? 'var(--bg-surface)' : 'white' }}
+                  value={penagihanModal.form.dueDateInvoice} 
+                  onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, dueDateInvoice: e.target.value } }))} 
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Due Date Final</label>
+                <input 
+                  type="date" 
+                  className="input-control" 
+                  disabled={penagihanModal.form.kindOfTransaction === 'Provisional'}
+                  style={{ background: penagihanModal.form.kindOfTransaction === 'Provisional' ? 'var(--bg-surface)' : 'white' }}
+                  value={penagihanModal.form.dueDateFinal} 
+                  onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, dueDateFinal: e.target.value } }))} 
+                />
+              </div>
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">Total Price (USD/bbl) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <input type="number" step="0.01" className="input-control" placeholder="0.00" value={penagihanModal.form.priceUsdBbl} onChange={e => setPenagihanModal(p => ({ ...p, form: { ...p.form, priceUsdBbl: e.target.value } }))} />
               </div>
             </div>
 
@@ -521,13 +569,7 @@ export const DataSubmission = () => {
                 <label className="input-label">Tipe Transaksi <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.pembelian} onChange={e => handleChange('pembelian', e.target.value)}>
                   <option value="">-- Pilih Tipe Transaksi --</option>
-                  {PEMBELIAN_OPTIONS.filter(opt => {
-                    if (form.liftingCategory === 'PROFORMA LIFTING') {
-                      return opt === 'Domestik Proforma Lifting';
-                    } else {
-                      return opt === 'Import' || opt === 'Domestik';
-                    }
-                  }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {PEMBELIAN_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
 
@@ -535,22 +577,14 @@ export const DataSubmission = () => {
               <div className="input-group">
                 <label className="input-label">Tipe Komuditas <span style={{ color: 'var(--danger)' }}>*</span></label>
                 <select className="input-control" value={form.commodityType} onChange={e => handleChange('commodityType', e.target.value)}>
-                  {COMMODITY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  {COMMODITY_OPTIONS.filter(opt => {
+                    if (form.pembelian === 'Domestik Proforma Lifting') return opt === 'Crude';
+                    return true;
+                  }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
 
-              {/* 3. Kategori Lifting */}
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">Kategori Lifting <span style={{ color: 'var(--danger)' }}>*</span></label>
-                <div className="flex gap-4">
-                  {['Reguler', 'PROFORMA LIFTING'].map(cat => (
-                    <label key={cat} className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border hover:bg-slate-50 transition-all" style={{ border: form.liftingCategory === cat ? '2px solid var(--accent)' : '1px solid var(--border)', background: form.liftingCategory === cat ? 'rgba(0,82,156,0.05)' : 'white' }}>
-                      <input type="radio" name="liftingCategory" checked={form.liftingCategory === cat} onChange={() => handleChange('liftingCategory', cat)} />
-                      <span className="font-semibold text-sm" style={{ color: form.liftingCategory === cat ? 'var(--accent)' : 'inherit' }}>{cat}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+
 
               {/* 4. Periode Lifting */}
               <div className="input-group">
@@ -605,7 +639,7 @@ export const DataSubmission = () => {
               </div>
 
               {/* 7 & 8. B/L or PPL Dated & Number */}
-              {form.liftingCategory === 'Reguler' ? (
+              {form.pembelian !== 'Domestik Proforma Lifting' ? (
                 <>
                   <div className="input-group">
                     <label className="input-label">B/L Dated <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -662,9 +696,12 @@ export const DataSubmission = () => {
                 </select>
               </div>
 
-              {/* 13. Volume Realisasi */}
+              {/* 13. Volume Realisasi / Nominasi */}
               <div className="input-group">
-                <label className="input-label">Volume Realisasi (bbls) <span style={{ color: 'var(--danger)' }}>*</span></label>
+                <label className="input-label">
+                  {form.pembelian === 'Domestik Proforma Lifting' ? 'Volume Nominasi (bbls)' : 'Volume Realisasi (bbls)'} 
+                  <span style={{ color: 'var(--danger)' }}> *</span>
+                </label>
                 <input type="number" className="input-control" placeholder="0" value={form.totalVolume} onChange={e => handleChange('totalVolume', e.target.value)} />
               </div>
             </div>
@@ -814,7 +851,7 @@ export const DataSubmission = () => {
                           color: l.pembelian === 'Import' ? '#ef4444' : '#00a651',
                           fontWeight: 600
                         }}>
-                          {l.pembelian || 'Domestik'}
+                            {l.pembelian === 'Domestik' ? 'Domestik Reguler' : (l.pembelian || 'Domestik Reguler')}
                         </span>
                       </td>
                       <td style={{ fontSize: '11px' }}>{l.skemaKomersialisasi || '-'}</td>
@@ -888,7 +925,7 @@ export const EditLifting = () => {
     dischargePort: '',
     kindOfTransaction: 'Provisional',
     jenisMm: '',
-    pembelian: 'Domestik',
+    pembelian: 'Domestik Reguler',
     bagianPembelian: '',
     kategoriInvoice: 'Provisional Invoice',
     totalVolume: '',
@@ -925,7 +962,7 @@ export const EditLifting = () => {
 
   useEffect(() => {
     if (!id) return;
-    const isSkemaEnabled = form.commodityType === 'Crude' && (form.pembelian === 'Domestik' || form.pembelian === 'Domestik Proforma Lifting');
+    const isSkemaEnabled = form.commodityType === 'Crude' && (form.pembelian === 'Domestik Reguler' || form.pembelian === 'Domestik Proforma Lifting');
     if (!isSkemaEnabled && form.skemaKomersialisasi !== 'N/A') {
       setForm(prev => ({ ...prev, skemaKomersialisasi: 'N/A' }));
     }
@@ -948,7 +985,7 @@ export const EditLifting = () => {
         dueDateInvoice: data.dueDateInvoice || '',
         dueDateFinal: data.dueDateFinal || '',
         kindOfTransaction: data.kindOfTransaction || 'Provisional',
-        pembelian: data.pembelian || 'Domestik',
+        pembelian: data.pembelian || 'Domestik Reguler',
         kategoriInvoice: data.kategoriInvoice || 'Provisional Invoice',
         totalVolume: data.totalVolume ?? '',
         volumeNominasi: data.volumeNominasi ?? '',
@@ -1181,7 +1218,7 @@ export const EditLifting = () => {
                     if (form.liftingCategory === 'PROFORMA LIFTING') {
                       return opt === 'Domestik Proforma Lifting';
                     } else {
-                      return opt === 'Import' || opt === 'Domestik';
+                      return opt === 'Import' || opt === 'Domestik Reguler';
                     }
                   }).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
@@ -1356,6 +1393,9 @@ export const EditLifting = () => {
                   <select className="input-control" disabled={isInvoiceReadOnly} value={form.kindOfTransaction} onChange={e => handleChange('kindOfTransaction', e.target.value)}>
                     {KIND_OF_TRANSACTION_OPTIONS
                       .filter(opt => {
+                        if (form.pembelian === 'Import') {
+                          return ['Provisional', 'Final'].includes(opt);
+                        }
                         if (form.liftingCategory === 'Reguler') {
                           return ['Provisional', 'Final'].includes(opt);
                         } else if (form.liftingCategory === 'PROFORMA LIFTING') {
@@ -1370,7 +1410,7 @@ export const EditLifting = () => {
                   <label className="input-label">Skema Komersialisasi {!isInvoiceReadOnly && form.kindOfTransaction !== 'Final' && <span className="text-danger">*</span>}</label>
                   {(() => {
                     const isSkemaEnabled = form.commodityType === 'Crude' &&
-                      (form.pembelian === 'Domestik' || form.pembelian === 'Domestik Proforma Lifting') &&
+                      (form.pembelian === 'Domestik Reguler' || form.pembelian === 'Domestik Proforma Lifting') &&
                       form.kindOfTransaction !== 'Final';
                     const value = isSkemaEnabled ? form.skemaKomersialisasi : 'N/A';
 
@@ -1408,16 +1448,18 @@ export const EditLifting = () => {
                   <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poMySap} onChange={e => handleChange('poMySap', e.target.value)} placeholder="Masukkan No. PO MySAP..." />
                 </div>
                 <div className="input-group">
-                  <label className="input-label">No. PO Hardcopy</label>
-                  <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} placeholder="Masukkan No. PO Hardcopy..." />
+                  <label className="input-label">No. PO Document</label>
+                  <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.poHardcopy} onChange={e => handleChange('poHardcopy', e.target.value)} placeholder="Masukkan No. PO Document..." />
                 </div>
 
+                {form.pembelian !== 'Import' && (
+                  <div className="input-group">
+                    <label className="input-label">No. Faktur Pajak</label>
+                    <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.fakturPajakNumber} onChange={e => handleChange('fakturPajakNumber', e.target.value)} placeholder="001.xxx-xx..." />
+                  </div>
+                )}
                 <div className="input-group">
-                  <label className="input-label">No. Faktur Pajak</label>
-                  <input type="text" className="input-control" disabled={isInvoiceReadOnly} value={form.fakturPajakNumber} onChange={e => handleChange('fakturPajakNumber', e.target.value)} placeholder="001.xxx-xx..." />
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Tanggal Faktur Pajak</label>
+                  <label className="input-label">{form.pembelian === 'Import' ? 'NORt Dated' : 'Tanggal Faktur Pajak'}</label>
                   <input type="date" className="input-control" disabled={isInvoiceReadOnly} value={form.fakturPajakDate} onChange={e => handleChange('fakturPajakDate', e.target.value)} />
                 </div>
 
@@ -1437,12 +1479,25 @@ export const EditLifting = () => {
                   <input
                     type="date"
                     className="input-control"
-                    disabled={isInvoiceReadOnly || form.kindOfTransaction.includes('Provisional')}
+                    disabled={isInvoiceReadOnly || form.kindOfTransaction === 'Provisional'}
                     value={form.dueDateFinal}
                     onChange={e => handleChange('dueDateFinal', e.target.value)}
-                    style={{ background: form.kindOfTransaction.includes('Provisional') ? '#f1f5f9' : 'white' }}
+                    style={{ background: form.kindOfTransaction === 'Provisional' ? '#f1f5f9' : 'white' }}
                   />
                 </div>
+                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="input-label">Total Price (USD/bbl) <span className="text-danger">*</span></label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className="input-control" 
+                    disabled={isInvoiceReadOnly} 
+                    value={form.priceUsdBbl} 
+                    onChange={e => handleChange('priceUsdBbl', e.target.value)} 
+                    style={{ fontWeight: 700, color: 'var(--accent)' }}
+                  />
+                </div>
+
                 {form.pembelian !== 'Import' && (
                   <div className="input-group">
                     <label className="input-label">Kurs BI (IDR/USD) <span className="text-danger">*</span></label>
@@ -1461,24 +1516,7 @@ export const EditLifting = () => {
                     )}
                   </div>
                 )}
-                <div className="input-group">
-                  <label className="input-label">Total Price (USD/bbl)</label>
-                  <div className="input-control" style={{ background: 'var(--bg-surface)', fontWeight: 700, color: 'var(--accent)' }}>
-                    ${(parseFloat(form.priceUsdBbl) || 0).toFixed(2)}
-                  </div>
-                </div>
-                <div className="input-group">
-                  <label className="input-label">Volume Check (%)</label>
-                  <div className="input-control" style={{
-                    background: 'var(--bg-surface)',
-                    fontWeight: 800,
-                    color: (Math.abs(((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) - (parseFloat(form.totalVolume) || 0)) < 1) ? 'var(--success)' : 'var(--danger)'
-                  }}>
-                    {parseFloat(form.totalVolume) > 0
-                      ? (((parseFloat(form.kkksVolume) || 0) + (parseFloat(form.skkVolume) || 0)) / parseFloat(form.totalVolume) * 100).toFixed(2) + '%'
-                      : '0.00%'}
-                  </div>
-                </div>
+
               </div>
 
               {form.pembelian !== 'Import' && form.kindOfTransaction !== 'Final' && (

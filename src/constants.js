@@ -43,7 +43,7 @@ export const STATUS_SP3_OPTIONS = [
 ];
 
 export const PEMBELIAN_OPTIONS = [
-  'Import', 'Domestik', 'Domestik Proforma Lifting',
+  'Import', 'Domestik Reguler', 'Domestik Proforma Lifting',
 ];
 
 export const SKEMA_KOMERSIALISASI_OPTIONS = [
