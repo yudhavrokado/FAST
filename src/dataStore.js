@@ -81,7 +81,17 @@ const SEED_DATA = {
     { id: 'NC-004', name: 'Naphtha', formula: 'MOPJ + Alpha', reference: 'MOPJ', alpha: 0, type: 'variable', price: 70.20 },
     { id: 'NC-005', name: 'UCO', formula: 'Fixed', reference: 'N/A', alpha: 0, type: 'fixed', price: 65.00 },
     { id: 'NC-006', name: 'RBDPO / KO', formula: 'Fixed', reference: 'N/A', alpha: 0, type: 'fixed', price: 62.50 },
-  ]
+  ],
+  loadingPorts: [
+    'Dumai', 'Cilacap', 'Balikpapan', 'Bontang', 'Merak', 'Tuban',
+    'Sungai Pakning', 'Tanjung Uban', 'Lawe-lawe', 'Sorong',
+    'Singapore', 'Rotterdam', 'Fujairah', 'Ras Tanura', 'Ruwais',
+  ].map((name, i) => ({ id: `LP-${i + 1}`, name })),
+  dischargePorts: [
+    'Dumai', 'Cilacap', 'Balikpapan', 'Bontang', 'Merak', 'Tuban',
+    'Sungai Pakning', 'Tanjung Uban', 'Lawe-lawe', 'Sorong',
+    'Plaju', 'Balongan', 'Kasim',
+  ].map((name, i) => ({ id: `DP-${i + 1}`, name })),
 };
 
 // ─── CORE DATABASE ENGINE (WITH SCHEMA MIGRATION) ───────────────────────────
@@ -128,6 +138,9 @@ export const initStore = () => {
         }
       });
     }
+
+    if (!current.loadingPorts) migrated.loadingPorts = SEED_DATA.loadingPorts;
+    if (!current.dischargePorts) migrated.dischargePorts = SEED_DATA.dischargePorts;
     
     localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
   }
@@ -140,6 +153,8 @@ const _db = () => {
   // Fail-safe defaults for new relational keys
   if (!db.crudes) db.crudes = SEED_DATA.crudes;
   if (!db.systemRef) db.systemRef = SEED_DATA.systemRef;
+  if (!db.loadingPorts) db.loadingPorts = SEED_DATA.loadingPorts;
+  if (!db.dischargePorts) db.dischargePorts = SEED_DATA.dischargePorts;
   return db;
 };
 
@@ -451,6 +466,46 @@ export const deleteNonCrude = (id) => {
   _save(db);
 };
 
+// ─── MASTER DATA: PORTS ────────────────────────────────────────────────────
+
+export const getLoadingPorts = () => _db().loadingPorts || [];
+export const saveLoadingPort = (port) => {
+  const db = _db();
+  if (!db.loadingPorts) db.loadingPorts = [];
+  if (port.id) {
+    const idx = db.loadingPorts.findIndex(p => p.id === port.id);
+    if (idx !== -1) db.loadingPorts[idx] = port;
+  } else {
+    port.id = `LP-${Date.now()}`;
+    db.loadingPorts.push(port);
+  }
+  _save(db);
+};
+export const deleteLoadingPort = (id) => {
+  const db = _db();
+  db.loadingPorts = db.loadingPorts.filter(p => p.id !== id);
+  _save(db);
+};
+
+export const getDischargePorts = () => _db().dischargePorts || [];
+export const saveDischargePort = (port) => {
+  const db = _db();
+  if (!db.dischargePorts) db.dischargePorts = [];
+  if (port.id) {
+    const idx = db.dischargePorts.findIndex(p => p.id === port.id);
+    if (idx !== -1) db.dischargePorts[idx] = port;
+  } else {
+    port.id = `DP-${Date.now()}`;
+    db.dischargePorts.push(port);
+  }
+  _save(db);
+};
+export const deleteDischargePort = (id) => {
+  const db = _db();
+  db.dischargePorts = db.dischargePorts.filter(p => p.id !== id);
+  _save(db);
+};
+
 // ─── STATISTICS & HELPERS ──────────────────────────────────────────────────
 
 export const getStats = () => {
@@ -474,5 +529,5 @@ export const generateAndAssignInvoiceId = (id) => {
 export {
   STATUS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, JENIS_MM_OPTIONS,
   KATEGORI_INVOICE_OPTIONS, KIND_OF_TRANSACTION_OPTIONS,
-  STATUS_SP3_OPTIONS, PEMBELIAN_OPTIONS, SKEMA_KOMERSIALISASI_OPTIONS, COMMODITY_OPTIONS
+  STATUS_SP3_OPTIONS, PEMBELIAN_OPTIONS, SKEMA_KOMERSIALISASI_OPTIONS, COMMODITY_OPTIONS, IMPORT_TERM_OPTIONS
 } from './constants';

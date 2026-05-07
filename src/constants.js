@@ -55,3 +55,7 @@ export const SKEMA_KOMERSIALISASI_OPTIONS = [
 export const COMMODITY_OPTIONS = [
   'Crude', 'Non Crude',
 ];
+
+export const IMPORT_TERM_OPTIONS = [
+  'CFR', 'DAP', 'FOB',
+];

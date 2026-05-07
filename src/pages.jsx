@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare, X, Eye, Bell, MapPin, Zap, Info } from 'lucide-react';
+import { Calendar, Activity, DollarSign, AlertCircle, CheckCircle, Upload, Save, FileText, Download, ChevronLeft, Search, Plus, Edit2, Trash2, Filter, MoreHorizontal, ArrowUpDown, CheckSquare, X, Eye, Bell, MapPin, Zap, Info, Anchor } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import {
   getAllLiftings, getLiftingById, createDraft, updateLifting, submitLifting, lockLifting, createAndSubmit,
@@ -12,9 +12,10 @@ import {
   getKursBIList, getLatestKursBI, saveKursBI, deleteKursBI, saveK3S, saveSupplier, deleteK3S, deleteSupplier,
   getVatList, saveVat, deleteVat,
   getNonCrudeList, saveNonCrude, deleteNonCrude,
+  getLoadingPorts, saveLoadingPort, deleteLoadingPort, getDischargePorts, saveDischargePort, deleteDischargePort,
   STATUS, JENIS_MM_OPTIONS,
   KATEGORI_INVOICE_OPTIONS, LOAD_PORT_OPTIONS, DISCHARGE_PORT_OPTIONS, KIND_OF_TRANSACTION_OPTIONS, STATUS_SP3_OPTIONS,
-  PEMBELIAN_OPTIONS, SKEMA_KOMERSIALISASI_OPTIONS, COMMODITY_OPTIONS, generateAndAssignInvoiceId
+  PEMBELIAN_OPTIONS, SKEMA_KOMERSIALISASI_OPTIONS, COMMODITY_OPTIONS, IMPORT_TERM_OPTIONS, generateAndAssignInvoiceId
 } from './dataStore';
 export const Dashboard = () => {
   const [viewMode, setViewMode] = useState('gabungan');
@@ -251,6 +252,8 @@ export const DataSubmission = () => {
   const [tab, setTab] = useState('manual');
   const navigate = useNavigate();
   const kkksList = getKKKSList();
+  const loadingPorts = getLoadingPorts();
+  const dischargePorts = getDischargePorts();
 
   // Mock current user mapping: Pertamina EP
   const MAPPED_K3S = 'Pertamina EP';
@@ -262,6 +265,9 @@ export const DataSubmission = () => {
     jenisMm: '',
     blNumber: '',
     blDate: '',
+    blDateStart: '',
+    blDateEnd: '',
+    importTerm: '',
     tipeLifting: 'vessel',
     vesselName: '',
     loadPort: '',
@@ -307,6 +313,22 @@ export const DataSubmission = () => {
   const handleChange = (field, value) => {
     setForm(prev => {
       const newForm = { ...prev, [field]: value };
+      
+      // Logic for Pipeline B/L Dated Range
+      if (field === 'tipeLifting' && value === 'pipeline') {
+        if (newForm.blDateStart && newForm.blDateEnd) {
+          newForm.blDate = `${newForm.blDateStart} to ${newForm.blDateEnd}`;
+        }
+      } else if (newForm.tipeLifting === 'pipeline' && (field === 'blDateStart' || field === 'blDateEnd')) {
+        const start = field === 'blDateStart' ? value : prev.blDateStart;
+        const end = field === 'blDateEnd' ? value : prev.blDateEnd;
+        if (start && end) {
+          newForm.blDate = `${start} to ${end}`;
+        } else {
+          newForm.blDate = start || end || '';
+        }
+      }
+
       if (field === 'liftingCategory') {
         if (value === 'PROFORMA LIFTING') {
           newForm.pembelian = 'Domestik Proforma Lifting';
@@ -316,6 +338,8 @@ export const DataSubmission = () => {
       }
       if (field === 'pembelian' && value === 'Import') {
         newForm.skemaKomersialisasi = '';
+      } else if (field === 'pembelian' && value !== 'Import') {
+        newForm.importTerm = '';
       }
       if (field === 'pembelian' && value === 'Domestik Proforma Lifting') {
         newForm.commodityType = 'Crude';
@@ -342,8 +366,9 @@ export const DataSubmission = () => {
   };
 
   const handleSaveDataLifting = () => {
-    if (!form.periodeLiftingBulan || !form.periodeLiftingTahun || !form.seller || !form.jenisMm || !form.blDate) {
-      showToast('Lengkapi data mandatory (*): Periode, Seller, Jenis Cargo, dan BL Date', 'error'); return;
+    const isPipelineRangeValid = form.tipeLifting === 'pipeline' ? (form.blDateStart && form.blDateEnd) : true;
+    if (!form.periodeLiftingBulan || !form.periodeLiftingTahun || !form.seller || !form.jenisMm || !form.blDate || !isPipelineRangeValid) {
+      showToast('Lengkapi data mandatory (*): Periode, Seller, Jenis Cargo, dan BL Date (Range jika Pipeline)', 'error'); return;
     }
     createDraft(form);
     showToast('Data Lifting berhasil disimpan sebagai Draft.');
@@ -584,6 +609,17 @@ export const DataSubmission = () => {
                 </select>
               </div>
 
+              {/* 3. Import Term (Conditional) */}
+              {form.pembelian === 'Import' && (
+                <div className="input-group">
+                  <label className="input-label">Import Term <span style={{ color: 'var(--danger)' }}>*</span></label>
+                  <select className="input-control" value={form.importTerm} onChange={e => handleChange('importTerm', e.target.value)}>
+                    <option value="">-- Pilih Import Term --</option>
+                    {IMPORT_TERM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+              )}
+
 
 
               {/* 4. Periode Lifting */}
@@ -642,8 +678,18 @@ export const DataSubmission = () => {
               {form.pembelian !== 'Domestik Proforma Lifting' ? (
                 <>
                   <div className="input-group">
-                    <label className="input-label">B/L Dated <span style={{ color: 'var(--danger)' }}>*</span></label>
-                    <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                    <label className="input-label">
+                      {form.tipeLifting === 'pipeline' ? 'Pipeline B/L Dated (Range)' : 'B/L Dated'} 
+                      <span style={{ color: 'var(--danger)' }}>*</span>
+                    </label>
+                    {form.tipeLifting === 'pipeline' ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <input type="date" className="input-control" value={form.blDateStart || ''} onChange={e => handleChange('blDateStart', e.target.value)} />
+                        <input type="date" className="input-control" value={form.blDateEnd || ''} onChange={e => handleChange('blDateEnd', e.target.value)} />
+                      </div>
+                    ) : (
+                      <input type="date" className="input-control" value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                    )}
                   </div>
                   <div className="input-group">
                     <label className="input-label">B/L Number <span style={{ color: 'var(--danger)' }}>*</span></label>
@@ -683,7 +729,7 @@ export const DataSubmission = () => {
                 <label className="input-label">Loading Port</label>
                 <select className="input-control" value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
                   <option value="">-- Pilih Loading Port --</option>
-                  {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
+                  {loadingPorts.map(lp => <option key={lp.id} value={lp.name}>{lp.name}</option>)}
                 </select>
               </div>
 
@@ -692,7 +738,7 @@ export const DataSubmission = () => {
                 <label className="input-label">Discharge Port</label>
                 <select className="input-control" value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
                   <option value="">-- Pilih Discharge Port --</option>
-                  {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
+                  {dischargePorts.map(dp => <option key={dp.id} value={dp.name}>{dp.name}</option>)}
                 </select>
               </div>
 
@@ -907,6 +953,8 @@ export const EditLifting = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const kkksList = getKKKSList();
+  const loadingPorts = getLoadingPorts();
+  const dischargePorts = getDischargePorts();
 
   const emptyForm = {
     invoiceNumber: '',
@@ -917,6 +965,9 @@ export const EditLifting = () => {
     fakturPajakDate: '',
     blNumber: '',
     blDate: '',
+    blDateStart: '',
+    blDateEnd: '',
+    importTerm: '',
     kkks: '',
     vesselName: '',
     isPipeline: false,
@@ -1109,6 +1160,22 @@ export const EditLifting = () => {
   const handleChange = (field, value) => {
     setForm(prev => {
       const newForm = { ...prev, [field]: value };
+
+      // Logic for Pipeline B/L Dated Range
+      if (field === 'tipeLifting' && value === 'pipeline') {
+        if (newForm.blDateStart && newForm.blDateEnd) {
+          newForm.blDate = `${newForm.blDateStart} to ${newForm.blDateEnd}`;
+        }
+      } else if (newForm.tipeLifting === 'pipeline' && (field === 'blDateStart' || field === 'blDateEnd')) {
+        const start = field === 'blDateStart' ? value : prev.blDateStart;
+        const end = field === 'blDateEnd' ? value : prev.blDateEnd;
+        if (start && end) {
+          newForm.blDate = `${start} to ${end}`;
+        } else {
+          newForm.blDate = start || end || '';
+        }
+      }
+
       if (field === 'liftingCategory') {
         if (value === 'PROFORMA LIFTING') {
           newForm.pembelian = 'Domestik Proforma Lifting';
@@ -1118,6 +1185,8 @@ export const EditLifting = () => {
       }
       if (field === 'pembelian' && value === 'Import') {
         newForm.skemaKomersialisasi = '';
+      } else if (field === 'pembelian' && value !== 'Import') {
+        newForm.importTerm = '';
       }
       if (field === 'kindOfTransaction' && value === 'Final') {
         newForm.skemaKomersialisasi = 'N/A';
@@ -1232,6 +1301,17 @@ export const EditLifting = () => {
                 </select>
               </div>
 
+              {/* Import Term (Conditional) */}
+              {form.pembelian === 'Import' && (
+                <div className="input-group">
+                  <label className="input-label">Import Term <span className="text-danger">*</span></label>
+                  <select className="input-control" disabled={isLiftingReadOnly} value={form.importTerm} onChange={e => handleChange('importTerm', e.target.value)}>
+                    <option value="">-- Pilih Import Term --</option>
+                    {IMPORT_TERM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+              )}
+
               {/* 3. Kategori Lifting */}
               <div className="input-group" style={{ gridColumn: 'span 2' }}>
                 <label className="input-label">Kategori Lifting</label>
@@ -1310,8 +1390,17 @@ export const EditLifting = () => {
               ) : (
                 <>
                   <div className="input-group">
-                    <label className="input-label">B/L Dated</label>
-                    <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                    <label className="input-label">
+                      {form.tipeLifting === 'pipeline' ? 'Pipeline B/L Dated (Range)' : 'B/L Dated'}
+                    </label>
+                    {form.tipeLifting === 'pipeline' ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDateStart || ''} onChange={e => handleChange('blDateStart', e.target.value)} />
+                        <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDateEnd || ''} onChange={e => handleChange('blDateEnd', e.target.value)} />
+                      </div>
+                    ) : (
+                      <input type="date" className="input-control" disabled={isLiftingReadOnly} value={form.blDate} onChange={e => handleChange('blDate', e.target.value)} />
+                    )}
                   </div>
                   <div className="input-group">
                     <label className="input-label">B/L Number</label>
@@ -1340,7 +1429,7 @@ export const EditLifting = () => {
                 <label className="input-label">Loading Port</label>
                 <select className="input-control" disabled={isReadOnly} value={form.loadPort} onChange={e => handleChange('loadPort', e.target.value)}>
                   <option value="">-- Pilih Loading Port --</option>
-                  {LOAD_PORT_OPTIONS.map(lp => <option key={lp} value={lp}>{lp}</option>)}
+                  {loadingPorts.map(lp => <option key={lp.id} value={lp.name}>{lp.name}</option>)}
                 </select>
               </div>
 
@@ -1349,7 +1438,7 @@ export const EditLifting = () => {
                 <label className="input-label">Discharge Port</label>
                 <select className="input-control" disabled={isReadOnly} value={form.dischargePort} onChange={e => handleChange('dischargePort', e.target.value)}>
                   <option value="">-- Pilih Discharge Port --</option>
-                  {DISCHARGE_PORT_OPTIONS.map(dp => <option key={dp} value={dp}>{dp}</option>)}
+                  {dischargePorts.map(dp => <option key={dp.id} value={dp.name}>{dp.name}</option>)}
                 </select>
               </div>
 
@@ -1824,6 +1913,8 @@ export const MasterDataPage = () => {
   const [vatList, setVatList] = useState([]);
   const [kursBIList, setKursBIList] = useState([]);
   const [nonCrudeList, setNonCrudeList] = useState([]);
+  const [loadingPortList, setLoadingPortList] = useState([]);
+  const [dischargePortList, setDischargePortList] = useState([]);
 
   const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   const years = [2024, 2025, 2026, 2027];
@@ -1839,6 +1930,8 @@ export const MasterDataPage = () => {
     setVatList(getVatList());
     setKursBIList(getKursBIList());
     setNonCrudeList(getNonCrudeList());
+    setLoadingPortList(getLoadingPorts());
+    setDischargePortList(getDischargePorts());
   };
 
   const refreshIcpData = () => {
@@ -1915,6 +2008,12 @@ export const MasterDataPage = () => {
     } else if (editSection === 'nonCrude') {
       saveNonCrude(editingItem);
       showToast('Data Produk Non-Crude berhasil disimpan');
+    } else if (editSection === 'loadingPort') {
+      saveLoadingPort(editingItem);
+      showToast('Loading Port berhasil diperbarui');
+    } else if (editSection === 'dischargePort') {
+      saveDischargePort(editingItem);
+      showToast('Discharge Port berhasil diperbarui');
     }
     refreshOtherData();
     setEditSection(null);
@@ -2389,6 +2488,84 @@ export const MasterDataPage = () => {
     </div>
   );
 
+  const renderPortsTab = () => (
+    <div className="animate-fade-in">
+      <div className="grid-cols-2 gap-8">
+        {/* Loading Ports Section */}
+        <div className="card shadow-sm" style={{ border: '1px solid var(--border)' }}>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-bold flex items-center gap-2"><MapPin size={18} color="var(--accent)" /> Loading Ports</h3>
+            <button className="btn btn-sm btn-primary" onClick={() => { setEditSection('loadingPort'); setEditingItem({ name: '' }); }}><Plus size={12} /> Tambah</button>
+          </div>
+          <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa', position: 'sticky', top: 0, zIndex: 1 }}>
+                  <th style={{ padding: '12px 16px' }}>Nama Port</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingPortList.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 500 }}>{p.name}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                      <div className="flex gap-2 justify-end">
+                        <button className="btn btn-sm btn-outline" style={{ padding: '4px' }} onClick={() => { setEditSection('loadingPort'); setEditingItem(p); }}>
+                          <Edit2 size={12} />
+                        </button>
+                        <button className="btn btn-sm btn-outline text-danger" style={{ padding: '4px' }} onClick={() => { if (window.confirm('Hapus loading port ini?')) { deleteLoadingPort(p.id); refreshOtherData(); showToast('Port berhasil dihapus'); } }}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {loadingPortList.length === 0 && <tr><td colSpan={2} className="text-center py-8 text-muted">Belum ada data.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Discharge Ports Section */}
+        <div className="card shadow-sm" style={{ border: '1px solid var(--border)' }}>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-bold flex items-center gap-2"><Anchor size={18} color="var(--success)" /> Discharge Ports</h3>
+            <button className="btn btn-sm btn-primary" onClick={() => { setEditSection('dischargePort'); setEditingItem({ name: '' }); }}><Plus size={12} /> Tambah</button>
+          </div>
+          <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: '#fafafa', position: 'sticky', top: 0, zIndex: 1 }}>
+                  <th style={{ padding: '12px 16px' }}>Nama Port</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dischargePortList.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 500 }}>{p.name}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                      <div className="flex gap-2 justify-end">
+                        <button className="btn btn-sm btn-outline" style={{ padding: '4px' }} onClick={() => { setEditSection('dischargePort'); setEditingItem(p); }}>
+                          <Edit2 size={12} />
+                        </button>
+                        <button className="btn btn-sm btn-outline text-danger" style={{ padding: '4px' }} onClick={() => { if (window.confirm('Hapus discharge port ini?')) { deleteDischargePort(p.id); refreshOtherData(); showToast('Port berhasil dihapus'); } }}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {dischargePortList.length === 0 && <tr><td colSpan={2} className="text-center py-8 text-muted">Belum ada data.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="animate-fade-in">
       {/* Toast */}
@@ -2398,6 +2575,7 @@ export const MasterDataPage = () => {
         <button className={`btn ${activeTab === 'icp' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('icp')} style={{ padding: '10px 24px', borderRadius: '10px' }}>ICP & Harga Referensi</button>
         <button className={`btn ${activeTab === 'non-crude' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('non-crude')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Non-Crude</button>
         <button className={`btn ${activeTab === 'kursBI' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('kursBI')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Kurs BI (IDR/USD)</button>
+        <button className={`btn ${activeTab === 'ports' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('ports')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Master Port</button>
         <button className={`btn ${activeTab === 'k3s' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('k3s')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Partner K3S & Supplier</button>
         <button className={`btn ${activeTab === 'vat' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setActiveTab('vat')} style={{ padding: '10px 24px', borderRadius: '10px' }}>Master Data VAT</button>
       </div>
@@ -2410,6 +2588,9 @@ export const MasterDataPage = () => {
 
       {/* Kurs BI Tab */}
       {activeTab === 'kursBI' && renderKursBITab()}
+
+      {/* Ports Tab */}
+      {activeTab === 'ports' && renderPortsTab()}
 
       {/* K3S Tab */}
       {activeTab === 'k3s' && (
@@ -2601,6 +2782,31 @@ export const MasterDataPage = () => {
             <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
               <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
               <button className="btn btn-primary" onClick={handleSaveRef}><Save size={16} /> Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Ports (Loading or Discharge) */}
+      {(editSection === 'loadingPort' || editSection === 'dischargePort') && editingItem && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="card shadow-lg animate-scale-in" style={{ width: '100%', maxWidth: '450px', padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div className="flex justify-between items-center mb-6 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                {editSection === 'loadingPort' ? <MapPin size={20} color="var(--accent)" /> : <Anchor size={20} color="var(--success)" />}
+                {editingItem.id ? `Edit ${editSection === 'loadingPort' ? 'Loading' : 'Discharge'} Port` : `Tambah ${editSection === 'loadingPort' ? 'Loading' : 'Discharge'} Port`}
+              </h2>
+              <button onClick={() => setEditSection(null)} className="btn btn-sm" style={{ border: 'none', padding: '6px' }}><X size={20} /></button>
+            </div>
+            <div className="grid gap-4 mb-6">
+              <div className="input-group">
+                <label className="input-label">Nama Port</label>
+                <input type="text" className="input-control" placeholder="Contoh: Dumai" value={editingItem.name} onChange={e => setEditingItem({ ...editingItem, name: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+              <button className="btn btn-outline" onClick={() => setEditSection(null)}>Batal</button>
+              <button className="btn btn-primary" onClick={handleSaveOther}><Save size={16} /> Simpan Port</button>
             </div>
           </div>
         </div>
