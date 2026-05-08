@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FAST System Settlement — Executive Summary Dashboard">
+  <title>Executive Summary — FAST Settlement</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebar-root"></div>
+    <div class="main-content">
+      <div id="topnav-root"></div>
+      <div class="page-container">
+        <div class="animate-fade-in" id="page-content">
+
+          <!-- Exception Signal Banner -->
+          <div class="exception-banner">
+            <div class="d-flex align-items-center gap-2">
+              <span class="pulse-dot" style="width:9px;height:9px"></span>
+              <span style="font-weight:700;color:#ef4444;font-size:13px">EXCEPTION SIGNAL AKTIF</span>
+            </div>
+            <span style="color:var(--fast-text-muted);font-size:13px">
+              3 invoice sudah <strong style="color:#ef4444">Overdue</strong>, 2 invoice jatuh tempo dalam <strong style="color:#f59e0b">≤ 3 hari</strong> — total eksposur <strong>$129.5M</strong> belum dibayar.
+            </span>
+            <a href="exception-signal.html" style="margin-left:auto;font-size:12px;color:#ef4444;text-decoration:underline;font-weight:600;white-space:nowrap">Lihat Exception Signal →</a>
+          </div>
+
+          <!-- Header -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div>
+              <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Dashboard Realisasi & Estimasi</h1>
+              <p class="text-muted mt-1 mb-0" style="font-size:13px">Gambaran umum penyelesaian transaksi Feedstock & KKKS</p>
+            </div>
+            <button class="btn btn-fast-primary" onclick="exportSummary()"><i class="bi bi-activity"></i> Unduh Ringkasan</button>
+          </div>
+
+          <!-- KPI Cards -->
+          <div class="row g-3 mb-4" id="kpi-cards"></div>
+
+          <!-- Charts Row -->
+          <div class="row g-3 mb-4">
+            <div class="col-lg-6">
+              <div class="fast-card" style="height:340px">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <h6 class="fw-semibold mb-0">Pergerakan Harga ICP & Dated Brent</h6>
+                  <div class="d-flex gap-3" style="font-size:12px">
+                    <span style="color:#00529c;font-weight:600">● ICP</span>
+                    <span style="color:#f59e0b;font-weight:600">● Brent</span>
+                  </div>
+                </div>
+                <div style="font-size:12px;color:var(--fast-text-muted);margin-bottom:8px">
+                  ICP Mar: <strong style="color:var(--fast-accent)">$82.45/bbl</strong> &nbsp;|&nbsp; Brent: <strong style="color:#f59e0b">$74.85/bbl</strong>
+                </div>
+                <canvas id="priceChart" style="max-height:240px"></canvas>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="fast-card" style="height:340px">
+                <h6 class="fw-semibold mb-3">Tren Realisasi vs Estimasi Lifting</h6>
+                <canvas id="trendChart" style="max-height:270px"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Loadport -->
+          <div class="row g-3 mb-4">
+            <div class="col-lg-6">
+              <div class="fast-card">
+                <h6 class="fw-semibold mb-3 d-flex align-items-center gap-2">
+                  <i class="bi bi-geo-alt" style="color:var(--fast-accent)"></i> Top Loadport Import
+                </h6>
+                <div id="loadport-import"></div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="fast-card">
+                <h6 class="fw-semibold mb-3 d-flex align-items-center gap-2">
+                  <i class="bi bi-geo-alt" style="color:var(--fast-success)"></i> Top Loadport Domestik
+                </h6>
+                <div id="loadport-domestik"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transaction Table -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <h5 class="fw-semibold mb-0">Rincian Transaksi Lifting</h5>
+            <div class="fast-tab-container" id="viewModeTabs">
+              <button class="fast-tab-btn active" onclick="filterInvoices('gabungan',this)">Gabungan</button>
+              <button class="fast-tab-btn" onclick="filterInvoices('estimasi',this)">Estimasi</button>
+              <button class="fast-tab-btn" onclick="filterInvoices('realisasi',this)">Realisasi</button>
+            </div>
+          </div>
+          <div class="fast-table-wrap">
+            <div class="table-responsive">
+              <table class="table mb-0">
+                <thead>
+                  <tr>
+                    <th>No. Referensi</th><th>Tanggal</th><th>KKKS Tertaut</th>
+                    <th>Tipe Data</th><th>Volume (BBL)</th><th>Total Nilai (USD)</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="invoice-tbody"></tbody>
+              </table>
+            </div>
+            <div class="table-footer-bar">
+              <span id="invoice-count">Menampilkan 0 baris data</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
