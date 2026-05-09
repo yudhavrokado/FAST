@@ -138,7 +138,12 @@ async function saveDraft() {
 }
 
 function renderLiftingTable() {
-  const search = (document.getElementById('liftingSearch').value || '').toLowerCase();
+  const searchEl = document.getElementById('liftingSearch');
+  const search = (searchEl ? searchEl.value : '').toLowerCase();
+  if (!FAST_DATA || !FAST_DATA.Fact_Lifting) {
+    document.getElementById('lifting-tbody').innerHTML = '<tr><td colspan="14" class="text-center py-4 text-danger">Gagal memuat data dari server.</td></tr>';
+    return;
+  }
   const filtered = FAST_DATA.Fact_Lifting.filter(l => {
     const p = FAST_DATA.Dim_Partner.find(pt => pt.PartnerKey === l.PartnerKey) || {};
     const c = FAST_DATA.Dim_Crude.find(cr => cr.CrudeKey === l.CrudeKey) || {};

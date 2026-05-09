@@ -35,12 +35,13 @@ const SEED_DATA = {
     { StatusKey: 2, StatusCode: 'lifting_locked', StatusLabel: 'Lifting Locked', CssClass: 'bg-purple-subtle text-purple' },
     { StatusKey: 3, StatusCode: 'submitted', StatusLabel: 'Submitted', CssClass: 'bg-info-subtle text-info' },
     { StatusKey: 4, StatusCode: 'revisi', StatusLabel: 'Need Revision', CssClass: 'bg-warning-subtle text-warning' },
-    { StatusKey: 5, StatusCode: 'approved', StatusLabel: 'Approved', CssClass: 'bg-success-subtle text-success' },
-    { StatusKey: 6, StatusCode: 'rejected', StatusLabel: 'Rejected', CssClass: 'bg-danger-subtle text-danger' }
+    { StatusKey: 5, StatusCode: 'approved_provisional', StatusLabel: 'Approved Provisional', CssClass: 'bg-success-subtle text-success' },
+    { StatusKey: 6, StatusCode: 'approved_final', StatusLabel: 'Approved Final', CssClass: 'bg-success-subtle text-success' },
+    { StatusKey: 7, StatusCode: 'rejected', StatusLabel: 'Rejected', CssClass: 'bg-danger-subtle text-danger' },
+    { StatusKey: 8, StatusCode: 'draft_penagihan', StatusLabel: 'Drafted Penagihan', CssClass: 'bg-secondary-subtle text-secondary' },
+    { StatusKey: 9, StatusCode: 'submitted_adjustment', StatusLabel: 'Submitted Adjustment', CssClass: 'bg-info-subtle text-info' }
   ],
   Fact_Lifting: [
-    // Data di bawah ini adalah data awal (SEED). Data yang Anda input via form disimpan di localStorage browser,
-    // sehingga TIDAK AKAN tertulis secara langsung ke dalam file data.js ini.
     { LiftingKey: 1, LiftingID: 'LFT-20260401-X1A2', StatusKey: 1, TransactionType: 'Import', LiftingType: 'Vessel', CommodityType: 'Crude', BLDate: '2026-05-01', BLNumber: 'BL-2026/05-01', PartnerKey: 1, CrudeKey: 1, VolumeBbls: 150000, LoadPortKey: 1, DischargePortKey: 2, CreatedAt: '2026-05-01T10:00:00Z', PeriodBulan: '05', PeriodTahun: '2026' }
   ],
   Fact_Settlement: [],
@@ -52,14 +53,14 @@ const SEED_DATA = {
 };
 
 // --- DB Engine (API Connected) ---
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'http://localhost:3001/api';
 
-window.FAST_DATA = {}; // Will be populated by the backend
+window.FAST_DATA = SEED_DATA; // Start with seeds
 
-// Fetch all initial data from backend
+// Fetch all initial data from backend with Cache Busting
 async function initFASTData(callback) {
   try {
-    const res = await fetch(`${API_BASE}/sync`);
+    const res = await fetch(`${API_BASE}/sync?t=${Date.now()}`);
     const json = await res.json();
     if (json.success) {
       window.FAST_DATA = json.data;
@@ -67,12 +68,9 @@ async function initFASTData(callback) {
     }
   } catch (error) {
     console.error("Gagal terhubung ke Backend:", error);
-    showToast("Gagal mengambil data dari server. Pastikan backend aktif.", "error");
+    showToast("Gagal mengambil data dari server. Menggunakan data lokal (Offline Mode).", "warning");
   }
 }
-
-// Ensure backward compatibility: wait for DOM and fetch data before triggering original events
-// Note: individual pages will now call initFASTData directly
 
 // --- CRUD FACT_LIFTING ---
 function generateId(prefix) {
@@ -100,33 +98,31 @@ async function createDraft(data) {
   return null;
 }
 
-function updateLifting(id, data) {
-  // Simulasi sinkron sementara (belum ada endpoint PUT di server.js)
-  // Nantinya diubah menjadi fetch(..., { method: 'PUT' })
-  const idx = window.FAST_DATA.Fact_Lifting.findIndex(l => l.LiftingID === id);
-  if (idx > -1) {
-    window.FAST_DATA.Fact_Lifting[idx] = { ...window.FAST_DATA.Fact_Lifting[idx], ...data, UpdatedAt: new Date().toISOString() };
-    return window.FAST_DATA.Fact_Lifting[idx];
+async function updateLifting(id, data) {
+  try {
+    const res = await fetch(`${API_BASE}/fact/lifting/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (json.success) {
+      const idx = window.FAST_DATA.Fact_Lifting.findIndex(l => l.LiftingID === id);
+      if (idx !== -1) window.FAST_DATA.Fact_Lifting[idx] = json.data;
+      return json.data;
+    }
+  } catch (error) {
+    console.error("Gagal memperbarui data:", error);
+    showToast("Gagal memperbarui data ke server.", "error");
   }
   return null;
 }
 
 function deleteLifting(id) {
-  // Simulasi DELETE
   window.FAST_DATA.Fact_Lifting = window.FAST_DATA.Fact_Lifting.filter(l => l.LiftingID !== id);
 }
 
-function createSettlement(data) {
-  // Simulasi POST ke Fact_Settlement
-  window.FAST_DATA.Fact_Settlement.push({
-    SettlementKey: Date.now(),
-    PaymentStatus: 'Unpaid',
-    ...data
-  });
-}
-
 function lockLifting(id) {
-  // Simulasi sinkron
   const idx = window.FAST_DATA.Fact_Lifting.findIndex(l => l.LiftingID === id);
   if (idx > -1) {
     window.FAST_DATA.Fact_Lifting[idx].StatusKey = 2; // Locked
@@ -159,14 +155,17 @@ function rejectLifting(id, notes) {
 // --- UTILITIES ---
 function getLiftingDetail(id) {
   const db = window.FAST_DATA;
+  if (!db || !db.Fact_Lifting) return null;
   const lifting = db.Fact_Lifting.find(l => l.LiftingID === id);
   if (!lifting) return null;
 
   return {
     ...lifting,
-    Partner: db.Dim_Partner.find(p => p.PartnerName === lifting.Seller) || {},
-    Crude: db.Dim_Crude.find(c => c.CrudeCode === lifting.Commodity) || {},
-    Status: db.Dim_Status.find(s => s.StatusKey === lifting.StatusKey) || {}
+    Partner: db.Dim_Partner.find(p => p.PartnerKey === lifting.PartnerKey) || {},
+    Crude: db.Dim_Crude.find(c => c.CrudeKey === lifting.CrudeKey) || {},
+    LoadPort: db.Dim_Port.find(p => p.PortKey === lifting.LoadPortKey) || {},
+    DischargePort: db.Dim_Port.find(p => p.PortKey === lifting.DischargePortKey) || {},
+    Status: db.Dim_Status.find(s => s.StatusKey === lifting.StatusKey) || { StatusLabel: 'Unknown', StatusCode: 'unknown' }
   };
 }
 
@@ -181,12 +180,13 @@ function formatCurrency(num) {
 }
 
 function getStatusBadge(statusKey) {
-  const db = _db();
+  const db = window.FAST_DATA;
   const s = db.Dim_Status.find(st => st.StatusKey === statusKey) || { StatusLabel: 'Unknown', CssClass: 'bg-light text-muted' };
   return `<span class="badge rounded-pill ${s.CssClass}" style="font-size:11px;font-weight:700;padding:5px 12px">${s.StatusLabel}</span>`;
 }
 
-// Exports (for browser window)
+// Exports
+window.initFASTData = initFASTData;
 window.createDraft = createDraft;
 window.updateLifting = updateLifting;
 window.deleteLifting = deleteLifting;

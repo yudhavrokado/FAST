@@ -1,0 +1,329 @@
+{
+  "Dim_Partner": [
+    {
+      "PartnerKey": 1,
+      "PartnerID": "K3S-001",
+      "PartnerName": "Pertamina Hulu Mahakam",
+      "PartnerType": "KKKS",
+      "Country": "Indonesia"
+    },
+    {
+      "PartnerKey": 2,
+      "PartnerID": "K3S-002",
+      "PartnerName": "Chevron Pacific Indonesia",
+      "PartnerType": "KKKS",
+      "Country": "USA"
+    },
+    {
+      "PartnerKey": 3,
+      "PartnerID": "SUP-001",
+      "PartnerName": "Shell Trading",
+      "PartnerType": "Supplier",
+      "Country": "Singapore"
+    }
+  ],
+  "Dim_Crude": [
+    {
+      "CrudeKey": 1,
+      "CrudeName": "SLC (Sumatra Light Crude)",
+      "CrudeCode": "SLC",
+      "IsDerived": 0,
+      "BaseCrudeKey": null,
+      "RefType": "Brent",
+      "Alpha": 1.5
+    },
+    {
+      "CrudeKey": 2,
+      "CrudeName": "Banyu Urip",
+      "CrudeCode": "BU",
+      "IsDerived": 0,
+      "BaseCrudeKey": null,
+      "RefType": "Brent",
+      "Alpha": -0.5
+    },
+    {
+      "CrudeKey": 3,
+      "CrudeName": "Attaka",
+      "CrudeCode": "ATT",
+      "IsDerived": 1,
+      "BaseCrudeKey": 1,
+      "RefType": "Brent",
+      "Alpha": 0.2
+    }
+  ],
+  "Dim_Port": [
+    {
+      "PortKey": 1,
+      "PortName": "Dumai Terminal",
+      "PortType": "Loading",
+      "Country": "Indonesia"
+    },
+    {
+      "PortKey": 2,
+      "PortName": "Senipah Terminal",
+      "PortType": "Loading",
+      "Country": "Indonesia"
+    },
+    {
+      "PortKey": 3,
+      "PortName": "Cilacap Ref. Port",
+      "PortType": "Discharge",
+      "Country": "Indonesia"
+    }
+  ],
+  "Dim_Status": [
+    {
+      "StatusKey": 1,
+      "StatusCode": "draft",
+      "StatusLabel": "Drafted",
+      "CssClass": "bg-secondary-subtle text-secondary"
+    },
+    {
+      "StatusKey": 2,
+      "StatusCode": "lifting_locked",
+      "StatusLabel": "Lifting Locked",
+      "CssClass": "bg-purple-subtle text-purple"
+    },
+    {
+      "StatusKey": 3,
+      "StatusCode": "submitted",
+      "StatusLabel": "Submitted",
+      "CssClass": "bg-info-subtle text-info"
+    },
+    {
+      "StatusKey": 4,
+      "StatusCode": "revisi",
+      "StatusLabel": "Need Revision",
+      "CssClass": "bg-warning-subtle text-warning"
+    },
+    {
+      "StatusKey": 5,
+      "StatusCode": "approved_provisional",
+      "StatusLabel": "Approved Provisional",
+      "CssClass": "bg-success-subtle text-success"
+    },
+    {
+      "StatusKey": 6,
+      "StatusCode": "approved_final",
+      "StatusLabel": "Approved Final",
+      "CssClass": "bg-success-subtle text-success"
+    },
+    {
+      "StatusKey": 7,
+      "StatusCode": "rejected",
+      "StatusLabel": "Rejected",
+      "CssClass": "bg-danger-subtle text-danger"
+    },
+    {
+      "StatusKey": 8,
+      "StatusCode": "draft_penagihan",
+      "StatusLabel": "Drafted Penagihan",
+      "CssClass": "bg-secondary-subtle text-secondary"
+    },
+    {
+      "StatusKey": 9,
+      "StatusCode": "submitted_adjustment",
+      "StatusLabel": "Submitted Adjustment",
+      "CssClass": "bg-info-subtle text-info"
+    }
+  ],
+  "Fact_Lifting": [
+    {
+      "LiftingKey": 4,
+      "LiftingID": "LFT-20260509-F85T",
+      "StatusKey": 9,
+      "TransactionType": "Domestik Reguler",
+      "LiftingType": "vessel",
+      "CommodityType": "Crude",
+      "Incoterm": "",
+      "PeriodBulan": "05",
+      "PeriodTahun": "2026",
+      "PartnerKey": 1,
+      "CrudeKey": 1,
+      "BLDate": "1231-03-12",
+      "PipelineBLDateStart": "",
+      "PipelineBLDateEnd": "",
+      "BLNumber": "213421",
+      "PPLDate": "",
+      "PPLNumber": "",
+      "VesselName": "fdasdfasd",
+      "LoadPortKey": 1,
+      "DischargePortKey": 3,
+      "VolumeBbls": 12312,
+      "CreatedAt": "2026-05-09T15:38:37.292Z",
+      "Remarks": "123123",
+      "UpdatedAt": "2026-05-09T17:07:36.338Z",
+      "Settlement": {
+        "KindOfTransaction": "Final",
+        "SkemaKomersialisasi": "Election In Kind (SKK Migas)",
+        "InvoiceNumber": "TEST-SAVE-123",
+        "InvoiceDate": "4312-03-12",
+        "POMySAP": "123123",
+        "PODocument": "123123",
+        "FakturPajak": "awerwqer",
+        "TanggalFakturPajak": "1231-03-12",
+        "DueDateProv": "1231-03-12",
+        "DueDateFinal": "1312-03-12",
+        "Currency": "USD",
+        "SKKMigas": {
+          "Prov": 15,
+          "Volume": 12312,
+          "ICP": 123.312,
+          "Alpha": -12.131,
+          "Price": 111.181,
+          "Kurs": 17500,
+          "Amount": 2874606991.2
+        },
+        "KKKS": {
+          "Prov": 0,
+          "Volume": 0,
+          "ICP": 0,
+          "Alpha": 0,
+          "Price": 0,
+          "Kurs": 0,
+          "Amount": 0
+        },
+        "Adjustment": {
+          "Volume": 12312,
+          "Price": 123,
+          "Kurs": 131211,
+          "Amount": 198702789336
+        }
+      }
+    },
+    {
+      "LiftingKey": 3,
+      "LiftingID": "LFT-20260509-0JSB",
+      "StatusKey": 3,
+      "TransactionType": "Import",
+      "LiftingType": "vessel",
+      "CommodityType": "Crude",
+      "Incoterm": "CIF",
+      "PeriodBulan": "05",
+      "PeriodTahun": "2026",
+      "PartnerKey": 1,
+      "CrudeKey": 2,
+      "BLDate": "",
+      "PipelineBLDateStart": "",
+      "PipelineBLDateEnd": "",
+      "BLNumber": "QDqwd",
+      "PPLDate": "",
+      "PPLNumber": "",
+      "VesselName": "aSDa",
+      "LoadPortKey": 1,
+      "DischargePortKey": 3,
+      "VolumeBbls": 1231.123,
+      "CreatedAt": "2026-05-09T15:35:06.056Z",
+      "Remarks": "asdfas",
+      "UpdatedAt": "2026-05-09T15:35:55.058Z",
+      "Settlement": {
+        "KindOfTransaction": "Provisional",
+        "SkemaKomersialisasi": "",
+        "InvoiceNumber": "sDFsda",
+        "InvoiceDate": "0123-03-12",
+        "POMySAP": "asdA",
+        "PODocument": "asdaS",
+        "FakturPajak": "asdAS",
+        "TanggalFakturPajak": "1212-03-12",
+        "DueDateProv": "1231-03-12",
+        "DueDateFinal": "",
+        "Currency": "USD",
+        "DatedBrentPrice": 11221,
+        "Kurs": 12323
+      }
+    },
+    {
+      "LiftingKey": 2,
+      "LiftingID": "LFT-20260509-C7FD",
+      "StatusKey": 3,
+      "TransactionType": "Domestik Reguler",
+      "LiftingType": "vessel",
+      "CommodityType": "Crude",
+      "Incoterm": "",
+      "PeriodBulan": "05",
+      "PeriodTahun": "2026",
+      "PartnerKey": 1,
+      "CrudeKey": 1,
+      "BLDate": "1231-03-12",
+      "PipelineBLDateStart": "",
+      "PipelineBLDateEnd": "",
+      "BLNumber": "dsacfsdcas",
+      "PPLDate": "",
+      "PPLNumber": "",
+      "VesselName": "asdfdawdsfsdw",
+      "LoadPortKey": 1,
+      "DischargePortKey": 3,
+      "VolumeBbls": 1231.123,
+      "CreatedAt": "2026-05-09T11:37:50.099Z",
+      "Remarks": "asdfaew",
+      "UpdatedAt": "2026-05-09T15:31:43.296Z",
+      "Settlement": {
+        "KindOfTransaction": "Provisional",
+        "SkemaKomersialisasi": "Election In Kind (SKK Migas)",
+        "InvoiceNumber": "",
+        "InvoiceDate": "",
+        "POMySAP": "",
+        "PODocument": "",
+        "FakturPajak": "",
+        "TanggalFakturPajak": "",
+        "DueDateProv": "",
+        "DueDateFinal": "",
+        "Currency": "USD",
+        "SKKMigas": {
+          "Prov": 12,
+          "Volume": 111212,
+          "ICP": 111.23,
+          "Alpha": -12.31,
+          "Price": 98.92,
+          "Kurs": 17500,
+          "Amount": 23102291184
+        },
+        "KKKS": {
+          "Prov": 0,
+          "Volume": 0,
+          "ICP": 0,
+          "Alpha": 0,
+          "Price": 0,
+          "Kurs": 0,
+          "Amount": 0
+        },
+        "UnitPriceUsd": 0
+      }
+    },
+    {
+      "LiftingKey": 1,
+      "LiftingID": "LFT-20260401-X1A2",
+      "StatusKey": 3,
+      "TransactionType": "Import",
+      "LiftingType": "vessel",
+      "CommodityType": "Crude",
+      "BLDate": "2026-05-01",
+      "BLNumber": "BL-2026/05-01",
+      "PartnerKey": 1,
+      "CrudeKey": 1,
+      "VolumeBbls": 150021.121,
+      "LoadPortKey": 1,
+      "DischargePortKey": 2,
+      "CreatedAt": "2026-05-01T10:00:00Z",
+      "VesselName": "adsa",
+      "Remarks": "nkjlnkl",
+      "UpdatedAt": "2026-05-09T14:37:16.681Z",
+      "Settlement": {
+        "KindOfTransaction": "Provisional",
+        "SkemaKomersialisasi": "",
+        "InvoiceNumber": "nkjsdnfksa",
+        "InvoiceDate": "1231-03-12",
+        "DueDateProv": "1231-03-12",
+        "DueDateFinal": "",
+        "Currency": "USD",
+        "DatedBrentPrice": 123.1231,
+        "Kurs": 12323.123
+      }
+    }
+  ],
+  "Fact_Settlement": [],
+  "Fact_Daily_Price": [],
+  "Dim_KursBI": [],
+  "Dim_Vat": [],
+  "Dim_NonCrude": []
+}

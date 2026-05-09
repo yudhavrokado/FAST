@@ -106,7 +106,7 @@
                   </div>
                   <div class="col-6">
                     <label class="form-label-sm">Volume Realisasi (bbls) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control fast-input" id="e-volume" value="250000">
+                    <input type="text" class="form-control fast-input" id="e-volume" value="250000">
                   </div>
                 </div>
 
@@ -119,7 +119,7 @@
                   <button class="btn text-danger me-auto" style="background:transparent;border:none;font-weight:600;font-size:13px" onclick="showToast('Data berhasil dihapus','warning')">
                     <i class="bi bi-trash"></i> Hapus Draft
                   </button>
-                  <button class="btn btn-fast-outline" onclick="showToast('Draft berhasil diperbarui')"><i class="bi bi-save"></i> Simpan Draft</button>
+                  <button class="btn btn-fast-outline" onclick="saveDraft()"><i class="bi bi-save"></i> Simpan Draft</button>
                   <button class="btn btn-fast-primary" style="background:var(--fast-success);border:none" onclick="lockLifting()">
                     <i class="bi bi-check2-square"></i> Kunci Data Lifting
                   </button>
@@ -158,19 +158,19 @@
                   </div>
                   <div class="col-md-6">
                     <label class="form-label-sm">No. PO MySAP</label>
-                    <input type="text" class="form-control fast-input" placeholder="Masukkan No. PO MySAP...">
+                    <input type="text" class="form-control fast-input" id="e-poMySap" placeholder="Masukkan No. PO MySAP...">
                   </div>
                   <div class="col-md-6">
                     <label class="form-label-sm">No. PO Document</label>
-                    <input type="text" class="form-control fast-input" placeholder="Masukkan No. PO Document...">
+                    <input type="text" class="form-control fast-input" id="e-poDocument" placeholder="Masukkan No. PO Document...">
                   </div>
                   <div class="col-md-6">
                     <label class="form-label-sm">No. Faktur Pajak</label>
-                    <input type="text" class="form-control fast-input" placeholder="001.xxx-xx...">
+                    <input type="text" class="form-control fast-input" id="e-fakturPajak" placeholder="001.xxx-xx...">
                   </div>
                   <div class="col-md-6">
                     <label class="form-label-sm">Tanggal Faktur Pajak</label>
-                    <input type="date" class="form-control fast-input">
+                    <input type="date" class="form-control fast-input" id="e-tglFakturPajak">
                   </div>
                   <div class="col-md-6">
                     <label class="form-label-sm">Due Date Provisional <span class="text-danger">*</span></label>
@@ -180,9 +180,131 @@
                     <label class="form-label-sm">Due Date Final</label>
                     <input type="date" class="form-control fast-input" id="e-dueDateFinal">
                   </div>
-                  <div class="col-12">
-                    <label class="form-label-sm">Total Price (USD/bbl) <span class="text-danger">*</span></label>
-                    <input type="number" step="0.01" class="form-control fast-input" id="e-priceUsd" placeholder="0.00">
+                  <div class="col-md-6" id="container-currency-main">
+                    <label class="form-label-sm">Currency <span class="text-danger">*</span></label>
+                    <select class="form-select fast-input" id="e-currency">
+                      <option value="USD">USD</option>
+                      <option value="IDR">IDR</option>
+                      <option value="Other">Other Currency</option>
+                    </select>
+                  </div>
+
+                  <!-- Redundant Total Price removed as requested -->
+
+                  <!-- Conditional Sections for Domestic -->
+                  <div class="col-12 mt-3" id="section-skk-entitlement" style="display:none">
+                    <div class="p-3 rounded-3" style="background:rgba(0,166,81,0.03); border:1px solid rgba(0,166,81,0.1)">
+                      <h6 class="mb-3 text-success"><i class="bi bi-bank me-2"></i>Entitlement SKK Migas</h6>
+                      <div class="row g-3">
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Prov Entitlement (%)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-skk-prov" oninput="calcSkk()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Volume (bbl)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-skk-vol" oninput="calcSkk()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">ICP (usd/bbl)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-skk-icp" oninput="calcSkk()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Alpha (usd/bbl)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-skk-alpha" oninput="calcSkk()">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label-sm">Total Price (usd/bbl)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm bg-light" id="e-skk-price" oninput="calcSkkAmount()">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label-sm">Kurs</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-skk-kurs" oninput="calcSkk()">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label-sm">Amount</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm bg-light" id="e-skk-amount">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-12 mt-3" id="section-kkks-entitlement" style="display:none">
+                    <div class="p-3 rounded-3" style="background:rgba(13,110,253,0.03); border:1px solid rgba(13,110,253,0.1)">
+                      <h6 class="mb-3 text-primary"><i class="bi bi-building me-2"></i>Entitlement KKKS</h6>
+                      <div class="row g-3">
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Prov Entitlement (%)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-kkks-prov" oninput="calcKkks()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Volume (bbl)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-kkks-vol" oninput="calcKkks()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">ICP (usd/bbl)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-kkks-icp" oninput="calcKkks()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Alpha (usd/bbl)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-kkks-alpha" oninput="calcKkks()">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label-sm">Total Price (usd/bbl)</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm bg-light" id="e-kkks-price" oninput="calcKkksAmount()">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label-sm">Kurs</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm" id="e-kkks-kurs" oninput="calcKkks()">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label-sm">Amount</label>
+                          <input type="text" step="0.01" class="form-control form-control-sm bg-light" id="e-kkks-amount">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Adjustment Section (For Final Settlement) -->
+                  <div class="col-12 mt-4" id="section-adjustment" style="display:none">
+                    <div class="p-3 border rounded bg-light" style="border: 1px dashed var(--fast-primary) !important; background: rgba(59,130,246,0.02) !important;">
+                      <h6 class="fw-bold mb-3 text-primary" style="font-size:12px"><i class="bi bi-calculator"></i> Penyesuaian (Adjustment)</h6>
+                      <div class="row g-3">
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Adj. Volume (bbls)</label>
+                          <input type="text" class="form-control fast-input" id="e-adj-vol" placeholder="0" oninput="calcAdj()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Adj. Price (USD/bbl)</label>
+                          <input type="text" class="form-control fast-input" id="e-adj-price" placeholder="0" oninput="calcAdj()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Kurs</label>
+                          <input type="text" class="form-control fast-input" id="e-adj-kurs" placeholder="0" oninput="calcAdj()">
+                        </div>
+                        <div class="col-md-3">
+                          <label class="form-label-sm">Adj. Amount (IDR)</label>
+                          <input type="text" class="form-control fast-input bg-white" id="e-adj-amount" placeholder="0">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- New Conditional Fields for Import -->
+                  <div class="col-md-4" id="container-currency" style="display:none">
+                    <label class="form-label-sm">Currency <span class="text-danger">*</span></label>
+                    <select class="form-select fast-input" id="e-currency-import">
+                      <option value="USD">USD</option>
+                      <option value="IDR">IDR</option>
+                      <option value="Other">Other Currency</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4" id="container-datedBrent" style="display:none">
+                    <label class="form-label-sm">Dated Brent Price <span class="text-danger">*</span></label>
+                    <input type="text" step="0.0001" class="form-control fast-input" id="e-datedBrent" placeholder="0.0000">
+                  </div>
+                  <div class="col-md-4" id="container-kurs" style="display:none">
+                    <label class="form-label-sm">Kurs (Exchange Rate) <span class="text-danger">*</span></label>
+                    <input type="text" step="0.01" class="form-control fast-input" id="e-kurs" placeholder="0.00">
                   </div>
                 </div>
 
@@ -222,7 +344,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top:1px solid var(--fast-border)">
-                  <a href="submission.html" class="btn btn-fast-outline">Batalkan</a>
+                  <button class="btn btn-fast-outline" onclick="saveBillingDraft()"><i class="bi bi-save"></i> Simpan Draft Penagihan</button>
                   <button class="btn btn-fast-primary" onclick="submitInvoice()">
                     <i class="bi bi-check-circle"></i> Finalisasi & Submit
                   </button>
